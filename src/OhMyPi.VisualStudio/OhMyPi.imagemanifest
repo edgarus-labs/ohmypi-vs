@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImageManifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/VisualStudio/ImageManifestSchema/2014">
+  <Symbols>
+    <String Name="Resources" Value="/OhMyPi.VisualStudio;component/Resources" />
+    <Guid Name="OmpImages" Value="{9b1f5c2e-6d0a-4f3e-8c47-2a51d7e0b6f4}" />
+    <ID Name="Pi" Value="1" />
+  </Symbols>
+  <Images>
+    <Image Guid="$(OmpImages)" ID="$(Pi)">
+      <Source Uri="$(Resources)/Pi.xaml" />
+    </Image>
+  </Images>
+  <ImageLists />
+</ImageManifest>

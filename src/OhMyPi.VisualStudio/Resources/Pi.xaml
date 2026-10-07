@@ -1,0 +1,6 @@
+<Viewbox xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Width="16" Height="16">
+  <Canvas Width="24" Height="24">
+    <Path Stroke="#424242" StrokeThickness="2.4" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+          Data="M4,7.5 C5,6 6.2,5.5 8,5.5 L20,5.5 M9,5.5 C9,10.5 8,15.5 5.5,18.5 M15.5,5.5 C15,10 15.2,14.5 16.2,17 C16.7,18.2 17.8,18.5 19.5,17.5" />
+  </Canvas>
+</Viewbox>

@@ -1,0 +1,71 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Extension version (major.minor.patch). Empty keeps the <Version> from OhMyPi.VisualStudio.csproj.
+        type: string
+        default: ''
+      artifact-name:
+        description: Name of the uploaded VSIX artifact. Empty uploads nothing.
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # The VSSDK build tasks need Visual Studio's MSBuild, and the .NET 10 SDK needs MSBuild 18 (Visual Studio 2026).
+    runs-on: windows-2025-vs2026
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET SDK (global.json)
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Set up Node.js (fake OMP for the Omp.Core tests)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Set up MSBuild (Visual Studio 2026)
+        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
+        with:
+          vs-version: '[18.0,19.0)'
+
+      - name: Build solution and VSIX
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          $arguments = @('OhMyPi.sln', '-restore', '-p:Configuration=Release', '-v:minimal', '-nologo')
+          if ($env:VERSION) { $arguments += "-p:Version=$env:VERSION" }
+          msbuild @arguments
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Test Omp.Core
+        run: dotnet test tests\Omp.Core.Tests -c Release --no-build
+
+      - name: Test OhMyPi.VisualStudio.UI
+        run: dotnet test tests\OhMyPi.VisualStudio.UI.Tests -c Release --no-build
+
+      - name: Test OhMyPi.VisualStudio
+        run: dotnet test tests\OhMyPi.VisualStudio.Tests -c Release --no-build
+
+      - name: Upload VSIX
+        if: inputs.artifact-name != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: src/OhMyPi.VisualStudio/bin/Release/net48/OhMyPi.VisualStudio.vsix
+          if-no-files-found: error

@@ -1,0 +1,2 @@
+[OhMyPi.VisualStudio.VsAutomation]::SwitchToUiAsync
+[OhMyPi.VisualStudio.VsAutomation]::EnterUiAsync

@@ -1,0 +1,50 @@
+<UserControl x:Class="OhMyPi.VisualStudio.UI.OmpChatControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:OhMyPi.VisualStudio.UI.Views"
+             Background="{DynamicResource {x:Static v:ThemeKeys.Background}}"
+             Foreground="{DynamicResource {x:Static v:ThemeKeys.Foreground}}"
+             FontFamily="{DynamicResource {x:Static v:ThemeKeys.FontFamily}}"
+             FontSize="{DynamicResource {x:Static v:ThemeKeys.FontSize}}"
+             UseLayoutRounding="True"
+             TextOptions.TextFormattingMode="Display"
+             KeyboardNavigation.TabNavigation="Cycle">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Views/Styles.xaml" />
+                <ResourceDictionary Source="Views/ModelPickerStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ContentControl x:Name="HeaderHost" Grid.Row="0" Focusable="False" />
+        <ContentControl x:Name="BannerHost" Grid.Row="1" Focusable="False" />
+        <Border x:Name="SectionsArea" Grid.Row="2" BorderThickness="0,0,0,1" Padding="0,2,0,2"
+                BorderBrush="{DynamicResource {x:Static v:ThemeKeys.Divider}}">
+            <StackPanel x:Name="SectionsHost" />
+        </Border>
+
+        <Grid x:Name="TranscriptArea" Grid.Row="3">
+            <v:TranscriptItemsControl x:Name="Transcript" Style="{StaticResource Omp.Transcript}" AutomationProperties.Name="Conversation" />
+            <ContentControl x:Name="WelcomeHost" Focusable="False" />
+            <ContentControl x:Name="JumpHost" Focusable="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,8" />
+        </Grid>
+
+        <ContentControl x:Name="HistoryHost" Grid.Row="2" Grid.RowSpan="2" Focusable="False" Visibility="Collapsed" />
+
+        <StackPanel Grid.Row="4" Margin="12,14,12,12">
+            <ContentControl x:Name="SessionPanelHost" Focusable="False" />
+            <ScrollViewer x:Name="InteractionsScroller" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" />
+            <ContentControl x:Name="ComposerHost" Focusable="False" />
+        </StackPanel>
+    </Grid>
+</UserControl>

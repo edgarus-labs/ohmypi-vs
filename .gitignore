@@ -1,0 +1,15 @@
+# Build output
+bin/
+obj/
+*.vsix
+*.binlog
+
+# IDE state
+.vs/
+*.user
+*.suo
+*.DotSettings.user
+.idea/
+
+# Test results
+TestResults/

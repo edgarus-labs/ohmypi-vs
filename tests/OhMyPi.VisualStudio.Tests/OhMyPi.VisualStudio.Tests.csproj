@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>OhMyPi.VisualStudio.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <!-- xunit.v3.mtp-off: dotnet test and Test Explorer run the tests through VSTest (xunit.runner.visualstudio). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Omp.Core\Omp.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The host's VS-independent logic is compiled in directly so the tests never load the VSSDK. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\OhMyPi.VisualStudio\Logic\**\*.cs" Link="Logic\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\OhMyPi.VisualStudio\PackageIds.cs" Link="PackageIds.cs" />
+    <Compile Include="..\..\src\OhMyPi.VisualStudio.UI\ModelPreferences.cs" Link="ModelPreferences.cs" />
+    <Compile Include="..\..\src\OhMyPi.VisualStudio.UI\IDismissals.cs" Link="IDismissals.cs" />
+  </ItemGroup>
+
+</Project>

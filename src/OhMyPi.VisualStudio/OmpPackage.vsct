@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
+  <Include href="KnownImageIds.vsct" />
+
+  <Commands package="guidOmpPackage">
+    <Menus>
+      <Menu guid="guidOmpCommandSet" id="OmpSubMenu" priority="0x0100" type="Menu">
+        <Parent guid="guidOmpCommandSet" id="ToolsMenuGroup" />
+        <Strings>
+          <ButtonText>oh-my-pi</ButtonText>
+          <CommandName>oh-my-pi</CommandName>
+        </Strings>
+      </Menu>
+      <Menu guid="guidOmpCommandSet" id="ToolWindowToolbar" type="ToolWindowToolbar">
+        <CommandFlag>DefaultDocked</CommandFlag>
+        <Strings>
+          <ButtonText>oh-my-pi</ButtonText>
+          <CommandName>oh-my-pi</CommandName>
+        </Strings>
+      </Menu>
+    </Menus>
+
+    <Groups>
+      <Group guid="guidOmpCommandSet" id="ToolsMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
+      </Group>
+      <Group guid="guidOmpCommandSet" id="SessionGroup" priority="0x0100">
+        <Parent guid="guidOmpCommandSet" id="OmpSubMenu" />
+      </Group>
+      <Group guid="guidOmpCommandSet" id="ComposerGroup" priority="0x0200">
+        <Parent guid="guidOmpCommandSet" id="OmpSubMenu" />
+      </Group>
+      <Group guid="guidOmpCommandSet" id="ProcessGroup" priority="0x0300">
+        <Parent guid="guidOmpCommandSet" id="OmpSubMenu" />
+      </Group>
+      <Group guid="guidOmpCommandSet" id="ToolbarGroup" priority="0x0100">
+        <Parent guid="guidOmpCommandSet" id="ToolWindowToolbar" />
+      </Group>
+      <Group guid="guidOmpCommandSet" id="EditorContextGroup" priority="0x0700">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN" />
+      </Group>
+      <Group guid="guidOmpCommandSet" id="SolutionExplorerGroup" priority="0x0700">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_ITEMNODE" />
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <Button guid="guidOmpCommandSet" id="cmdidViewToolWindow" priority="0x0100" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
+        <Icon guid="guidOmpImages" id="Pi" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>oh-my-pi</ButtonText>
+          <CanonicalName>.View.OhMyPi</CanonicalName>
+          <LocCanonicalName>.View.OhMyPi</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="guidOmpCommandSet" id="cmdidOpen" priority="0x0100" type="Button">
+        <Parent guid="guidOmpCommandSet" id="SessionGroup" />
+        <Icon guid="guidOmpImages" id="Pi" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Open</ButtonText>
+          <CanonicalName>.OMP.Open</CanonicalName>
+          <LocCanonicalName>.OMP.Open</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidNewSession" priority="0x0200" type="Button">
+        <Parent guid="guidOmpCommandSet" id="SessionGroup" />
+        <Icon guid="ImageCatalogGuid" id="Add" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>New Session</ButtonText>
+          <CanonicalName>.OMP.NewSession</CanonicalName>
+          <LocCanonicalName>.OMP.NewSession</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidResumeSession" priority="0x0300" type="Button">
+        <Parent guid="guidOmpCommandSet" id="SessionGroup" />
+        <Icon guid="ImageCatalogGuid" id="History" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Resume Session...</ButtonText>
+          <ToolTipText>Session History</ToolTipText>
+          <CanonicalName>.OMP.ResumeSession</CanonicalName>
+          <LocCanonicalName>.OMP.ResumeSession</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidRenameSession" priority="0x0400" type="Button">
+        <Parent guid="guidOmpCommandSet" id="SessionGroup" />
+        <Icon guid="ImageCatalogGuid" id="Rename" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Rename Session</ButtonText>
+          <CanonicalName>.OMP.RenameSession</CanonicalName>
+          <LocCanonicalName>.OMP.RenameSession</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidShowAgents" priority="0x0500" type="Button">
+        <Parent guid="guidOmpCommandSet" id="SessionGroup" />
+        <Strings>
+          <ButtonText>Show Agents</ButtonText>
+          <CanonicalName>.OMP.ShowAgents</CanonicalName>
+          <LocCanonicalName>.OMP.ShowAgents</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="guidOmpCommandSet" id="cmdidSendPrompt" priority="0x0100" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ComposerGroup" />
+        <Strings>
+          <ButtonText>Send Prompt</ButtonText>
+          <CanonicalName>.OMP.SendPrompt</CanonicalName>
+          <LocCanonicalName>.OMP.SendPrompt</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidSelectModel" priority="0x0200" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ComposerGroup" />
+        <Strings>
+          <ButtonText>Select Model...</ButtonText>
+          <CanonicalName>.OMP.SelectModel</CanonicalName>
+          <LocCanonicalName>.OMP.SelectModel</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidSelectThinkingLevel" priority="0x0300" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ComposerGroup" />
+        <Strings>
+          <ButtonText>Select Thinking Level...</ButtonText>
+          <CanonicalName>.OMP.SelectThinkingLevel</CanonicalName>
+          <LocCanonicalName>.OMP.SelectThinkingLevel</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidToggleFastMode" priority="0x0400" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ComposerGroup" />
+        <Strings>
+          <ButtonText>Toggle Fast Mode</ButtonText>
+          <CanonicalName>.OMP.ToggleFastMode</CanonicalName>
+          <LocCanonicalName>.OMP.ToggleFastMode</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="guidOmpCommandSet" id="cmdidAbort" priority="0x0100" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ProcessGroup" />
+        <Icon guid="ImageCatalogGuid" id="Stop" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
+        <Strings>
+          <ButtonText>Abort</ButtonText>
+          <CanonicalName>.OMP.Abort</CanonicalName>
+          <LocCanonicalName>.OMP.Abort</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidRestart" priority="0x0200" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ProcessGroup" />
+        <Icon guid="ImageCatalogGuid" id="Restart" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Restart</ButtonText>
+          <CanonicalName>.OMP.Restart</CanonicalName>
+          <LocCanonicalName>.OMP.Restart</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidShowLog" priority="0x0300" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ProcessGroup" />
+        <Icon guid="ImageCatalogGuid" id="Output" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Show Log</ButtonText>
+          <CanonicalName>.OMP.ShowLog</CanonicalName>
+          <LocCanonicalName>.OMP.ShowLog</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidOpenSettings" priority="0x0400" type="Button">
+        <Parent guid="guidOmpCommandSet" id="ProcessGroup" />
+        <Icon guid="ImageCatalogGuid" id="Settings" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Open Settings</ButtonText>
+          <CanonicalName>.OMP.OpenSettings</CanonicalName>
+          <LocCanonicalName>.OMP.OpenSettings</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="guidOmpCommandSet" id="cmdidAddActiveFile" priority="0x0100" type="Button">
+        <Parent guid="guidOmpCommandSet" id="EditorContextGroup" />
+        <Icon guid="ImageCatalogGuid" id="AddDocument" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add File to OMP Chat</ButtonText>
+          <CanonicalName>.OMP.AddFileToChat</CanonicalName>
+          <LocCanonicalName>.OMP.AddFileToChat</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidAddSelectedFiles" priority="0x0100" type="Button">
+        <Parent guid="guidOmpCommandSet" id="SolutionExplorerGroup" />
+        <Icon guid="ImageCatalogGuid" id="AddDocument" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add File to OMP Chat</ButtonText>
+          <CanonicalName>.OMP.AddSelectedFilesToChat</CanonicalName>
+          <LocCanonicalName>.OMP.AddSelectedFilesToChat</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="guidOmpCommandSet" id="cmdidShowUsage" priority="0x0600" type="Button">
+        <Parent guid="guidOmpCommandSet" id="SessionGroup" />
+        <Icon guid="ImageCatalogGuid" id="Currency" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Show Usage</ButtonText>
+          <CanonicalName>.OMP.ShowUsage</CanonicalName>
+          <LocCanonicalName>.OMP.ShowUsage</LocCanonicalName>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <CommandPlacements>
+    <CommandPlacement guid="guidOmpCommandSet" id="cmdidNewSession" priority="0x0100">
+      <Parent guid="guidOmpCommandSet" id="ToolbarGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidOmpCommandSet" id="cmdidResumeSession" priority="0x0200">
+      <Parent guid="guidOmpCommandSet" id="ToolbarGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidOmpCommandSet" id="cmdidAbort" priority="0x0300">
+      <Parent guid="guidOmpCommandSet" id="ToolbarGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidOmpCommandSet" id="cmdidRestart" priority="0x0400">
+      <Parent guid="guidOmpCommandSet" id="ToolbarGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidOmpCommandSet" id="cmdidShowUsage" priority="0x0500">
+      <Parent guid="guidOmpCommandSet" id="ToolbarGroup" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidOmpCommandSet" id="SolutionExplorerGroup" priority="0x0700">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_XPROJ_MULTIITEM" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidOmpCommandSet" id="SolutionExplorerGroup" priority="0x0700">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FOLDERNODE" />
+    </CommandPlacement>
+    <CommandPlacement guid="guidOmpCommandSet" id="SolutionExplorerGroup" priority="0x0700">
+      <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_PROJNODE" />
+    </CommandPlacement>
+  </CommandPlacements>
+
+  <Symbols>
+    <GuidSymbol name="guidOmpPackage" value="{f4d10c0a-2f40-4d24-90e5-399d239064e3}" />
+
+    <GuidSymbol name="guidOmpImages" value="{9b1f5c2e-6d0a-4f3e-8c47-2a51d7e0b6f4}">
+      <IDSymbol name="Pi" value="1" />
+    </GuidSymbol>
+
+    <GuidSymbol name="guidOmpCommandSet" value="{33df85cf-aade-453e-b0c3-d133b70ab0dc}">
+      <IDSymbol name="OmpSubMenu" value="0x1000" />
+      <IDSymbol name="ToolWindowToolbar" value="0x1001" />
+      <IDSymbol name="ToolsMenuGroup" value="0x1010" />
+      <IDSymbol name="SessionGroup" value="0x1011" />
+      <IDSymbol name="ComposerGroup" value="0x1012" />
+      <IDSymbol name="ProcessGroup" value="0x1013" />
+      <IDSymbol name="ToolbarGroup" value="0x1014" />
+      <IDSymbol name="EditorContextGroup" value="0x1015" />
+      <IDSymbol name="SolutionExplorerGroup" value="0x1016" />
+
+      <IDSymbol name="cmdidOpen" value="0x0100" />
+      <IDSymbol name="cmdidViewToolWindow" value="0x0101" />
+      <IDSymbol name="cmdidNewSession" value="0x0102" />
+      <IDSymbol name="cmdidResumeSession" value="0x0103" />
+      <IDSymbol name="cmdidSelectModel" value="0x0104" />
+      <IDSymbol name="cmdidSelectThinkingLevel" value="0x0105" />
+      <IDSymbol name="cmdidToggleFastMode" value="0x0106" />
+      <IDSymbol name="cmdidSendPrompt" value="0x0107" />
+      <IDSymbol name="cmdidAbort" value="0x0108" />
+      <IDSymbol name="cmdidRestart" value="0x0109" />
+      <IDSymbol name="cmdidRenameSession" value="0x010A" />
+      <IDSymbol name="cmdidShowAgents" value="0x010B" />
+      <IDSymbol name="cmdidShowLog" value="0x010C" />
+      <IDSymbol name="cmdidOpenSettings" value="0x010D" />
+      <IDSymbol name="cmdidAddActiveFile" value="0x010E" />
+      <IDSymbol name="cmdidAddSelectedFiles" value="0x010F" />
+      <IDSymbol name="cmdidShowUsage" value="0x0110" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>

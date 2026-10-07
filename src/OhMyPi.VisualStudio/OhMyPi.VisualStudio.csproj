@@ -1,0 +1,86 @@
+<Project>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>OhMyPi.VisualStudio</RootNamespace>
+    <AssemblyName>OhMyPi.VisualStudio</AssemblyName>
+    <Version>0.1.0</Version>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <UseCodebase>true</UseCodebase>
+    <IncludeAssemblyInVSIXContainer>true</IncludeAssemblyInVSIXContainer>
+    <IncludeDebugSymbolsInVSIXContainer>false</IncludeDebugSymbolsInVSIXContainer>
+    <IncludeDebugSymbolsInLocalVSIXDeployment>true</IncludeDebugSymbolsInLocalVSIXDeployment>
+    <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
+    <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+    <CreateVsixContainer>true</CreateVsixContainer>
+    <!-- Debug (F5) deploys to the experimental instance; Release only builds the .vsix for VSIXInstaller (see README). -->
+    <DeployExtension Condition="'$(Configuration)' == 'Debug'">true</DeployExtension>
+    <DeployExtension Condition="'$(Configuration)' != 'Debug'">false</DeployExtension>
+
+    <StartAction>Program</StartAction>
+    <StartProgram>$(DevEnvDir)devenv.exe</StartProgram>
+    <StartArguments>/rootsuffix Exp</StartArguments>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.14.2094">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Design" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Omp.Core\Omp.Core.csproj" />
+    <ProjectReference Include="..\OhMyPi.VisualStudio.UI\OhMyPi.VisualStudio.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="vs-threading.MainThreadSwitchingMethods.txt" />
+    <None Include="source.extension.vsixmanifest" SubType="Designer" />
+    <VSCTCompile Include="OmpPackage.vsct" ResourceName="Menus.ctmenu" />
+    <Content Include="Resources\icon.png" IncludeInVSIX="true" />
+    <Content Include="OhMyPi.imagemanifest" IncludeInVSIX="true" />
+    <Resource Include="Resources\Pi.xaml" />
+  </ItemGroup>
+
+  <!-- Referenced projects' symbols reach the VSIX as copy-local items, which IncludeDebugSymbolsInVSIXContainer does not cover. -->
+  <Target Name="ExcludeReferencedSymbolsFromVsix" AfterTargets="GetVsixSourceItems" Condition="'$(Configuration)' != 'Debug'">
+    <ItemGroup>
+      <VSIXSourceItem Remove="@(VSIXSourceItem)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- source.extension.vsixmanifest reads the VSIX version from this target, so <Version> is the only version literal. -->
+  <Target Name="GetVsixVersion" Returns="$(Version)" />
+
+  <!-- InstalledProductRegistration needs a constant, generated from <Version>. -->
+  <Target Name="GenerateVersionInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <VersionInfoFile>$(IntermediateOutputPath)VersionInfo.g.cs</VersionInfoFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(VersionInfoFile)" Lines="namespace OhMyPi.VisualStudio { internal static class VersionInfo { public const string Version = &quot;$(Version)&quot;%3B } }" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Compile Include="$(VersionInfoFile)" />
+      <FileWrites Include="$(VersionInfoFile)" />
+    </ItemGroup>
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <!-- The VSSDK targets (pkgdef, VSCT, VSIX container) must come after the SDK's common targets. -->
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
+  <Target Name="RequireVsSdkTargets" BeforeTargets="Build" Condition="!Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')">
+    <Error Text="The VSSDK targets were not found at '$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets', so no pkgdef, menu resource or .vsix would be built. Restore first (the Microsoft.VSSDK.BuildTools package sets VSToolsPath), then build in a separate invocation." />
+  </Target>
+
+</Project>

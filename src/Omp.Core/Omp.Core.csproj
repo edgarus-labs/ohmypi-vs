@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Omp.Core</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- VSTHRD003 guards against deadlocks with the VS main thread (JoinableTaskFactory). Omp.Core never runs on or
+         switches to that thread; its awaits of TaskCompletionSource tasks it owns are the intended pattern. -->
+    <NoWarn>$(NoWarn);VSTHRD003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Omp.Core.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <!-- The WPF tests own a plain STA thread (no JoinableTaskFactory) and block it deliberately while background producers run. -->
+    <NoWarn>$(NoWarn);VSTHRD001;VSTHRD002;VSTHRD110</NoWarn>
+  </PropertyGroup>
+
+  <!-- xunit.v3.mtp-off: dotnet test and Test Explorer run the tests through VSTest (xunit.runner.visualstudio). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="xunit.v3.mtp-off" Version="4.0.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OhMyPi.VisualStudio.UI\OhMyPi.VisualStudio.UI.csproj" />
+  </ItemGroup>
+
+</Project>
