@@ -1,9 +1,9 @@
-using System;
 using OhMyPi.VisualStudio.Logic;
+using System;
 
 namespace OhMyPi.VisualStudio.Tests;
 
-public class PendingTextTests
+public sealed class PendingTextTests
 {
     [Fact]
     public void OnlyTheFirstLineAfterADrainAsksForAFlush()

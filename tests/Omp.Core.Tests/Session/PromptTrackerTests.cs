@@ -16,7 +16,11 @@ public class PromptTrackerTests
     private static JObject Result(string id, string status = "completed", bool sessionSettled = true, bool agentInvoked = true, string? error = null)
     {
         var frame = new JObject { ["type"] = "prompt_result", ["id"] = id, ["agentInvoked"] = agentInvoked, ["status"] = status, ["sessionSettled"] = sessionSettled };
-        if (error != null) frame["error"] = new JObject { ["message"] = error, ["retryable"] = true };
+        if (error is not null)
+        {
+            frame["error"] = new JObject { ["message"] = error, ["retryable"] = true };
+        }
+
         return frame;
     }
 

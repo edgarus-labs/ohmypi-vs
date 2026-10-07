@@ -1,9 +1,9 @@
-using System.IO;
 using OhMyPi.VisualStudio.Logic;
+using System.IO;
 
 namespace OhMyPi.VisualStudio.Tests;
 
-public class LocalPathsTests
+public sealed class LocalPathsTests
 {
     [Theory]
     [InlineData(null)]
@@ -13,10 +13,7 @@ public class LocalPathsTests
     [InlineData("C:\\a|b.cs")]
     [InlineData("C:\\a\"b.cs")]
     [InlineData("C:\\a\u0001b.cs")]
-    public void MonikersThatAreNoExistingPathsAreRejected(string? moniker)
-    {
-        Assert.False(LocalPaths.Exists(moniker, allowDirectories: true));
-    }
+    public void MonikersThatAreNoExistingPathsAreRejected(string? moniker) => Assert.False(LocalPaths.Exists(moniker, allowDirectories: true));
 
     [Fact]
     public void FilesAlwaysAndDirectoriesOnRequestAreAccepted()

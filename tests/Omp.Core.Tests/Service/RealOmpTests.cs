@@ -15,7 +15,11 @@ public sealed class RealOmpTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        if (_service != null) await Wait.Settle(_service.StopAsync());
+        if (_service is not null)
+        {
+            await Wait.Settle(_service.StopAsync());
+        }
+
         try
         {
             Directory.Delete(_dir, true);

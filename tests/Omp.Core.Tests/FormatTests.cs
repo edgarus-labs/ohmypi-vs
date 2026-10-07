@@ -61,7 +61,10 @@ public class FormatTests
         var text = Format.AgentSummary(agent, 5000);
         Assert.StartsWith("scout\n", text);
         foreach (var part in new[] { "id: a1", "parent: main", "status: failed", "model: m", "activity: read", "tokens: 1,200", "cost: $0.0123", "duration: 3.0s", "error: boom" })
+        {
             Assert.Contains(part, text);
+        }
+
         Assert.DoesNotContain("tools:", text);
     }
 

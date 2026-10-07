@@ -10,8 +10,13 @@ public class AgentRegistryTests
         ["type"] = "subagent_lifecycle",
         ["payload"] = new JObject
         {
-            ["id"] = id, ["agent"] = "task", ["agentSource"] = "bundled", ["status"] = status, ["index"] = 0,
-            ["description"] = $"do {id}", ["sessionFile"] = $"/s/{id}.jsonl",
+            ["id"] = id,
+            ["agent"] = "task",
+            ["agentSource"] = "bundled",
+            ["status"] = status,
+            ["index"] = 0,
+            ["description"] = $"do {id}",
+            ["sessionFile"] = $"/s/{id}.jsonl",
         },
     };
 
@@ -53,7 +58,10 @@ public class AgentRegistryTests
             ["type"] = "subagent_progress",
             ["payload"] = new JObject
             {
-                ["index"] = 0, ["agent"] = "task", ["agentSource"] = "bundled", ["task"] = "t",
+                ["index"] = 0,
+                ["agent"] = "task",
+                ["agentSource"] = "bundled",
+                ["task"] = "t",
                 ["progress"] = new JObject { ["id"] = "Anna", ["status"] = "running", ["currentTool"] = "grep", ["toolCount"] = 4, ["tokens"] = 1200, ["cost"] = 0.02, ["resolvedModel"] = "openai/gpt" },
             },
         });
@@ -92,7 +100,13 @@ public class AgentRegistryTests
         Assert.Single(registry.Agents);
         registry.ApplySnapshot(registry.Version, new JArray(new JObject
         {
-            ["id"] = "Cleo", ["index"] = 1, ["agent"] = "scout", ["agentSource"] = "bundled", ["status"] = "running", ["lastUpdate"] = 10_000, ["task"] = "look",
+            ["id"] = "Cleo",
+            ["index"] = 1,
+            ["agent"] = "scout",
+            ["agentSource"] = "bundled",
+            ["status"] = "running",
+            ["lastUpdate"] = 10_000,
+            ["task"] = "look",
             ["progress"] = new JObject { ["lastIntent"] = "Scanning", ["durationMs"] = 4000, ["retryFailure"] = new JObject { ["attempt"] = 2, ["errorMessage"] = "429" } },
         }));
         var cleo = Find(registry, "Cleo");

@@ -1,12 +1,11 @@
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using OhMyPi.VisualStudio.Logic;
 using Omp.Core;
 using Omp.Core.Changes;
-using OhMyPi.VisualStudio.Logic;
+using System;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace OhMyPi.VisualStudio.Tests;
 
@@ -15,11 +14,17 @@ public sealed class ChangeFeedTests : IDisposable
     private sealed class NullLogger : IOmpLogger
     {
         public readonly ConcurrentQueue<string> Errors = new();
+
         public void Error(string message, Exception? error = null) => Errors.Enqueue(message);
+
         public void Warn(string message, Exception? error = null) { }
+
         public void Info(string message, Exception? error = null) { }
+
         public void Debug(string message, Exception? error = null) { }
+
         public bool TraceEnabled => false;
+
         public void Trace(string direction, string frame) { }
     }
 
@@ -37,7 +42,11 @@ public sealed class ChangeFeedTests : IDisposable
         var model = new ChangeModel(async path =>
         {
             var snapshot = _files.TryGetValue(path, out var found) ? found : Snapshot.Missing;
-            if (_beforeRead != null) await _beforeRead(path);
+            if (_beforeRead is not null)
+            {
+                await _beforeRead(path);
+            }
+
             return snapshot;
         }, _logger);
         _feed = new ChangeFeed(_service, model, new WorkspaceScope(Cwd, new[] { Cwd }), _logger);
@@ -65,10 +74,10 @@ public sealed class ChangeFeedTests : IDisposable
     private void RunWrite(string id, string relative, string? before, string? after)
     {
         var path = System.IO.Path.Combine(Cwd, relative);
-        _files[path] = before == null ? Snapshot.Missing : Snapshot.Of(before);
+        _files[path] = before is null ? Snapshot.Missing : Snapshot.Of(before);
         _service.RaiseToolExecution(Write(ToolExecutionPhase.Start, id, relative));
         _feed.WhenIdleAsync().GetAwaiter().GetResult();
-        _files[path] = after == null ? Snapshot.Missing : Snapshot.Of(after);
+        _files[path] = after is null ? Snapshot.Missing : Snapshot.Of(after);
         _service.RaiseToolExecution(Write(ToolExecutionPhase.End, id, relative));
     }
 
@@ -177,10 +186,7 @@ public sealed class ChangeFeedTests : IDisposable
     }
 
     [Fact]
-    public async Task AnUntrackedFileDiffsAgainstTheRecordedBefore()
-    {
-        Assert.Equal(new DiffSource(false, "recorded\n"), await _feed.DiffSourceAsync(System.IO.Path.Combine(Cwd, "elsewhere.txt"), "recorded\n"));
-    }
+    public async Task AnUntrackedFileDiffsAgainstTheRecordedBefore() => Assert.Equal(new DiffSource(false, "recorded\n"), await _feed.DiffSourceAsync(System.IO.Path.Combine(Cwd, "elsewhere.txt"), "recorded\n"));
 
     [Fact]
     public async Task AnUntrackedFileWithoutRecordedBeforeHasNoDiff()

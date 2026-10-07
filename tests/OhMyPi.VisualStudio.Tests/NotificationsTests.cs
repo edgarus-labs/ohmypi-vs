@@ -1,16 +1,13 @@
+using OhMyPi.VisualStudio.Logic;
 using System;
 using System.Threading.Tasks;
-using OhMyPi.VisualStudio.Logic;
 
 namespace OhMyPi.VisualStudio.Tests;
 
-public class NotificationsTests
+public sealed class NotificationsTests
 {
     [Fact]
-    public void ShortSingleLineMessagesAreShownAsTheyAre()
-    {
-        Assert.Equal("OMP failed to start: spawn ENOENT", NotificationText.Summary("OMP failed to start: spawn ENOENT"));
-    }
+    public void ShortSingleLineMessagesAreShownAsTheyAre() => Assert.Equal("OMP failed to start: spawn ENOENT", NotificationText.Summary("OMP failed to start: spawn ENOENT"));
 
     [Fact]
     public void MultiLineMessagesShowTheirFirstLine()
@@ -37,6 +34,7 @@ public class NotificationsTests
         Task<string?> Show()
         {
             shown++;
+
             return choice.Task;
         }
 
@@ -61,6 +59,7 @@ public class NotificationsTests
         Task<string?> Show()
         {
             shown++;
+
             return Task.FromResult<string?>(null);
         }
 

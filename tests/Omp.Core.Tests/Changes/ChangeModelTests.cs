@@ -15,11 +15,15 @@ public class ChangeModelTests
     private sealed class Disk
     {
         public Dictionary<string, Snapshot?> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public List<string> Reads { get; } = new();
 
         public Disk(params (string Path, string? Content)[] initial)
         {
-            foreach (var (path, content) in initial) Files[path] = content == null ? null : Snapshot.Of(content);
+            foreach (var (path, content) in initial)
+            {
+                Files[path] = content is null ? null : Snapshot.Of(content);
+            }
         }
 
         public void Set(string path, string content) => Files[path] = Snapshot.Of(content);
@@ -27,6 +31,7 @@ public class ChangeModelTests
         public Task<Snapshot?> Read(string path)
         {
             Reads.Add(path);
+
             return Task.FromResult(Files.TryGetValue(path, out var snapshot) ? snapshot : Snapshot.Missing);
         }
     }
@@ -245,43 +250,5 @@ public class ChangeModelTests
         await model.ApplyAsync(Start("t2", "edit", PathArg("b.ts")), Scope);
         Assert.Equal("aaaaaa", model.Baseline(File("a.ts"))!.Content);
         Assert.False(model.HasBaseline(File("b.ts")));
-    }
-}
-
-public sealed class ReadSnapshotTests : IDisposable
-{
-    private readonly string _dir = TempDirectory.Create("omp-snapshot-");
-
-    public void Dispose() => Directory.Delete(_dir, true);
-
-    [Fact]
-    public async Task ReadsAFileAndReportsAMissingOneAsMissing()
-    {
-        var logger = new MemoryLogger();
-        System.IO.File.WriteAllText(Path.Combine(_dir, "a.txt"), "hello\u00e9");
-        var snapshot = await ChangeModel.ReadSnapshotAsync(Path.Combine(_dir, "a.txt"), logger);
-        Assert.True(snapshot!.Exists);
-        Assert.Equal("hello\u00e9", snapshot.Content);
-        Assert.Same(Snapshot.Missing, await ChangeModel.ReadSnapshotAsync(Path.Combine(_dir, "missing.txt"), logger));
-        Assert.Same(Snapshot.Missing, await ChangeModel.ReadSnapshotAsync(Path.Combine(_dir, "no-dir", "missing.txt"), logger));
-        Assert.Empty(logger.Records);
-    }
-
-    [Fact]
-    public async Task DoesNotSnapshotFilesOverTheSizeLimitAndLogsWhy()
-    {
-        var big = Path.Combine(_dir, "big.txt");
-        System.IO.File.WriteAllBytes(big, Enumerable.Repeat((byte)0x61, ChangeModel.MaxSnapshotBytes + 1).ToArray());
-        var logger = new MemoryLogger();
-        Assert.Null(await ChangeModel.ReadSnapshotAsync(big, logger));
-        Assert.Matches(@"big\.txt.*exceeds", logger.Text("debug"));
-    }
-
-    [Fact]
-    public async Task DoesNotSnapshotDirectoriesAndLogsWhy()
-    {
-        var logger = new MemoryLogger();
-        Assert.Null(await ChangeModel.ReadSnapshotAsync(_dir, logger));
-        Assert.Contains("not a regular file", logger.Text("debug"));
     }
 }

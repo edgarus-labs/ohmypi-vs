@@ -2,7 +2,7 @@ using OhMyPi.VisualStudio.Logic;
 
 namespace OhMyPi.VisualStudio.Tests;
 
-public class SessionMemoryTests
+public sealed class SessionMemoryTests
 {
     private readonly SessionMemory _memory = new();
 

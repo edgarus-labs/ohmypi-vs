@@ -1,15 +1,16 @@
-using System.Collections.Generic;
-using System.Linq;
 using OhMyPi.VisualStudio.Logic;
 using OhMyPi.VisualStudio.UI;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OhMyPi.VisualStudio.Tests;
 
-public class ModelPreferenceStoreTests
+public sealed class ModelPreferenceStoreTests
 {
     private sealed class FakeStore : IPreferenceStore
     {
         public Dictionary<string, string> Values { get; } = new();
+
         public int Writes { get; private set; }
 
         public string? Read(string key) => Values.TryGetValue(key, out var value) ? value : null;
@@ -23,7 +24,7 @@ public class ModelPreferenceStoreTests
 
     private static ModelKey Key(string provider, string id) => new(provider, id);
 
-    private static string[] Ids(IReadOnlyList<ModelKey> keys) => keys.Select(k => k.ToString()).ToArray();
+    private static string[] Ids(IReadOnlyList<ModelKey> keys) => [.. keys.Select(k => k.ToString())];
 
     private readonly FakeStore _store = new();
 
@@ -76,7 +77,10 @@ public class ModelPreferenceStoreTests
     public void RecentsAreCappedAtTwentyDroppingTheOldest()
     {
         var preferences = new ModelPreferenceStore(_store);
-        for (var i = 1; i <= 25; i++) preferences.RecordPicked(Key("p", "m" + i));
+        for (var i = 1; i <= 25; i++)
+        {
+            preferences.RecordPicked(Key("p", "m" + i));
+        }
 
         Assert.Equal(20, preferences.Recents.Count);
         Assert.Equal("p/m25", preferences.Recents[0].ToString());

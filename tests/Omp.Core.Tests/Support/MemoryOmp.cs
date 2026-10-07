@@ -44,22 +44,37 @@ internal sealed class MemoryOmp : MemoryTransport, IOmpProcessHandle
 
     public Task ShutdownAsync(int graceMs)
     {
-        if (ShutdownError != null) return Task.FromException(ShutdownError);
-        if (!IsClosed) Close(0, Pid);
+        if (ShutdownError is not null)
+        {
+            return Task.FromException(ShutdownError);
+        }
+
+        if (!IsClosed)
+        {
+            Close(0, Pid);
+        }
+
         return Task.CompletedTask;
     }
 
     private static void Respond(MemoryOmp omp, Dictionary<string, Func<JObject, MemoryOmp, JToken?>>? overrides, JObject frame)
     {
         var type = (string)frame["type"]!;
-        if (type == "extension_ui_response") return;
-        Func<JObject, MemoryOmp, JToken?>? handler = null;
-        if (overrides?.TryGetValue(type, out handler) != true && !Defaults.TryGetValue(type, out handler))
+        if (type == "extension_ui_response")
+        {
+            return;
+        }
+
+        if (overrides?.TryGetValue(type, out Func<JObject, MemoryOmp, JToken?>? handler) != true && !Defaults.TryGetValue(type, out handler))
         {
             omp.Fail(frame, $"Unknown command: {type}");
+
             return;
         }
         var data = handler!(frame, omp);
-        if (!ReferenceEquals(data, NoReply)) omp.Reply(frame, data);
+        if (!ReferenceEquals(data, NoReply))
+        {
+            omp.Reply(frame, data);
+        }
     }
 }

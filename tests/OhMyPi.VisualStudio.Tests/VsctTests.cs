@@ -9,17 +9,21 @@ using System.Xml.Linq;
 namespace OhMyPi.VisualStudio.Tests;
 
 /// <summary>The command table and the ids the package registers handlers for must agree, or commands silently do nothing.</summary>
-public class VsctTests
+public sealed class VsctTests
 {
     private static readonly XNamespace Ns = "http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable";
     private static readonly XDocument Table = XDocument.Load(Path.Combine(RepositoryRoot(), "src", "OhMyPi.VisualStudio", "OmpPackage.vsct"));
 
     private static string RepositoryRoot()
     {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory != null; directory = directory.Parent)
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "OhMyPi.sln"))) return directory.FullName;
+            if (File.Exists(Path.Combine(directory.FullName, "OhMyPi.sln")))
+            {
+                return directory.FullName;
+            }
         }
+
         throw new InvalidOperationException("OhMyPi.sln not found above " + AppContext.BaseDirectory);
     }
 
@@ -78,10 +82,7 @@ public class VsctTests
     }
 
     [Fact]
-    public void AddFilesIsOfferedOnFilesFoldersProjectsAndMultipleSelections()
-    {
-        Assert.Equal(
+    public void AddFilesIsOfferedOnFilesFoldersProjectsAndMultipleSelections() => Assert.Equal(
             new[] { "IDM_VS_CTXT_FOLDERNODE", "IDM_VS_CTXT_ITEMNODE", "IDM_VS_CTXT_PROJNODE", "IDM_VS_CTXT_XPROJ_MULTIITEM" },
             ShellParentsOf("SolutionExplorerGroup").OrderBy(id => id, StringComparer.Ordinal));
-    }
 }

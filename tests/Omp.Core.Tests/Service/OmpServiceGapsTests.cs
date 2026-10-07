@@ -18,7 +18,10 @@ public sealed class OmpServiceGapsTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var service in _services) await Wait.Settle(service.StopAsync());
+        foreach (var service in _services)
+        {
+            await Wait.Settle(service.StopAsync());
+        }
     }
 
     private (OmpService Service, MemoryLogger Logger, List<InteractionRequest> Interactions) Create(MemoryOmp omp, IHostTools? tools = null)
@@ -29,7 +32,8 @@ public sealed class OmpServiceGapsTests : IAsyncLifetime
             new OmpServiceTuning { Spawn = _ => omp, ShutdownGraceMs = 50 });
         _services.Add(service);
         var interactions = new List<InteractionRequest>();
-        service.InteractionRequested += (_, request) => { lock (interactions) interactions.Add(request); };
+        service.InteractionRequested += (_, request) => { lock (interactions) { interactions.Add(request); } };
+
         return (service, logger, interactions);
     }
 

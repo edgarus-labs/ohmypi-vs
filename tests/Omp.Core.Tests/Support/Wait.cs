@@ -7,7 +7,11 @@ public static class Wait
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
         while (!predicate())
         {
-            if (DateTime.UtcNow > deadline) throw new TimeoutException($"Timed out waiting for {label}");
+            if (DateTime.UtcNow > deadline)
+            {
+                throw new TimeoutException($"Timed out waiting for {label}");
+            }
+
             await Task.Delay(10);
         }
     }
@@ -17,6 +21,7 @@ public static class Wait
         try
         {
             await task;
+
             return null;
         }
         catch (Exception error)

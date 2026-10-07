@@ -5,12 +5,14 @@ public class ExecutableResolverTests
     private static Func<string, bool> FsWith(params string[] files)
     {
         var set = new HashSet<string>(files, StringComparer.OrdinalIgnoreCase);
+
         return set.Contains;
     }
 
     private static Func<string, string?> Env(params (string Name, string Value)[] vars)
     {
         var map = vars.ToDictionary(v => v.Name, v => v.Value, StringComparer.OrdinalIgnoreCase);
+
         return name => map.TryGetValue(name, out var value) ? value : null;
     }
 
@@ -57,10 +59,7 @@ public class ExecutableResolverTests
     }
 
     [Fact]
-    public void SkipsAnExtensionlessOmpForALauncherWindowsCanRun()
-    {
-        Assert.Equal("C:\\tools\\omp.cmd", ExecutableResolver.Locate("", WinEnv, FsWith("C:\\bin\\omp", "C:\\tools\\omp.cmd")));
-    }
+    public void SkipsAnExtensionlessOmpForALauncherWindowsCanRun() => Assert.Equal("C:\\tools\\omp.cmd", ExecutableResolver.Locate("", WinEnv, FsWith("C:\\bin\\omp", "C:\\tools\\omp.cmd")));
 
     [Fact]
     public void FallsBackToLocalBinBunBinAndTheOmpInstallDirectory()
@@ -75,7 +74,9 @@ public class ExecutableResolverTests
     {
         var error = Assert.Throws<FileNotFoundException>(() => ExecutableResolver.Locate("", WinEnv, FsWith()));
         foreach (var path in new[] { "C:\\bin\\omp.exe", "C:\\tools\\omp.cmd", "C:\\Users\\u\\.local\\bin\\omp.exe", "C:\\Users\\u\\.bun\\bin\\omp.cmd", "C:\\Users\\u\\AppData\\Local\\omp\\omp.exe" })
+        {
             Assert.Contains(path, error.Message);
+        }
     }
 
     [Fact]

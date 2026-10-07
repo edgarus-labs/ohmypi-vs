@@ -2,8 +2,6 @@ using System.Collections.Concurrent;
 
 namespace Omp.Core.Tests.Support;
 
-public sealed record LogRecord(string Level, string Message, Exception? Error);
-
 /// <summary>Records every message; an error argument is appended as <c>: message</c>.</summary>
 public sealed class MemoryLogger : IOmpLogger
 {

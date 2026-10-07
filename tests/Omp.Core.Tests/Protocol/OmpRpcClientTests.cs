@@ -1,7 +1,7 @@
-using System.Text;
 using Newtonsoft.Json.Linq;
 using Omp.Core.Protocol;
 using Omp.Core.Tests.Support;
+using System.Text;
 
 namespace Omp.Core.Tests.Protocol;
 
@@ -10,14 +10,24 @@ public class OmpRpcClientTests
     private static MemoryTransport Negotiating(Action<JObject, MemoryTransport>? extra = null) =>
         new((frame, t) =>
         {
-            if ((string?)frame["type"] == "negotiate_protocol") t.Reply(frame, new JObject { ["protocolVersion"] = 2 });
-            else extra?.Invoke(frame, t);
+            if ((string?)frame["type"] == "negotiate_protocol")
+            {
+                t.Reply(frame, new JObject { ["protocolVersion"] = 2 });
+            }
+            else
+            {
+                extra?.Invoke(frame, t);
+            }
         });
 
     private static JObject Ready(int? maxFrameBytes = null)
     {
         var ready = (JObject)MemoryTransport.ReadyV2.DeepClone();
-        if (maxFrameBytes != null) ready["maxFrameBytes"] = maxFrameBytes;
+        if (maxFrameBytes is not null)
+        {
+            ready["maxFrameBytes"] = maxFrameBytes;
+        }
+
         return ready;
     }
 
@@ -352,12 +362,9 @@ public class OmpRpcClientTests
     }
 
     [Fact]
-    public void DescribeCloseNamesTheProcessIdAndAppendsOmpsLastStderrLines()
-    {
-        Assert.Equal(
+    public void DescribeCloseNamesTheProcessIdAndAppendsOmpsLastStderrLines() => Assert.Equal(
             "OMP process 42 exited (code 1)\nOMP stderr (last lines):\nboom\n'node' is not recognized",
             OmpRpcClient.DescribeClose(new TransportClose { Code = 1, Pid = 42, Stderr = "boom\n'node' is not recognized" }));
-    }
 
     [Fact]
     public async Task KeepsStderrOutOfTheErrorsOfRequestsTheCloseRejected()

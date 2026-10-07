@@ -1,148 +1,181 @@
-using System;
+using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
-namespace Omp.Core.Processes
+namespace Omp.Core.Processes;
+
+/// <summary>
+/// Ends a process and every descendant with <c>TerminateProcess</c>. Descendants are found by parent process id in
+/// Toolhelp snapshots, so nothing depends on WMI: <c>taskkill /T</c> queries WMI and blocks for about a minute, then
+/// fails, when the WMI service is slow or stuck. Every member's handle stays open until the walk ends, so a member's
+/// pid cannot be reused meanwhile, and a process only counts as a child when it was created after its parent, so an
+/// unrelated process naming an older holder of the same pid as its parent is left alone.
+/// </summary>
+internal static class ProcessTree
 {
-    /// <summary>
-    /// Ends a process and every descendant with <c>TerminateProcess</c>. Descendants are found by parent process id in
-    /// Toolhelp snapshots, so nothing depends on WMI: <c>taskkill /T</c> queries WMI and blocks for about a minute, then
-    /// fails, when the WMI service is slow or stuck. Every member's handle stays open until the walk ends, so a member's
-    /// pid cannot be reused meanwhile, and a process only counts as a child when it was created after its parent, so an
-    /// unrelated process naming an older holder of the same pid as its parent is left alone.
-    /// </summary>
-    internal static class ProcessTree
+    /// <summary>The operating system calls the walk makes; tests substitute their own.</summary>
+    internal interface INative
     {
-        /// <summary>The operating system calls the walk makes; tests substitute their own.</summary>
-        internal interface INative
+        /// <summary>Opens a process for ending; <paramref name="error"/> is the Win32 error when the handle is invalid.</summary>
+        SafeProcessHandle Open(int pid, out int error);
+
+        bool GetCreated(SafeProcessHandle process, out long created);
+
+        bool Terminate(SafeProcessHandle process);
+
+        bool TryGetExitCode(SafeProcessHandle process, out uint code);
+
+        List<(int Pid, int ParentPid)> Parents();
+    }
+
+    private sealed class Windows : INative
+    {
+        public static readonly Windows Instance = new Windows();
+
+        public SafeProcessHandle Open(int pid, out int error)
         {
-            /// <summary>Opens a process for ending; <paramref name="error"/> is the Win32 error when the handle is invalid.</summary>
-            SafeProcessHandle Open(int pid, out int error);
+            var handle = NativeMethods.OpenProcess(NativeMethods.ProcessTerminate | NativeMethods.ProcessQueryLimitedInformation, false, pid);
+            error = handle.IsInvalid ? Marshal.GetLastWin32Error() : 0;
 
-            bool GetCreated(SafeProcessHandle process, out long created);
-
-            bool Terminate(SafeProcessHandle process);
-
-            bool TryGetExitCode(SafeProcessHandle process, out uint code);
-
-            List<(int Pid, int ParentPid)> Parents();
+            return handle;
         }
 
-        private sealed class Windows : INative
-        {
-            public static readonly Windows Instance = new Windows();
+        public bool GetCreated(SafeProcessHandle process, out long created) => NativeMethods.GetProcessTimes(process, out created, out _, out _, out _);
 
-            public SafeProcessHandle Open(int pid, out int error)
+        public bool Terminate(SafeProcessHandle process) => NativeMethods.TerminateProcess(process, 1);
+
+        public bool TryGetExitCode(SafeProcessHandle process, out uint code) => NativeMethods.GetExitCodeProcess(process, out code);
+
+        public List<(int Pid, int ParentPid)> Parents() => NativeMethods.ProcessParents();
+    }
+
+    /// <summary>Snapshots taken after the first, to catch children started while their parent was being ended.</summary>
+    private const int MaxRounds = 8;
+
+    /// <summary>Terminate <paramref name="pid"/> and its descendants; failures are logged. Returns at once when <paramref name="pid"/> is gone.</summary>
+    public static void Kill(int pid, IOmpLogger logger, INative? native = null)
+    {
+        native = native ?? Windows.Instance;
+        var members = new Dictionary<int, Member>();
+        try
+        {
+            var root = Open(pid, logger, native);
+            if (root is null)
             {
-                var handle = NativeMethods.OpenProcess(NativeMethods.ProcessTerminate | NativeMethods.ProcessQueryLimitedInformation, false, pid);
-                error = handle.IsInvalid ? Marshal.GetLastWin32Error() : 0;
-                return handle;
+                return;
             }
 
-            public bool GetCreated(SafeProcessHandle process, out long created) => NativeMethods.GetProcessTimes(process, out created, out _, out _, out _);
-
-            public bool Terminate(SafeProcessHandle process) => NativeMethods.TerminateProcess(process, 1);
-
-            public bool TryGetExitCode(SafeProcessHandle process, out uint code) => NativeMethods.GetExitCodeProcess(process, out code);
-
-            public List<(int Pid, int ParentPid)> Parents() => NativeMethods.ProcessParents();
-        }
-
-        /// <summary>Snapshots taken after the first, to catch children started while their parent was being ended.</summary>
-        private const int MaxRounds = 8;
-
-        /// <summary>Terminate <paramref name="pid"/> and its descendants; failures are logged. Returns at once when <paramref name="pid"/> is gone.</summary>
-        public static void Kill(int pid, IOmpLogger logger, INative? native = null)
-        {
-            native = native ?? Windows.Instance;
-            var members = new Dictionary<int, Member>();
-            try
+            members.Add(pid, root);
+            Terminate(pid, root.Handle, logger, native);
+            for (var round = 0; round < MaxRounds; round++)
             {
-                var root = Open(pid, logger, native);
-                if (root == null) return;
-                members.Add(pid, root);
-                Terminate(pid, root.Handle, logger, native);
-                for (var round = 0; round < MaxRounds; round++)
+                if (!AddDescendants(members, native.Parents(), logger, native))
                 {
-                    if (!AddDescendants(members, native.Parents(), logger, native)) return;
-                }
-                logger.Warn($"Process {pid} kept starting children while its tree was being ended");
-            }
-            catch (Win32Exception error)
-            {
-                logger.Warn($"Cannot list the processes of the tree of {pid}", error);
-            }
-            finally
-            {
-                foreach (var member in members.Values) member.Handle.Dispose();
-            }
-        }
-
-        /// <summary>Adds and terminates every process of <paramref name="processes"/> descending from a member; false when there was none.</summary>
-        private static bool AddDescendants(Dictionary<int, Member> members, List<(int Pid, int ParentPid)> processes, IOmpLogger logger, INative native)
-        {
-            var added = false;
-            bool grew;
-            do
-            {
-                grew = false;
-                foreach (var (pid, parentPid) in processes)
-                {
-                    if (pid == parentPid || members.ContainsKey(pid) || !members.TryGetValue(parentPid, out var parent)) continue;
-                    var child = Open(pid, logger, native);
-                    if (child == null) continue;
-                    if (child.Created < parent.Created)
-                    {
-                        child.Handle.Dispose();
-                        continue;
-                    }
-                    members.Add(pid, child);
-                    Terminate(pid, child.Handle, logger, native);
-                    grew = added = true;
+                    return;
                 }
             }
-            while (grew);
-            return added;
+            logger.Warn($"Process {pid} kept starting children while its tree was being ended");
         }
-
-        private static Member? Open(int pid, IOmpLogger logger, INative native)
+        catch (Win32Exception error)
         {
-            var handle = native.Open(pid, out var error);
-            if (handle.IsInvalid)
-            {
-                handle.Dispose();
-                if (error != NativeMethods.ErrorInvalidParameter) logger.Warn($"Cannot open process {pid} to end it", new Win32Exception(error));
-                return null;
-            }
-            if (!native.GetCreated(handle, out var created))
-            {
-                logger.Warn($"Cannot read the start time of process {pid}", new Win32Exception());
-                handle.Dispose();
-                return null;
-            }
-            return new Member(handle, created);
+            logger.Warn($"Cannot list the processes of the tree of {pid}", error);
         }
-
-        private static void Terminate(int pid, SafeProcessHandle handle, IOmpLogger logger, INative native)
+        finally
         {
-            if (native.Terminate(handle)) return;
-            var error = new Win32Exception();
-            if (native.TryGetExitCode(handle, out var code) && code != NativeMethods.StillActive) return;
-            logger.Warn($"Cannot end process {pid}", error);
-        }
-
-        private sealed class Member
-        {
-            public Member(SafeProcessHandle handle, long created)
+            foreach (var member in members.Values)
             {
-                Handle = handle;
-                Created = created;
+                member.Handle.Dispose();
+            }
+        }
+    }
+
+    /// <summary>Adds and terminates every process of <paramref name="processes"/> descending from a member; false when there was none.</summary>
+    private static bool AddDescendants(Dictionary<int, Member> members, List<(int Pid, int ParentPid)> processes, IOmpLogger logger, INative native)
+    {
+        var added = false;
+        bool grew;
+        do
+        {
+            grew = false;
+            foreach (var (pid, parentPid) in processes)
+            {
+                if (pid == parentPid || members.ContainsKey(pid) || !members.TryGetValue(parentPid, out var parent))
+                {
+                    continue;
+                }
+
+                var child = Open(pid, logger, native);
+                if (child is null)
+                {
+                    continue;
+                }
+
+                if (child.Created < parent.Created)
+                {
+                    child.Handle.Dispose();
+                    continue;
+                }
+                members.Add(pid, child);
+                Terminate(pid, child.Handle, logger, native);
+                grew = added = true;
+            }
+        }
+        while (grew);
+
+        return added;
+    }
+
+    private static Member? Open(int pid, IOmpLogger logger, INative native)
+    {
+        var handle = native.Open(pid, out var error);
+        if (handle.IsInvalid)
+        {
+            handle.Dispose();
+            if (error != NativeMethods.ErrorInvalidParameter)
+            {
+                logger.Warn($"Cannot open process {pid} to end it", new Win32Exception(error));
             }
 
-            public SafeProcessHandle Handle { get; }
-            public long Created { get; }
+            return null;
         }
+        if (!native.GetCreated(handle, out var created))
+        {
+            logger.Warn($"Cannot read the start time of process {pid}", new Win32Exception());
+            handle.Dispose();
+
+            return null;
+        }
+
+        return new Member(handle, created);
+    }
+
+    private static void Terminate(int pid, SafeProcessHandle handle, IOmpLogger logger, INative native)
+    {
+        if (native.Terminate(handle))
+        {
+            return;
+        }
+
+        var error = new Win32Exception();
+        if (native.TryGetExitCode(handle, out var code) && code != NativeMethods.StillActive)
+        {
+            return;
+        }
+
+        logger.Warn($"Cannot end process {pid}", error);
+    }
+
+    private sealed class Member
+    {
+        public Member(SafeProcessHandle handle, long created)
+        {
+            Handle = handle;
+            Created = created;
+        }
+
+        public SafeProcessHandle Handle { get; }
+
+        public long Created { get; }
     }
 }
