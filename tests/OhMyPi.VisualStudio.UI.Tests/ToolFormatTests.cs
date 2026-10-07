@@ -356,5 +356,25 @@ namespace OhMyPi.VisualStudio.UI.Tests
             Assert.Equal("", ToolFormat.ShellParameters(Tool("bash", "\"ls\"")));
             Assert.Equal("", ToolFormat.ShellParameters(Tool("bash", null)));
         }
+
+        [Fact]
+        public void FlatArgs_lists_an_object_one_property_per_line_with_bare_strings()
+        {
+            var args = JToken.Parse("{\"path\":\"src/a.ts\",\"line\":12,\"dry\":false,\"ref\":null,\"opts\":{\"a\":[1,2]},\"ids\":[\"x\",\"y\"]}");
+            Assert.Equal("path: src/a.ts\nline: 12\ndry: false\nref: null\nopts: {\"a\":[1,2]}\nids: [\"x\",\"y\"]", ToolFormat.FlatArgs(args));
+        }
+
+        [Fact]
+        public void FlatArgs_keeps_the_lines_of_a_multi_line_string_indented_under_its_name()
+        {
+            Assert.Equal("code: print(1)\n  print(2)\nlanguage: py", ToolFormat.FlatArgs(JToken.Parse("{\"code\":\"print(1)\\nprint(2)\",\"language\":\"py\"}")));
+        }
+
+        [Fact]
+        public void FlatArgs_shows_anything_but_an_object_as_indented_json()
+        {
+            Assert.Equal("[\n  1,\n  2\n]", ToolFormat.FlatArgs(JToken.Parse("[1,2]")));
+            Assert.Equal("\"ls\"", ToolFormat.FlatArgs(JToken.Parse("\"ls\"")));
+        }
     }
 }

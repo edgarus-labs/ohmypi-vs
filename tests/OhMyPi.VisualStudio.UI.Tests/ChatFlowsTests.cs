@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Omp.Core;
@@ -360,6 +361,29 @@ namespace OhMyPi.VisualStudio.UI.Tests
                 Pump();
                 Assert.True(HasText(window, "Copy failed: clipboard busy"));
             }, service, host);
+        }
+
+        [Fact]
+        public void A_session_loaded_from_history_renders_its_markdown_like_the_live_view()
+        {
+            var service = new FakeService { Transcript = new TranscriptItem[] { new AssistantItem { Id = "a1", Text = "first session" } } };
+            RunSta((window, control) =>
+            {
+                Assert.True(HasText(window, "first session"));
+                service.RaiseReset(new TranscriptItem[]
+                {
+                    new UserItem { Id = "h0", Text = "resume" },
+                    new AssistantItem { Id = "h1", Text = "### Plan\n\nDone with **bold**:\n\n| Name | Size |\n|---|---|\n| a | 1 |\n\n```cs\nvar x = 1;\n```", Model = "M" },
+                });
+                Pump(300);
+                Assert.False(HasText(window, "first session"));
+                Assert.True(HasText(window, "Plan"));
+                var bolds = Descendants(window).OfType<RichTextBox>().SelectMany(r => r.Document.Blocks.OfType<Paragraph>()).SelectMany(p => p.Inlines.OfType<Bold>());
+                Assert.Contains(bolds, b => new TextRange(b.ContentStart, b.ContentEnd).Text == "bold");
+                Assert.True(HasText(window, "Size"));
+                Assert.Contains(Descendants(window).OfType<TextBox>(), t => t.Text == "var x = 1;");
+                Assert.False(HasText(window, "**bold**"));
+            }, service, new FakeHost());
         }
 
         [Fact]

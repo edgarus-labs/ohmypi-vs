@@ -82,6 +82,10 @@ namespace OhMyPi.VisualStudio.UI.Views
             var body = Body(item, ctx, row);
             if (body != null)
             {
+                var rail = new Border { Width = 2, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Stretch, Margin = new Thickness(0, 4, 6, 2) }
+                    .Theme(Border.BackgroundProperty, ThemeKeys.CodeSurfaceBorder);
+                Grid.SetRow(rail, 1);
+                layout.Children.Add(rail);
                 Grid.SetRow(body, 1);
                 Grid.SetColumn(body, 1);
                 layout.Children.Add(body);
@@ -122,7 +126,7 @@ namespace OhMyPi.VisualStudio.UI.Views
             return files.Count == 1 && ToolFormat.FileLinkLabel(files[0].Path, files[0].Line, ctx.Cwd) == head.Primary ? files[0] : null;
         }
 
-        /// <summary>Name and primary argument on the left, the detail (hits, exit code, duration) at the right edge; the primary argument is what gives way.</summary>
+        /// <summary>Name in a pill and primary argument on the left, the detail (hits, exit code, duration) at the right edge; the primary argument is what gives way.</summary>
         private static FrameworkElement Header(ToolItem item, ToolHeadline head, RenderContext ctx)
         {
             var header = new DockPanel { LastChildFill = true };
@@ -133,12 +137,15 @@ namespace OhMyPi.VisualStudio.UI.Views
                 DockPanel.SetDock(detail, Dock.Right);
                 header.Children.Add(detail);
             }
-            var name = Ui.Text(head.Name, weight: FontWeights.SemiBold, small: true);
-            name.MaxWidth = 180;
-            name.Margin = new Thickness(0, 0, 8, 0);
-            name.ToolTip = item.Name;
-            DockPanel.SetDock(name, Dock.Left);
-            header.Children.Add(name);
+            var name = Ui.Small(Ui.Text(head.Name, weight: FontWeights.SemiBold), 0.9);
+            var pill = new Border { Child = name, CornerRadius = new CornerRadius(4), Padding = new Thickness(6, 1, 6, 1), BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center }
+                .Theme(Border.BackgroundProperty, ThemeKeys.CodeSurface)
+                .Theme(Border.BorderBrushProperty, ThemeKeys.CodeSurfaceBorder);
+            pill.MaxWidth = 180;
+            pill.Margin = new Thickness(0, 0, 8, 0);
+            pill.ToolTip = item.Name;
+            DockPanel.SetDock(pill, Dock.Left);
+            header.Children.Add(pill);
             var inHeader = HeaderFile(item, ctx, head);
             FrameworkElement primary;
             if (inHeader != null)
@@ -149,7 +156,7 @@ namespace OhMyPi.VisualStudio.UI.Views
             }
             else
             {
-                var text = Ui.Muted(head.Primary);
+                var text = Ui.Text(head.Primary, ThemeKeys.Foreground, small: true);
                 text.SetResourceReference(TextBlock.FontFamilyProperty, "Omp.MonoFont");
                 var full = ToolFormat.PickRenderer(item.Name) == RendererKind.Shell ? ToolFormat.ShellCommand(item) : head.Primary;
                 if (full.Length > 0) text.ToolTip = full;
@@ -279,19 +286,22 @@ namespace OhMyPi.VisualStudio.UI.Views
             return Ui.Link(label, () => ctx.OpenFile(path, line), $"Open {(line.HasValue ? $"{path}:{line}" : path)}", mono: true);
         }
 
-        /// <summary>The call's arguments as indented JSON; null for a call without any.</summary>
+        /// <summary>The call's arguments as <c>name: value</c> lines (copying yields the indented JSON); null for a call without any.</summary>
         private static UIElement? ArgsSection(ToolItem item, RenderContext ctx)
         {
             if (item.Args == null || (item.Args is JContainer container && !container.HasValues)) return null;
-            return Quiet(ctx, $"{item.Id}:args:more", item.Args.ToString(Formatting.Indented), "Input");
+            return Quiet(ctx, $"{item.Id}:args:more", ToolFormat.FlatArgs(item.Args), "Input", original: ToolFormat.IndentedJson(item.Args));
         }
 
-        /// <summary>Input text the header does not show: muted, never on the code background.</summary>
-        private static UIElement Quiet(RenderContext ctx, string key, string text, string name)
+        /// <summary>Input text the header does not show, under an uppercase caption: muted, never on the code background.</summary>
+        private static UIElement Quiet(RenderContext ctx, string key, string text, string name, string? original = null)
         {
-            var input = new TruncatedText(ctx, key, text, tail: false, ThemeKeys.Muted, code: true);
+            var input = new TruncatedText(ctx, key, text, tail: false, ThemeKeys.Muted, original: original, code: true);
             Ui.AutomationName(input.Box, name);
-            return input.Element;
+            Ui.Small(input.Box, 0.92);
+            var caption = Ui.Small(Ui.Text(name.ToUpperInvariant(), ThemeKeys.Muted, weight: FontWeights.SemiBold), 0.8);
+            caption.Margin = new Thickness(0, 0, 0, 2);
+            return Ui.Column(0, caption, input.Element);
         }
 
         /// <summary>
@@ -439,8 +449,8 @@ namespace OhMyPi.VisualStudio.UI.Views
         private static UIElement? DiffSection(ToolItem item, RenderContext ctx, string diff) => DiffView(ctx, $"{item.Id}:diff:more", diff);
 
         /// <summary>
-        /// A unified diff as selectable lines on full-width green (added) and red (removed) backgrounds, the text in
-        /// the body color with only the +/- sign colored: the first <see cref="DiffPreviewLines"/>
+        /// A unified diff as selectable lines on full-width soft green (added) and red (removed) tints with a colored
+        /// left edge, the text in the body color with only the +/- sign colored: the first <see cref="DiffPreviewLines"/>
         /// with "show more" (remembered under <paramref name="key"/>), which shows up to <see cref="DiffLines"/>, with "Copy all" past that.
         /// </summary>
         private static UIElement DiffView(RenderContext ctx, string key, string diff)
@@ -452,7 +462,7 @@ namespace OhMyPi.VisualStudio.UI.Views
             {
                 var limit = ctx.Open.IsOpen(key) == true ? DiffLines : DiffPreviewLines;
                 var shown = lines.Length > limit ? lines.Take(limit).ToArray() : lines;
-                var block = Ui.SizedProse(inlines => Ui.AddLines(inlines, string.Join("\n", shown.Select(line => line.Length == 0 ? " " : line))), wrap: false);
+                var block = Ui.SizedProse(inlines => Ui.AddLines(inlines, string.Join("\n", shown.Select(line => line.Length == 0 ? " " : line))));
                 block.SetResourceReference(TextElement.FontFamilyProperty, "Omp.MonoFont");
                 var scroller = new ScrollViewer { Content = block, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
                 Ui.BubbleWheel(scroller);
@@ -462,7 +472,7 @@ namespace OhMyPi.VisualStudio.UI.Views
                 for (var i = 0; i < shown.Length; i++) box.Document.Blocks.Add(DiffLine(shown[i], spans[i]));
                 box.SetBinding(FrameworkElement.MinWidthProperty, new Binding(nameof(ScrollViewer.ViewportWidth)) { Source = scroller });
                 var sizer = ((Panel)block).Children.OfType<TextBlock>().Single();
-                box.SetBinding(FrameworkElement.WidthProperty, new Binding(nameof(FrameworkElement.ActualWidth)) { Source = sizer, Converter = new Widen(2 * DiffInset + 4) });
+                box.SetBinding(FrameworkElement.WidthProperty, new Binding(nameof(FrameworkElement.ActualWidth)) { Source = sizer, Converter = new Widen(2 * DiffInset + DiffRail + 4) });
                 var framed = new Border { Child = scroller, Padding = new Thickness(0, 6, 0, 6) }.Styled("Omp.CodeBlock");
                 if (shown.Length == lines.Length)
                 {
@@ -487,6 +497,9 @@ namespace OhMyPi.VisualStudio.UI.Views
         /// <summary>Horizontal room inside the tint of a diff line, around its text.</summary>
         private const double DiffInset = 8;
 
+        /// <summary>Width of the colored edge of an added or removed diff line (kept transparent on other lines so text aligns).</summary>
+        private const double DiffRail = 3;
+
         /// <summary>Adds a fixed width to a bound size.</summary>
         private sealed class Widen : IValueConverter
         {
@@ -502,13 +515,14 @@ namespace OhMyPi.VisualStudio.UI.Views
         /// <param name="changed">Within the text after the sign, the part that differs from the paired line; drawn on a stronger tint.</param>
         private static Paragraph DiffLine(string line, (int Start, int Length)? changed)
         {
-            var paragraph = new Paragraph { Margin = new Thickness(0), Padding = new Thickness(DiffInset, 0, DiffInset, 0) };
+            var paragraph = new Paragraph { Margin = new Thickness(0), Padding = new Thickness(DiffInset, 0, DiffInset, 0), BorderThickness = new Thickness(DiffRail, 0, 0, 0), BorderBrush = Brushes.Transparent };
             var kind = ToolFormat.DiffLineClass(line);
             if (kind == DiffLineKind.Add || kind == DiffLineKind.Delete)
             {
                 var added = kind == DiffLineKind.Add;
                 var color = added ? ThemeKeys.Success : ThemeKeys.Error;
                 paragraph.SetResourceReference(TextElement.BackgroundProperty, added ? ThemeKeys.DiffAddedLine : ThemeKeys.DiffRemovedLine);
+                paragraph.SetResourceReference(Block.BorderBrushProperty, color);
                 var sign = new Run(line.Substring(0, 1));
                 sign.SetResourceReference(TextElement.ForegroundProperty, color);
                 paragraph.Inlines.Add(sign);

@@ -107,7 +107,7 @@ namespace OhMyPi.VisualStudio.UI.Views
                         var file = links.ResolveFile(inline.Text);
                         if (file == null)
                         {
-                            run.SetResourceReference(TextElement.BackgroundProperty, ThemeKeys.Card);
+                            run.SetResourceReference(TextElement.BackgroundProperty, ThemeKeys.CodeSurface);
                             target.Add(run);
                         }
                         else
@@ -230,38 +230,43 @@ namespace OhMyPi.VisualStudio.UI.Views
             return panel;
         }
 
+        private static readonly Thickness CellPadding = new Thickness(8, 4, 8, 4);
+
         private static FrameworkElement Table(MdTable table, MarkdownLinks links)
         {
-            var grid = new Grid();
             var columns = table.Header.Count;
             foreach (var row in table.Rows) columns = Math.Max(columns, row.Count);
-            for (var c = 0; c < columns; c++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var rows = new List<IReadOnlyList<IReadOnlyList<MdInline>>> { table.Header };
             rows.AddRange(table.Rows);
+            var panel = new TablePanel { Columns = columns };
             for (var r = 0; r < rows.Count; r++)
             {
-                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                for (var c = 0; c < rows[r].Count; c++)
+                for (var c = 0; c < columns; c++)
                 {
-                    var cellRow = rows[r][c];
+                    var cellRow = c < rows[r].Count ? rows[r][c] : Array.Empty<MdInline>();
                     var align = c < table.Aligns.Count ? table.Aligns[c] : MdAlign.Left;
                     var alignment = align == MdAlign.Right ? TextAlignment.Right : align == MdAlign.Center ? TextAlignment.Center : TextAlignment.Left;
-                    var cell = Ui.SizedProse(inlines => AddInlines(inlines, cellRow, links), wrap: true, maxWidth: 360, alignment: alignment);
+                    var sizer = new TextBlock { TextWrapping = TextWrapping.WrapWithOverflow, TextAlignment = alignment };
+                    AddInlines(sizer.Inlines, cellRow, links);
+                    var box = Ui.Prose(inlines => AddInlines(inlines, cellRow, links));
+                    box.Document.TextAlignment = alignment;
+                    var chrome = new Border { BorderThickness = new Thickness(0, 0, c < columns - 1 ? 1 : 0, r < rows.Count - 1 ? 1 : 0) }
+                        .Theme(Border.BorderBrushProperty, ThemeKeys.CodeSurfaceBorder);
+                    if (r == 0) chrome.Theme(Border.BackgroundProperty, ThemeKeys.CodeSurface);
+                    var cell = new TableCell(sizer, box, chrome, CellPadding);
                     if (r == 0) cell.SetValue(TextElement.FontWeightProperty, FontWeights.SemiBold);
-                    var border = new Border
-                    {
-                        Child = cell,
-                        Padding = new Thickness(8, 3, 8, 3),
-                        BorderThickness = new Thickness(0, 0, c < columns - 1 ? 1 : 0, r < rows.Count - 1 ? 1 : 0),
-                    }.Theme(Border.BorderBrushProperty, ThemeKeys.CardBorder);
-                    Grid.SetRow(border, r);
-                    Grid.SetColumn(border, c);
-                    grid.Children.Add(border);
+                    panel.Children.Add(cell);
                 }
             }
-            var frame = new Border { Child = grid, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), HorizontalAlignment = HorizontalAlignment.Left }
-                .Theme(Border.BorderBrushProperty, ThemeKeys.CardBorder);
-            var scroller = new ScrollViewer { Content = frame, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
+            var frame = new Border { Child = panel, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6), HorizontalAlignment = HorizontalAlignment.Left }
+                .Theme(Border.BorderBrushProperty, ThemeKeys.CodeSurfaceBorder);
+            var scroller = new TableScroller(panel, frame.BorderThickness.Left + frame.BorderThickness.Right)
+            {
+                Content = frame,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Focusable = false,
+            };
             Ui.BubbleWheel(scroller);
             return scroller;
         }

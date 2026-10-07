@@ -25,7 +25,7 @@ namespace OhMyPi.VisualStudio
             BitmapImageMoniker = new Microsoft.VisualStudio.Imaging.Interop.ImageMoniker { Guid = PackageGuids.Images, Id = 1 };
             ToolBar = new CommandID(PackageGuids.CommandSet, PackageIds.ToolWindowToolbar);
             Content = _host;
-            DiffColors.Attach(_host.Resources);
+            ChatColors.Attach(_host.Resources);
             _runtime.GenerationChanged += OnGenerationChanged;
             ShowCurrent();
         }

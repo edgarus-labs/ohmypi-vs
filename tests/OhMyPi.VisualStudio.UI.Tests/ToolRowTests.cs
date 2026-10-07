@@ -107,8 +107,26 @@ namespace OhMyPi.VisualStudio.UI.Tests
             RunSta((window, control) =>
             {
                 var row = ToolRowOf(window);
-                Assert.Contains("\"query\": \"x\"", Box(row, "Input").Text);
+                Assert.Equal("query: x", Box(row, "Input").Text);
                 Assert.Equal("result", Box(row, "Result").Text);
+            }, service, new FakeHost());
+        }
+
+        [Fact]
+        public void Tool_input_is_shown_as_flat_lines_and_copying_it_whole_yields_the_json()
+        {
+            var item = Tool("t1", "custom_tool", "{\"query\":\"x\",\"limit\":5,\"scope\":{\"a\":1}}", ToolStatus.Done, new ToolResultView { Text = "result" });
+            var service = new FakeService { Transcript = new TranscriptItem[] { item } };
+            RunSta((window, control) =>
+            {
+                var box = Box(ToolRowOf(window), "Input");
+                Assert.Equal("query: x\nlimit: 5\nscope: {\"a\":1}", box.Text);
+
+                box.Focus();
+                box.SelectAll();
+                System.Windows.Clipboard.SetText("sentinel");
+                System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
+                Assert.Equal("{\n  \"query\": \"x\",\n  \"limit\": 5,\n  \"scope\": {\n    \"a\": 1\n  }\n}", System.Windows.Clipboard.GetText());
             }, service, new FakeHost());
         }
 

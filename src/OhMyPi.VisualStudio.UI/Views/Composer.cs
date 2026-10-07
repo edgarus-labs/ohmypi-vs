@@ -72,6 +72,8 @@ namespace OhMyPi.VisualStudio.UI.Views
             Input.TextChanged += (_, __) => RenderActions();
             Input.IsKeyboardFocusedChanged += (_, __) => RenderActions();
             DataObject.AddPastingHandler(Input, OnPaste);
+            CommandManager.AddPreviewCanExecuteHandler(Input, OnCanPaste);
+            CommandManager.AddPreviewExecutedHandler(Input, OnPasteCommand);
             Input.AllowDrop = true;
             Input.PreviewDragOver += OnDragOver;
             Input.PreviewDrop += OnDrop;
@@ -346,14 +348,75 @@ namespace OhMyPi.VisualStudio.UI.Views
 
         private long ImageBytes => _attachments.OfType<ImageAttachment>().Sum(i => i.Bytes);
 
+        /// <summary>
+        /// A text box only enables Paste for text, so Ctrl+V with an image or copied files on the clipboard would do
+        /// nothing; those take the composer's own paste. Text keeps the text box's paste (and <see cref="OnPaste"/>).
+        /// </summary>
+        private void OnCanPaste(object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (e.Command != ApplicationCommands.Paste) return;
+            try
+            {
+                if (!HasNonTextPaste(Clipboard.GetDataObject())) return;
+            }
+            catch (Exception error) when (error is System.Runtime.InteropServices.ExternalException)
+            {
+                return;
+            }
+            e.CanExecute = true;
+            e.Handled = true;
+        }
+
+        private void OnPasteCommand(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (e.Command != ApplicationCommands.Paste) return;
+            try
+            {
+                var data = Clipboard.GetDataObject();
+                if (!HasNonTextPaste(data)) return;
+                e.Handled = true;
+                PasteNonText(data!);
+            }
+            catch (Exception error)
+            {
+                e.Handled = true;
+                _log("Pasting failed", error);
+                _notice(NoticeLevel.Error, $"Pasting failed: {error.Message}");
+            }
+        }
+
+        /// <summary>Whether <paramref name="data"/> holds an image or files and no text (text wins, as when copying from Office).</summary>
+        private static bool HasNonTextPaste(IDataObject? data) =>
+            data != null && !data.GetDataPresent(DataFormats.UnicodeText)
+            && (data.GetDataPresent(PngFormat) || data.GetDataPresent(DataFormats.Bitmap) || data.GetDataPresent(DataFormats.FileDrop));
+
+        /// <summary>The clipboard format browsers and screenshot tools put a lossless, alpha-preserving copy of an image in.</summary>
+        private const string PngFormat = "PNG";
+
+        /// <summary>Attaches copied files (images as images, the rest as mentions) or the clipboard image, PNG data first.</summary>
+        private void PasteNonText(IDataObject data)
+        {
+            if (data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
+            {
+                _ = AddDroppedAsync(paths);
+                return;
+            }
+            if (data.GetData(PngFormat) is MemoryStream png)
+            {
+                AddImages(new[] { ($"Image {++_imageSequence}", (byte[]?)png.ToArray(), "image/png", "") });
+                return;
+            }
+            if (data.GetData(DataFormats.Bitmap) is BitmapSource bitmap) AddImage(bitmap);
+        }
+
         private void OnPaste(object sender, DataObjectPastingEventArgs e)
         {
             try
             {
-                if (e.DataObject.GetDataPresent(DataFormats.Bitmap) && !e.DataObject.GetDataPresent(DataFormats.UnicodeText))
+                if (HasNonTextPaste(e.DataObject))
                 {
                     e.CancelCommand();
-                    if (e.DataObject.GetData(DataFormats.Bitmap) is BitmapSource bitmap) AddImage(bitmap);
+                    PasteNonText(e.DataObject);
                     return;
                 }
                 if (!(e.DataObject.GetData(DataFormats.UnicodeText) is string text)) return;

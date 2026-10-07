@@ -174,8 +174,8 @@ namespace OhMyPi.VisualStudio.UI.Views
         {
             var paragraph = new Paragraph { Margin = new Thickness(0) };
             fill(paragraph.Inlines);
-            var document = new FlowDocument(paragraph) { PagePadding = new Thickness(0), TextAlignment = TextAlignment.Left };
-            var box = new RichTextBox(document).Styled("Omp.Prose");
+            var document = new FlowDocument(paragraph) { TextAlignment = TextAlignment.Left };
+            var box = new ProseBox(document).Styled("Omp.Prose");
             if (brushKey != null) box.SetResourceReference(Control.ForegroundProperty, brushKey);
             if (small) Small(box);
             BubbleWheel(box);
@@ -187,17 +187,30 @@ namespace OhMyPi.VisualStudio.UI.Views
             Prose(inlines => AddLines(inlines, text), brushKey, small);
 
         /// <summary>
-        /// Selectable prose for layouts that size to their content (auto-width table cells, horizontally scrolled
-        /// diffs), which a rich text box alone does not: a hidden text block with the same inlines sets the size and
-        /// the prose is laid over it. Without <paramref name="wrap"/> lines never break.
+        /// A rich text box whose document keeps no page padding: the template application puts 5px back on each
+        /// side whenever the box (re)enters the tree, which would inset the text and make sized prose wrap early.
         /// </summary>
-        public static FrameworkElement SizedProse(Action<InlineCollection> fill, bool wrap, double maxWidth = double.PositiveInfinity, TextAlignment alignment = TextAlignment.Left)
+        private sealed class ProseBox : RichTextBox
         {
-            var sizer = new TextBlock { TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap, MaxWidth = maxWidth, TextAlignment = alignment, Visibility = Visibility.Hidden, HorizontalAlignment = HorizontalAlignment.Left };
+            public ProseBox(FlowDocument document) : base(document) { }
+
+            public override void OnApplyTemplate()
+            {
+                base.OnApplyTemplate();
+                Document.PagePadding = new Thickness(0);
+            }
+        }
+
+        /// <summary>
+        /// Selectable prose whose lines never break, sized to its content (horizontally scrolled diffs), which a rich
+        /// text box alone does not: a hidden text block with the same inlines sets the size and the prose is laid over it.
+        /// </summary>
+        public static FrameworkElement SizedProse(Action<InlineCollection> fill)
+        {
+            var sizer = new TextBlock { TextWrapping = TextWrapping.NoWrap, Visibility = Visibility.Hidden, HorizontalAlignment = HorizontalAlignment.Left };
             fill(sizer.Inlines);
             var box = Prose(fill);
-            box.Document.TextAlignment = alignment;
-            if (!wrap) box.Document.PageWidth = NoWrapPageWidth;
+            box.Document.PageWidth = NoWrapPageWidth;
             box.HorizontalAlignment = HorizontalAlignment.Left;
             box.VerticalAlignment = VerticalAlignment.Top;
             box.SetBinding(FrameworkElement.WidthProperty, new System.Windows.Data.Binding(nameof(FrameworkElement.ActualWidth)) { Source = sizer, Converter = CaretSlack.Instance });

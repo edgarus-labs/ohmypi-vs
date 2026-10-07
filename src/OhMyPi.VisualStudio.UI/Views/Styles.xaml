@@ -58,6 +58,14 @@
             </Setter.Value>
         </Setter>
         <Style.Triggers>
+            <!-- A sideways scroll bar only shows while the pointer is over its scroll viewer. -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding Orientation, RelativeSource={RelativeSource Self}}" Value="Horizontal" />
+                    <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" Value="False" />
+                </MultiDataTrigger.Conditions>
+                <Setter Property="Opacity" Value="0" />
+            </MultiDataTrigger>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto" />
                 <Setter Property="MinWidth" Value="0" />
@@ -445,18 +453,21 @@
         <Setter Property="Padding" Value="4" />
     </Style>
 
+    <!-- Bordered box (user messages, chips, badges, questions, section panels) on the surface derived from the window background, so it shows on every theme. -->
     <Style x:Key="Omp.Card" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.Card}}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.CardBorder}}" />
+        <Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurface}}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurfaceBorder}}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="6" />
     </Style>
 
-    <!-- Multi-line tool results (output, JSON, diffs): set apart from the transcript by the card background alone. -->
+    <!-- Multi-line tool results (output, JSON, diffs): a bordered box on the code surface, set apart from the transcript on every theme. -->
     <Style x:Key="Omp.CodeBlock" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.Card}}" />
-        <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="Padding" Value="10,6,10,6" />
+        <Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurface}}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurfaceBorder}}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="Padding" Value="10,6" />
     </Style>
 
     <!-- Section and collapsible headers: chevron + content, full width, no hover fill. -->

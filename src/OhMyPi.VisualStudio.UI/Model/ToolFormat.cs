@@ -272,8 +272,26 @@ namespace OhMyPi.VisualStudio.UI.Model
         {
             if (!(item.Args is JObject args)) return "";
             var commandKey = new[] { "command", "code", "input" }.FirstOrDefault(key => Str(args[key]) != null);
-            return string.Join("\n", args.Properties().Where(p => p.Name != commandKey).Select(p => $"{p.Name}: {(p.Value.Type == JTokenType.String ? p.Value.Value<string>() : p.Value.ToString(Newtonsoft.Json.Formatting.None))}"));
+            return FlatLines(args.Properties().Where(p => p.Name != commandKey));
         }
+
+        /// <summary>
+        /// A call's arguments for reading: an object as one <c>name: value</c> line per property (strings bare, their
+        /// further lines indented; everything else as JSON, nested values on one line); anything else as indented JSON.
+        /// </summary>
+        public static string FlatArgs(JToken args) =>
+            args is JObject record ? FlatLines(record.Properties()) : IndentedJson(args);
+
+        /// <summary>Indented JSON with <c>\n</c> line ends, as copying a tool's arguments yields them.</summary>
+        public static string IndentedJson(JToken token) => token.ToString(Newtonsoft.Json.Formatting.Indented).Replace("\r\n", "\n");
+
+        private static string FlatLines(IEnumerable<JProperty> properties) =>
+            string.Join("\n", properties.Select(p => $"{p.Name}: {FlatValue(p.Value)}"));
+
+        private static string FlatValue(JToken value) =>
+            value.Type == JTokenType.String
+                ? (value.Value<string>() ?? "").Replace("\r\n", "\n").Replace("\n", "\n  ")
+                : value.ToString(Newtonsoft.Json.Formatting.None);
 
         private static string? SearchScope(JObject args)
         {

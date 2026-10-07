@@ -50,11 +50,13 @@ namespace OhMyPi.VisualStudio.UI.Views
         /// <summary>The theme's own accent color (the active window frame), for fills that follow the chosen theme.</summary>
         public static object ThemeAccent => EnvironmentColors.AccentMediumBrushKey;
 
-        /// <summary>Backgrounds of changed lines and words in diffs: the colors of Visual Studio's own diff window, supplied by the host.</summary>
-        public const string DiffAddedLine = DiffColorKeys.AddedLine;
-        public const string DiffRemovedLine = DiffColorKeys.RemovedLine;
-        public const string DiffAddedWord = DiffColorKeys.AddedWord;
-        public const string DiffRemovedWord = DiffColorKeys.RemovedWord;
+        /// <summary>Colors the host derives from the theme (see <see cref="PaletteKeys"/>): the code surface and the diff backgrounds.</summary>
+        public const string CodeSurface = PaletteKeys.CodeSurface;
+        public const string CodeSurfaceBorder = PaletteKeys.CodeSurfaceBorder;
+        public const string DiffAddedLine = PaletteKeys.DiffAddedLine;
+        public const string DiffRemovedLine = PaletteKeys.DiffRemovedLine;
+        public const string DiffAddedWord = PaletteKeys.DiffAddedWord;
+        public const string DiffRemovedWord = PaletteKeys.DiffRemovedWord;
         public static object Divider => EnvironmentColors.ToolWindowBorderBrushKey;
         public static object ScrollThumb => EnvironmentColors.ScrollBarThumbBackgroundBrushKey;
         public static object ScrollThumbHover => EnvironmentColors.ScrollBarThumbMouseOverBackgroundBrushKey;

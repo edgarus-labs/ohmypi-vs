@@ -178,6 +178,67 @@ namespace OhMyPi.VisualStudio.UI.Tests
             });
         }
 
+        /// <summary>Ctrl+V as the text box runs it: the Paste command against the system clipboard.</summary>
+        private static void PasteClipboard(TextBox input)
+        {
+            input.Focus();
+            Assert.True(ApplicationCommands.Paste.CanExecute(null, input), "Paste is disabled for this clipboard content");
+            ApplicationCommands.Paste.Execute(null, input);
+            Pump();
+        }
+
+        [Fact]
+        public void Ctrl_V_attaches_a_screenshot_a_png_and_a_copied_image_file_from_the_clipboard()
+        {
+            var dir = Path.Combine(Path.GetTempPath(), "omp-paste-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var file = Path.Combine(dir, "shot.png");
+                File.WriteAllBytes(file, Png());
+                Run(h =>
+                {
+                    Clipboard.SetImage(BitmapSource.Create(2, 2, 96, 96, PixelFormats.Bgra32, null, new byte[16], 8));
+                    PasteClipboard(h.Composer.Input);
+                    Assert.Single(AllNamed<Button>(h.Composer, "Remove Image 1"));
+
+                    var png = new DataObject();
+                    png.SetData("PNG", new MemoryStream(Png()));
+                    Clipboard.SetDataObject(png, true);
+                    PasteClipboard(h.Composer.Input);
+                    Assert.Single(AllNamed<Button>(h.Composer, "Remove Image 2"));
+
+                    Clipboard.SetFileDropList(new System.Collections.Specialized.StringCollection { file });
+                    PasteClipboard(h.Composer.Input);
+                    Pump(300);
+                    Assert.Single(AllNamed<Button>(h.Composer, "Remove shot.png"));
+
+                    Assert.Equal("", h.Composer.Input.Text);
+                    Assert.Empty(h.Notices);
+                });
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
+        [Fact]
+        public void Ctrl_V_of_long_text_attaches_it_and_short_text_goes_into_the_input()
+        {
+            Run(h =>
+            {
+                Clipboard.SetText(string.Join("\r\n", Enumerable.Range(0, 40)));
+                PasteClipboard(h.Composer.Input);
+                Assert.Single(AllNamed<Button>(h.Composer, "Remove Pasted text 1"));
+                Assert.Equal("", h.Composer.Input.Text);
+
+                Clipboard.SetText("short");
+                PasteClipboard(h.Composer.Input);
+                Assert.Equal("short", h.Composer.Input.Text);
+            });
+        }
+
         [Fact]
         public void An_image_whose_data_cannot_be_decoded_shows_without_a_thumbnail_and_is_logged()
         {
