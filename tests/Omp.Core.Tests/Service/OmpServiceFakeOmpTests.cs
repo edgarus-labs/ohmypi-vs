@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Omp.Core.Processes;
 using Omp.Core.Tests.Support;
+using System.Diagnostics;
 
 namespace Omp.Core.Tests.Service;
 
@@ -16,12 +16,13 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
 
     public OmpServiceFakeOmpTests()
     {
-        _memory = new NodeMemoryGuard(() => { lock (_harnesses) return _harnesses.Select(h => h.Logger).ToArray(); });
+        _memory = new NodeMemoryGuard(() => { lock (_harnesses) { return _harnesses.Select(h => h.Logger).ToArray(); } });
     }
 
     public ValueTask InitializeAsync()
     {
         _launcher = FakeOmp.WriteLauncher(_dir, "fake-omp", FakeOmp.Script);
+
         return default;
     }
 
@@ -35,7 +36,9 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         foreach (var harness in _harnesses)
         {
             foreach (var pid in FakeOmp.ReportedPids(harness.Logger))
+            {
                 await Wait.For(() => !FakeOmp.IsAlive(pid), 5000, $"node {pid} gone");
+            }
         }
         await _memory.DisposeAsync();
         await TempDirectory.DeleteAsync(_dir);
@@ -44,13 +47,21 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     private sealed class Harness
     {
         public required OmpService Service { get; init; }
+
         public required MemoryLogger Logger { get; init; }
+
         public List<SessionPhase> Phases { get; } = new();
+
         public List<ConnectionState> States { get; } = new();
+
         public List<TranscriptItem> Items { get; } = new();
+
         public List<ToolExecutionEvent> Tools { get; } = new();
+
         public List<InteractionRequest> Interactions { get; } = new();
+
         public List<string> Cancelled { get; } = new();
+
         public List<PresentationRequest> Presentations { get; } = new();
 
         public IReadOnlyList<string> AssistantTexts() => Service.Transcript.OfType<AssistantItem>().Select(i => i.Text).ToArray();
@@ -59,14 +70,17 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
 
         public T Locked<T>(Func<T> read)
         {
-            lock (this) return read();
+            lock (this)
+            {
+                return read();
+            }
         }
     }
 
     private Harness Create(bool autoRestart = false, bool trace = false, IDictionary<string, string>? env = null, Action<OmpServiceTuning>? tune = null, string? executable = null, IHostTools? hostTools = null)
     {
         var logger = new MemoryLogger(trace);
-        var tuning = new OmpServiceTuning { RestartDelaysMs = new[] { 20, 20, 20 }, RestartWindowMs = 60_000, ShutdownGraceMs = 1000 };
+        var tuning = new OmpServiceTuning { RestartDelaysMs = [20, 20, 20], RestartWindowMs = 60_000, ShutdownGraceMs = 1000 };
         tune?.Invoke(tuning);
         var service = new OmpService(
             new OmpServiceOptions
@@ -80,23 +94,32 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
             },
             tuning);
         var h = new Harness { Service = service, Logger = logger };
-        service.SessionChanged += (_, s) => { lock (h) if (h.Phases.Count == 0 || h.Phases[h.Phases.Count - 1] != s.Phase) h.Phases.Add(s.Phase); };
-        service.ConnectionChanged += (_, c) => { lock (h) h.States.Add(c.State); };
-        service.TranscriptItemChanged += (_, i) => { lock (h) h.Items.Add(i); };
-        service.ToolExecution += (_, t) => { lock (h) h.Tools.Add(t); };
-        service.InteractionRequested += (_, r) => { lock (h) h.Interactions.Add(r); };
-        service.InteractionCancelled += (_, id) => { lock (h) h.Cancelled.Add(id); };
-        service.Presentation += (_, p) => { lock (h) h.Presentations.Add(p); };
-        lock (_harnesses) _harnesses.Add(h);
+        service.SessionChanged += (_, s) => { lock (h) { if (h.Phases.Count == 0 || h.Phases[h.Phases.Count - 1] != s.Phase) { h.Phases.Add(s.Phase); } } };
+        service.ConnectionChanged += (_, c) => { lock (h) { h.States.Add(c.State); } };
+        service.TranscriptItemChanged += (_, i) => { lock (h) { h.Items.Add(i); } };
+        service.ToolExecution += (_, t) => { lock (h) { h.Tools.Add(t); } };
+        service.InteractionRequested += (_, r) => { lock (h) { h.Interactions.Add(r); } };
+        service.InteractionCancelled += (_, id) => { lock (h) { h.Cancelled.Add(id); } };
+        service.Presentation += (_, p) => { lock (h) { h.Presentations.Add(p); } };
+        lock (_harnesses)
+        {
+            _harnesses.Add(h);
+        }
+
         return h;
     }
 
     private IReadOnlyList<JObject> SentCommands()
     {
-        if (!File.Exists(LogFile)) return Array.Empty<JObject>();
+        if (!File.Exists(LogFile))
+        {
+            return Array.Empty<JObject>();
+        }
+
         using var stream = new FileStream(LogFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         using var reader = new StreamReader(stream);
-        return reader.ReadToEnd().Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(JObject.Parse).ToArray();
+
+        return reader.ReadToEnd().Split(['\n'], StringSplitOptions.RemoveEmptyEntries).Select(JObject.Parse).ToArray();
     }
 
     private JObject? Command(string type) => SentCommands().FirstOrDefault(c => (string?)c["type"] == type);
@@ -104,6 +127,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     private static async Task<int> NodePid(Harness h)
     {
         await Wait.For(() => FakeOmp.ReportedPids(h.Logger).Count > 0, 5000, "node pid");
+
         return FakeOmp.ReportedPids(h.Logger).Last();
     }
 
@@ -133,7 +157,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         var outcome = await h.Service.PromptAsync("hello there");
         Assert.Equal((PromptStatus.Completed, true), (outcome.Status, outcome.SessionSettled));
         Assert.Equal(SessionPhase.Idle, h.Service.Session.Phase);
-        Assert.Equal(new[] { SessionPhase.Submitting, SessionPhase.Running, SessionPhase.Idle }, h.Locked(() => h.Phases.Skip(h.Phases.Count - 3).ToArray()));
+        Assert.Equal([SessionPhase.Submitting, SessionPhase.Running, SessionPhase.Idle], h.Locked(() => h.Phases.Skip(h.Phases.Count - 3).ToArray()));
         Assert.Contains(h.Locked(() => h.Items.ToArray()), i => i is AssistantItem { Streaming: true });
         Assert.Equal(new[] { typeof(UserItem), typeof(AssistantItem), typeof(TurnSummaryItem) }, h.Service.Transcript.Select(i => i.GetType()));
         Assert.True(((TurnSummaryItem)h.Service.Transcript[2]).OutputTokens > 0);
@@ -207,10 +231,14 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         var changes = new Omp.Core.Changes.ChangeModel(path => Omp.Core.Changes.ChangeModel.ReadSnapshotAsync(path, h.Logger), h.Logger);
         var scope = new Omp.Core.Changes.ChangeScope { Cwd = _dir, Roots = new[] { _dir } };
         var applied = new List<Task>();
-        h.Service.ToolExecution += (_, e) => { lock (applied) applied.Add(changes.ApplyAsync(e, scope)); };
+        h.Service.ToolExecution += (_, e) => { lock (applied) { applied.Add(changes.ApplyAsync(e, scope)); } };
         await h.Service.PromptAsync($"please tool {target}");
         Task[] pending;
-        lock (applied) pending = applied.ToArray();
+        lock (applied)
+        {
+            pending = [.. applied];
+        }
+
         await Task.WhenAll(pending);
         var change = Assert.Single(changes.Changes);
         Assert.Equal((target, Omp.Core.Changes.ChangeStatus.Modified, 1, 0), (change.Path, change.Status, change.Added, change.Removed));
@@ -357,6 +385,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     private sealed class RecordingHostTools : IHostTools
     {
         public List<(string Name, JObject Arguments)> Calls { get; } = new();
+
         public Func<string, JObject, CancellationToken, Task<HostToolResult>> Answer { get; set; } = (_, _, _) => Task.FromResult(HostToolResult.Text("done"));
 
         public IReadOnlyList<HostToolDefinition> Definitions { get; } = new[]
@@ -366,7 +395,11 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
 
         public Task<HostToolResult> InvokeAsync(string name, JObject arguments, CancellationToken cancellationToken)
         {
-            lock (Calls) Calls.Add((name, arguments));
+            lock (Calls)
+            {
+                Calls.Add((name, arguments));
+            }
+
             return Answer(name, arguments, cancellationToken);
         }
     }
@@ -413,8 +446,10 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
                 catch (OperationCanceledException)
                 {
                     cancelled.TrySetResult(true);
+
                     throw;
                 }
+
                 return HostToolResult.Text("never");
             },
         };
@@ -509,7 +544,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         Assert.Equal((PromptStatus.Completed, false), (outcome.Status, outcome.SessionSettled));
         Assert.Equal(SessionPhase.Yielded, h.Service.Session.Phase);
         await Wait.For(() => h.Service.Session.Phase == SessionPhase.Idle, 10000, "settled");
-        Assert.Equal(new[] { SessionPhase.Yielded, SessionPhase.Running, SessionPhase.Yielded, SessionPhase.Idle }, h.Locked(() => h.Phases.Skip(h.Phases.Count - 4).ToArray()));
+        Assert.Equal([SessionPhase.Yielded, SessionPhase.Running, SessionPhase.Yielded, SessionPhase.Idle], h.Locked(() => h.Phases.Skip(h.Phases.Count - 4).ToArray()));
         Assert.Equal(new[] { "Started a background job.", "Background job finished." }, h.AssistantTexts());
         var summary = Assert.IsType<TurnSummaryItem>(h.Service.Transcript.Last());
         Assert.Single(h.Service.Transcript.OfType<TurnSummaryItem>());
@@ -630,7 +665,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     [Fact]
     public async Task RestoresTheRestartBudgetOnceTheWindowHasPassed()
     {
-        var h = Create(autoRestart: true, tune: t => { t.RestartDelaysMs = new[] { 20 }; t.RestartWindowMs = 300; });
+        var h = Create(autoRestart: true, tune: t => { t.RestartDelaysMs = [20]; t.RestartWindowMs = 300; });
         await h.Service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         for (var i = 0; i < 2; i++)
         {
@@ -644,7 +679,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     [Fact]
     public async Task DoesNotRelaunchAfterStopWhileARestartIsPending()
     {
-        var h = Create(autoRestart: true, tune: t => t.RestartDelaysMs = new[] { 300 });
+        var h = Create(autoRestart: true, tune: t => t.RestartDelaysMs = [300]);
         await h.Service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         await h.Service.PromptAsync("please crash");
         await Wait.For(() => h.Service.Connection.State == ConnectionState.Restarting, 10000, "restarting");
@@ -659,7 +694,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     public async Task ReschedulesWhenARestartAttemptFailsToLaunch()
     {
         var marker = Path.Combine(_dir, "refuse-start");
-        var h = Create(autoRestart: true, env: new Dictionary<string, string> { ["FAKE_OMP_EXIT_IF_EXISTS"] = marker }, tune: t => t.RestartDelaysMs = new[] { 20, 1500, 20 });
+        var h = Create(autoRestart: true, env: new Dictionary<string, string> { ["FAKE_OMP_EXIT_IF_EXISTS"] = marker }, tune: t => t.RestartDelaysMs = [20, 1500, 20]);
         await h.Service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         File.WriteAllText(marker, "");
         await h.Service.PromptAsync("please crash");
@@ -678,7 +713,11 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         var node = await NodePid(h);
         _ = h.Service.PromptAsync("approve this");
         await Wait.For(() => h.Locked(() => h.Interactions.Count) > 0, 10000, "confirm request");
-        using (var process = Process.GetProcessById(node)) process.Kill();
+        using (var process = Process.GetProcessById(node))
+        {
+            process.Kill();
+        }
+
         await Wait.For(() => h.Service.Connection.State == ConnectionState.Failed, 10000, "failed");
         Assert.Equal(new[] { h.Interactions[0].Id }, h.Locked(() => h.Cancelled.ToArray()));
     }
@@ -721,7 +760,11 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     {
         var first = Create();
         await first.Service.StartAsync(new StartOptions { NewSession = true }, TestContext.Current.CancellationToken);
-        foreach (var text in new[] { "one", "two", "three" }) await first.Service.PromptAsync(text);
+        foreach (var text in new[] { "one", "two", "three" })
+        {
+            await first.Service.PromptAsync(text);
+        }
+
         var file = first.Service.Session.SessionFile!;
         await first.Service.StopAsync();
         var second = Create(tune: t => t.HistoryPageLimit = 2);
@@ -749,7 +792,11 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         var h = Create();
         await h.Service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         var results = await Task.WhenAll(Wait.Settle(h.Service.RestartAsync()), Wait.Settle(h.Service.RestartAsync()));
-        foreach (var error in results) Assert.True(error == null || error is OmpSupersededException, error?.ToString());
+        foreach (var error in results)
+        {
+            Assert.True(error is null || error is OmpSupersededException, error?.ToString());
+        }
+
         Assert.Equal(ConnectionState.Ready, h.Service.Connection.State);
     }
 
@@ -780,7 +827,7 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     [Fact]
     public async Task StartWhileARestartIsPendingCancelsThePendingRestart()
     {
-        var h = Create(autoRestart: true, tune: t => t.RestartDelaysMs = new[] { 300, 300, 300 });
+        var h = Create(autoRestart: true, tune: t => t.RestartDelaysMs = [300, 300, 300]);
         await h.Service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         await h.Service.PromptAsync("please crash");
         await Wait.For(() => h.Service.Connection.State == ConnectionState.Restarting, 10000, "restarting");
@@ -797,7 +844,11 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         var calls = 0;
         var h = Create(tune: t => t.Spawn = options =>
         {
-            if (++calls == 1) throw new PathTooLongException("spawn ENAMETOOLONG");
+            if (++calls == 1)
+            {
+                throw new PathTooLongException("spawn ENAMETOOLONG");
+            }
+
             return new OmpProcess(options);
         });
         Assert.Contains("ENAMETOOLONG", (await Assert.ThrowsAsync<PathTooLongException>(() => h.Service.StartAsync(cancellationToken: TestContext.Current.CancellationToken))).Message);

@@ -1,6 +1,6 @@
+using OhMyPi.VisualStudio.Logic.Automation;
 using System;
 using System.Collections.Generic;
-using OhMyPi.VisualStudio.Logic.Automation;
 
 namespace OhMyPi.VisualStudio.Tests;
 
@@ -12,13 +12,18 @@ public sealed class LineEditsTests
         var edit = LineEdits.Plan(lines.Count, line => lines[line].Length, startLine, endLine, text, lineBreak);
         var start = Offset(lines, edit.StartLine, edit.StartIndex, lineBreak);
         var end = Offset(lines, edit.EndLine, edit.EndIndex, lineBreak);
+
         return document.Substring(0, start) + edit.Text + document.Substring(end);
     }
 
     private static int Offset(IReadOnlyList<string> lines, int line, int index, string lineBreak)
     {
         var offset = 0;
-        for (var i = 0; i < line; i++) offset += lines[i].Length + lineBreak.Length;
+        for (var i = 0; i < line; i++)
+        {
+            offset += lines[i].Length + lineBreak.Length;
+        }
+
         return offset + index;
     }
 

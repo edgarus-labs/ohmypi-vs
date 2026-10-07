@@ -1,6 +1,6 @@
-using System.Text;
 using Newtonsoft.Json.Linq;
 using Omp.Core.Protocol;
+using System.Text;
 
 namespace Omp.Core.Tests.Support;
 
@@ -16,9 +16,11 @@ internal class MemoryTransport : IOmpTransport
     }
 
     public event Action<ArraySegment<byte>>? Data;
+
     public event Action<TransportClose>? Closed;
 
     public bool IsClosed { get; private set; }
+
     public bool FailWrites { get; set; }
 
     /// <summary>Accept writes, then report this error through the write's error callback.</summary>
@@ -26,18 +28,33 @@ internal class MemoryTransport : IOmpTransport
 
     public IReadOnlyList<JObject> Written
     {
-        get { lock (_written) return _written.ToArray(); }
+        get
+        {
+            lock (_written)
+            {
+                return _written.ToArray();
+            }
+        }
     }
 
     public void Write(string line, Action<Exception>? onError = null)
     {
-        if (FailWrites || IsClosed) throw new IOException("write EPIPE");
+        if (FailWrites || IsClosed)
+        {
+            throw new IOException("write EPIPE");
+        }
+
         var frame = JObject.Parse(line);
-        lock (_written) _written.Add(frame);
+        lock (_written)
+        {
+            _written.Add(frame);
+        }
+
         var failure = FailWritesLater;
-        if (failure != null)
+        if (failure is not null)
         {
             Task.Run(() => onError?.Invoke(failure));
+
             return;
         }
         _respond?.Invoke(frame, this);
@@ -54,14 +71,22 @@ internal class MemoryTransport : IOmpTransport
     public void Reply(JObject request, JToken? data = null)
     {
         var frame = new JObject { ["type"] = "response", ["id"] = request["id"], ["command"] = request["type"], ["success"] = true };
-        if (data != null) frame["data"] = data;
+        if (data is not null)
+        {
+            frame["data"] = data;
+        }
+
         Emit(frame);
     }
 
     public void Fail(JObject request, string error, string? code = null)
     {
         var frame = new JObject { ["type"] = "response", ["id"] = request["id"], ["command"] = request["type"], ["success"] = false, ["error"] = error };
-        if (code != null) frame["code"] = code;
+        if (code is not null)
+        {
+            frame["code"] = code;
+        }
+
         Emit(frame);
     }
 

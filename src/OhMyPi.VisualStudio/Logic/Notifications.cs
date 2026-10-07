@@ -2,64 +2,82 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace OhMyPi.VisualStudio.Logic
-{
-    /// <summary>Notification text kept to one line, so a long failure (for example every PATH directory tried) does not fill the window.</summary>
-    internal static class NotificationText
-    {
-        public const int MaxLength = 200;
-        private const string Elided = " … (details in the oh-my-pi log)";
+namespace OhMyPi.VisualStudio.Logic;
 
-        public static string Summary(string message)
+/// <summary>Notification text kept to one line, so a long failure (for example every PATH directory tried) does not fill the window.</summary>
+internal static class NotificationText
+{
+    public const int MaxLength = 200;
+    private const string Elided = " … (details in the oh-my-pi log)";
+
+    public static string Summary(string message)
+    {
+        var text = message.Trim();
+        var newline = text.IndexOfAny(['\r', '\n']);
+        var cut = newline >= 0;
+        if (cut)
         {
-            var text = message.Trim();
-            var newline = text.IndexOfAny(new[] { '\r', '\n' });
-            var cut = newline >= 0;
-            if (cut) text = text.Substring(0, newline).TrimEnd();
-            if (text.Length + (cut ? Elided.Length : 0) > MaxLength)
-            {
-                text = text.Substring(0, MaxLength - Elided.Length).TrimEnd();
-                cut = true;
-            }
-            return cut ? text + Elided : text;
+            text = text.Substring(0, newline).TrimEnd();
         }
+
+        if (text.Length + (cut ? Elided.Length : 0) > MaxLength)
+        {
+            text = text.Substring(0, MaxLength - Elided.Length).TrimEnd();
+            cut = true;
+        }
+
+        return cut ? text + Elided : text;
+    }
+}
+
+/// <summary>Notifications on screen by message, so a repeated message reuses the open notification instead of stacking another.</summary>
+internal sealed class OpenNotifications
+{
+    private readonly Dictionary<string, Task<string?>> _open = new Dictionary<string, Task<string?>>(StringComparer.Ordinal);
+
+    /// <summary>The choice of the notification showing <paramref name="message"/>; <paramref name="show"/> runs only when none is open.</summary>
+    public Task<string?> ShowOnceAsync(string message, Func<Task<string?>> show)
+    {
+        var choice = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_open)
+        {
+#pragma warning disable VSTHRD003 // The notification another caller opened; its own UI events complete it.
+            if (_open.TryGetValue(message, out var open))
+            {
+                return open;
+            }
+#pragma warning restore VSTHRD003
+            _open.Add(message, choice.Task);
+        }
+        _ = ShowCoreAsync(message, show, choice);
+
+        return choice.Task;
     }
 
-    /// <summary>Notifications on screen by message, so a repeated message reuses the open notification instead of stacking another.</summary>
-    internal sealed class OpenNotifications
+    private async Task ShowCoreAsync(string message, Func<Task<string?>> show, TaskCompletionSource<string?> choice)
     {
-        private readonly Dictionary<string, Task<string?>> _open = new Dictionary<string, Task<string?>>(StringComparer.Ordinal);
-
-        /// <summary>The choice of the notification showing <paramref name="message"/>; <paramref name="show"/> runs only when none is open.</summary>
-        public Task<string?> ShowOnceAsync(string message, Func<Task<string?>> show)
+        string? result = null;
+        Exception? failure = null;
+        try
         {
-            var choice = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            lock (_open)
-            {
-#pragma warning disable VSTHRD003 // The notification another caller opened; its own UI events complete it.
-                if (_open.TryGetValue(message, out var open)) return open;
-#pragma warning restore VSTHRD003
-                _open.Add(message, choice.Task);
-            }
-            _ = ShowCoreAsync(message, show, choice);
-            return choice.Task;
+            result = await show().ConfigureAwait(false);
+        }
+        catch (Exception error)
+        {
+            failure = error;
+        }
+        lock (_open)
+        {
+            _open.Remove(message);
         }
 
-        private async Task ShowCoreAsync(string message, Func<Task<string?>> show, TaskCompletionSource<string?> choice)
+        if (failure is null)
         {
-            string? result = null;
-            Exception? failure = null;
-            try
-            {
-                result = await show().ConfigureAwait(false);
-            }
-            catch (Exception error)
-            {
-                failure = error;
-            }
-            lock (_open) _open.Remove(message);
-            if (failure == null) choice.TrySetResult(result);
-            else choice.TrySetException(failure);
+            choice.TrySetResult(result);
+        }
+        else
+        {
+            choice.TrySetException(failure);
         }
     }
 }

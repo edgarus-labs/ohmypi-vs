@@ -1,7 +1,7 @@
+using OhMyPi.VisualStudio.Logic;
 using System;
 using System.IO;
 using System.Linq;
-using OhMyPi.VisualStudio.Logic;
 
 namespace OhMyPi.VisualStudio.Tests;
 
@@ -17,8 +17,16 @@ public sealed class DiffBaselinesTests : IDisposable
 
     public void Dispose()
     {
-        if (!Directory.Exists(_parent)) return;
-        foreach (var file in Directory.EnumerateFiles(_parent, "*", SearchOption.AllDirectories)) File.SetAttributes(file, FileAttributes.Normal);
+        if (!Directory.Exists(_parent))
+        {
+            return;
+        }
+
+        foreach (var file in Directory.EnumerateFiles(_parent, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
         Directory.Delete(_parent, recursive: true);
     }
 
@@ -66,10 +74,7 @@ public sealed class DiffBaselinesTests : IDisposable
     }
 
     [Fact]
-    public void DeletingAMissingDirectoryIsFine()
-    {
-        DiffBaselines.Delete(Path.Combine(_parent, "missing"));
-    }
+    public void DeletingAMissingDirectoryIsFine() => DiffBaselines.Delete(Path.Combine(_parent, "missing"));
 
     [Fact]
     public void SweepDeletesTheRootsOfProcessesThatAreGone()
@@ -89,10 +94,7 @@ public sealed class DiffBaselinesTests : IDisposable
     }
 
     [Fact]
-    public void SweepOfAMissingParentFindsNothing()
-    {
-        Assert.Empty(DiffBaselines.SweepStale(Path.Combine(_parent, "missing"), _ => false));
-    }
+    public void SweepOfAMissingParentFindsNothing() => Assert.Empty(DiffBaselines.SweepStale(Path.Combine(_parent, "missing"), _ => false));
 
     [Fact]
     public void SweepKeepsTheRootsOfThisProcess()

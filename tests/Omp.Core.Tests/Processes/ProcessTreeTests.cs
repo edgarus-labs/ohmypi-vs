@@ -1,7 +1,7 @@
-using System.ComponentModel;
 using Microsoft.Win32.SafeHandles;
 using Omp.Core.Processes;
 using Omp.Core.Tests.Support;
+using System.ComponentModel;
 
 namespace Omp.Core.Tests.Processes;
 
@@ -10,18 +10,30 @@ public class ProcessTreeTests
     private sealed class Native : ProcessTree.INative
     {
         public Dictionary<int, long> Created { get; } = new();
+
         public Dictionary<int, int> OpenErrors { get; } = new();
+
         public HashSet<int> CannotRead { get; } = new();
+
         public HashSet<int> CannotTerminate { get; } = new();
+
         public Dictionary<int, uint> ExitCodes { get; } = new();
+
         public Func<int, List<(int, int)>> Processes { get; set; } = _ => new();
+
         public List<int> Terminated { get; } = new();
+
         public int ParentCalls { get; private set; }
 
         public SafeProcessHandle Open(int pid, out int error)
         {
-            if (OpenErrors.TryGetValue(pid, out error)) return new SafeProcessHandle(IntPtr.Zero, false);
+            if (OpenErrors.TryGetValue(pid, out error))
+            {
+                return new SafeProcessHandle(IntPtr.Zero, false);
+            }
+
             error = 0;
+
             return new SafeProcessHandle((IntPtr)(pid + 1000), false);
         }
 
@@ -29,20 +41,27 @@ public class ProcessTreeTests
         {
             var pid = (int)process.DangerousGetHandle() - 1000;
             created = Created.TryGetValue(pid, out var value) ? value : 0;
+
             return !CannotRead.Contains(pid);
         }
 
         public bool Terminate(SafeProcessHandle process)
         {
             var pid = (int)process.DangerousGetHandle() - 1000;
-            if (CannotTerminate.Contains(pid)) return false;
+            if (CannotTerminate.Contains(pid))
+            {
+                return false;
+            }
+
             Terminated.Add(pid);
+
             return true;
         }
 
         public bool TryGetExitCode(SafeProcessHandle process, out uint code)
         {
             var pid = (int)process.DangerousGetHandle() - 1000;
+
             return ExitCodes.TryGetValue(pid, out code);
         }
 
@@ -123,6 +142,7 @@ public class ProcessTreeTests
         {
             var pid = next++;
             _native.Created[pid] = 1000 + pid;
+
             return new() { (pid, 1) };
         };
         _native.Created[1] = 100;

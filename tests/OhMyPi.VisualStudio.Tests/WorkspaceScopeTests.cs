@@ -1,11 +1,11 @@
+using OhMyPi.VisualStudio.Logic;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using OhMyPi.VisualStudio.Logic;
 
 namespace OhMyPi.VisualStudio.Tests;
 
-public class WorkspaceScopeTests
+public sealed class WorkspaceScopeTests
 {
     private readonly WorkspaceScope _scope = new(@"D:\work\repo", new[] { @"D:\work\repo", @"D:\elsewhere" });
     private readonly List<string> _asked = new();
@@ -13,6 +13,7 @@ public class WorkspaceScopeTests
     private Task<bool> Confirm(string path, bool answer)
     {
         _asked.Add(path);
+
         return Task.FromResult(answer);
     }
 
@@ -51,10 +52,7 @@ public class WorkspaceScopeTests
     [InlineData(@"\\?\D:\work\repo\a.cs", false)]
     [InlineData(@"\\.\D:\work\repo\a.cs", false)]
     [InlineData(@"\\host\share\a.cs", false)]
-    public void ContainsOnlyPathsBelowItsRoots(string path, bool expected)
-    {
-        Assert.Equal(expected, _scope.Contains(path));
-    }
+    public void ContainsOnlyPathsBelowItsRoots(string path, bool expected) => Assert.Equal(expected, _scope.Contains(path));
 
     [Fact]
     public async Task OpensPathsInsideTheWorkspaceWithoutAsking()

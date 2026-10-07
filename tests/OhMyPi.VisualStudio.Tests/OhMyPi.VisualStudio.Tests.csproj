@@ -28,7 +28,10 @@
   <ItemGroup>
     <Compile Include="..\..\src\OhMyPi.VisualStudio\Logic\**\*.cs" Link="Logic\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="..\..\src\OhMyPi.VisualStudio\PackageIds.cs" Link="PackageIds.cs" />
-    <Compile Include="..\..\src\OhMyPi.VisualStudio.UI\ModelPreferences.cs" Link="ModelPreferences.cs" />
+    <Compile Include="..\..\src\OhMyPi.VisualStudio\PackageGuids.cs" Link="PackageGuids.cs" />
+    <Compile Include="..\..\src\OhMyPi.VisualStudio.UI\ModelKey.cs" Link="ModelKey.cs" />
+    <Compile Include="..\..\src\OhMyPi.VisualStudio.UI\IModelPreferences.cs" Link="IModelPreferences.cs" />
+    <Compile Include="..\..\src\OhMyPi.VisualStudio.UI\IModelPickerFilters.cs" Link="IModelPickerFilters.cs" />
     <Compile Include="..\..\src\OhMyPi.VisualStudio.UI\IDismissals.cs" Link="IDismissals.cs" />
   </ItemGroup>
 

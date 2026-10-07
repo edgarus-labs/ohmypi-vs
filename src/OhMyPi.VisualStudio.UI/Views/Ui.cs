@@ -1,327 +1,384 @@
 using System;
 using System.Windows;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Automation.Peers;
 using System.Windows.Media;
 
-namespace OhMyPi.VisualStudio.UI.Views
+namespace OhMyPi.VisualStudio.UI.Views;
+
+/// <summary>Small factory helpers so every view builds themed elements the same way.</summary>
+internal static class Ui
 {
-    /// <summary>Segoe Fluent Icons / MDL2 Assets code points used by the chat.</summary>
-    internal static class Glyphs
+    public const double SmallScale = 1.0;
+
+    public static T Theme<T>(this T element, DependencyProperty property, object key) where T : FrameworkElement
     {
-        public const string Add = "\uE710";
-        public const string ChevronRight = "\uE76C";
-        public const string ChevronDown = "\uE70D";
-        public const string ArrowDown = "\uE74B";
-        public const string Cancel = "\uE711";
-        public const string Check = "\uE73E";
-        public const string Error = "\uE783";
-        public const string Warning = "\uE7BA";
-        public const string Info = "\uE946";
-        public const string Flash = "\uE945";
-        public const string OpenFile = "\uE8E5";
-        public const string Copy = "\uE8C8";
-        public const string Sync = "\uE895";
-        public const string Clock = "\uE823";
-        public const string Circle = "\uEA3A";
-        public const string CircleFill = "\uEA3B";
-        public const string Blocked = "\uE733";
-        public const string Send = "\uE724";
-        public const string Stop = "\uE71A";
+        element.SetResourceReference(property, key);
+
+        return element;
     }
 
-    /// <summary>Small factory helpers so every view builds themed elements the same way.</summary>
-    internal static class Ui
+    public static T Styled<T>(this T element, string styleKey) where T : FrameworkElement
     {
-        public const double SmallScale = 1.0;
+        element.SetResourceReference(FrameworkElement.StyleProperty, styleKey);
 
-        public static T Theme<T>(this T element, DependencyProperty property, object key) where T : FrameworkElement
+        return element;
+    }
+
+    public static TextBlock Text(string text, object? brushKey = null, bool wrap = false, bool small = false, FontWeight? weight = null)
+    {
+        var block = new TextBlock
         {
-            element.SetResourceReference(property, key);
-            return element;
+            Text = text,
+            TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap,
+            TextTrimming = wrap ? TextTrimming.None : TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        if (brushKey is not null)
+        {
+            block.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
         }
 
-        public static T Styled<T>(this T element, string styleKey) where T : FrameworkElement
+        if (small)
         {
-            element.SetResourceReference(FrameworkElement.StyleProperty, styleKey);
-            return element;
+            Small(block);
         }
 
-        public static TextBlock Text(string text, object? brushKey = null, bool wrap = false, bool small = false, FontWeight? weight = null)
+        if (weight.HasValue)
         {
-            var block = new TextBlock
-            {
-                Text = text,
-                TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap,
-                TextTrimming = wrap ? TextTrimming.None : TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center,
-            };
-            if (brushKey != null) block.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
-            if (small) Small(block);
-            if (weight.HasValue) block.FontWeight = weight.Value;
-            return block;
+            block.FontWeight = weight.Value;
         }
 
-        public static TextBlock Muted(string text, bool wrap = false, bool small = true) => Text(text, ThemeKeys.Muted, wrap, small);
+        return block;
+    }
 
-        public static TextBlock Subtle(string text, bool wrap = false, bool small = true) => Text(text, ThemeKeys.Subtle, wrap, small);
+    public static TextBlock Muted(string text, bool wrap = false, bool small = true) => Text(text, ThemeKeys.Muted, wrap, small);
 
-        private static readonly DependencyProperty FontScaleProperty =
-            DependencyProperty.RegisterAttached("FontScale", typeof(double), typeof(Ui), new PropertyMetadata(1.0, OnScaledFontChanged));
+    public static TextBlock Subtle(string text, bool wrap = false, bool small = true) => Text(text, ThemeKeys.Subtle, wrap, small);
 
-        /// <summary>The VS environment font size, bound as a dynamic resource so a change in Tools &gt; Options rescales the text.</summary>
-        private static readonly DependencyProperty EnvironmentFontSizeProperty =
-            DependencyProperty.RegisterAttached("EnvironmentFontSize", typeof(double), typeof(Ui), new PropertyMetadata(double.NaN, OnScaledFontChanged));
+    private static readonly DependencyProperty FontScaleProperty =
+        DependencyProperty.RegisterAttached("FontScale", typeof(double), typeof(Ui), new PropertyMetadata(1.0, OnScaledFontChanged));
 
-        /// <summary>Sizes an element's font relative to the VS environment font, following later changes of that font.</summary>
-        public static T Small<T>(T element, double scale = SmallScale) where T : FrameworkElement
+    /// <summary>The VS environment font size, bound as a dynamic resource so a change in Tools &gt; Options rescales the text.</summary>
+    private static readonly DependencyProperty EnvironmentFontSizeProperty =
+        DependencyProperty.RegisterAttached("EnvironmentFontSize", typeof(double), typeof(Ui), new PropertyMetadata(double.NaN, OnScaledFontChanged));
+
+    /// <summary>Sizes an element's font relative to the VS environment font, following later changes of that font.</summary>
+    public static T Small<T>(T element, double scale = SmallScale) where T : FrameworkElement
+    {
+        element.SetValue(FontScaleProperty, scale);
+        element.SetResourceReference(EnvironmentFontSizeProperty, ThemeKeys.FontSize);
+
+        return element;
+    }
+
+    /// <summary>Sizes a run's font relative to the VS environment font, following later changes of that font.</summary>
+    public static Run Small(Run run, double scale)
+    {
+        run.SetValue(FontScaleProperty, scale);
+        run.SetResourceReference(EnvironmentFontSizeProperty, ThemeKeys.FontSize);
+
+        return run;
+    }
+
+    private static void OnScaledFontChanged(DependencyObject element, DependencyPropertyChangedEventArgs e)
+    {
+        var size = (double)element.GetValue(EnvironmentFontSizeProperty);
+        if (double.IsNaN(size))
         {
-            element.SetValue(FontScaleProperty, scale);
-            element.SetResourceReference(EnvironmentFontSizeProperty, ThemeKeys.FontSize);
-            return element;
+            return;
         }
 
-        /// <summary>Sizes a run's font relative to the VS environment font, following later changes of that font.</summary>
-        public static Run Small(Run run, double scale)
+        element.SetValue(TextElement.FontSizeProperty, Math.Round(size * (double)element.GetValue(FontScaleProperty), 1));
+    }
+
+    public static TextBlock Icon(string glyph, object? brushKey = null, double size = 12)
+    {
+        var block = new TextBlock { Text = glyph, FontSize = size, VerticalAlignment = VerticalAlignment.Center };
+        block.SetResourceReference(TextBlock.FontFamilyProperty, "Omp.IconFont");
+        if (brushKey is not null)
         {
-            run.SetValue(FontScaleProperty, scale);
-            run.SetResourceReference(EnvironmentFontSizeProperty, ThemeKeys.FontSize);
-            return run;
+            block.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
         }
 
-        private static void OnScaledFontChanged(DependencyObject element, DependencyPropertyChangedEventArgs e)
+        return block;
+    }
+
+    public static Button IconButton(string glyph, string tooltip, Action onClick)
+    {
+        var button = new Button { Content = glyph, ToolTip = tooltip }.Styled("Omp.IconButton");
+        AutomationName(button, tooltip);
+        button.Click += (_, e) =>
         {
-            var size = (double)element.GetValue(EnvironmentFontSizeProperty);
-            if (double.IsNaN(size)) return;
-            element.SetValue(TextElement.FontSizeProperty, Math.Round(size * (double)element.GetValue(FontScaleProperty), 1));
+            e.Handled = true;
+            onClick();
+        };
+
+        return button;
+    }
+
+    public static Button Button(object content, Action onClick, string style = "Omp.SecondaryButton", string? tooltip = null)
+    {
+        var button = new Button { Content = content }.Styled(style);
+        if (tooltip is not null)
+        {
+            button.ToolTip = tooltip;
         }
 
-        public static TextBlock Icon(string glyph, object? brushKey = null, double size = 12)
+        if (content is string text)
         {
-            var block = new TextBlock { Text = glyph, FontSize = size, VerticalAlignment = VerticalAlignment.Center };
-            block.SetResourceReference(TextBlock.FontFamilyProperty, "Omp.IconFont");
-            if (brushKey != null) block.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
-            return block;
-        }
-
-        public static Button IconButton(string glyph, string tooltip, Action onClick)
-        {
-            var button = new Button { Content = glyph, ToolTip = tooltip }.Styled("Omp.IconButton");
-            AutomationName(button, tooltip);
-            button.Click += (_, e) =>
-            {
-                e.Handled = true;
-                onClick();
-            };
-            return button;
-        }
-
-        public static Button Button(object content, Action onClick, string style = "Omp.SecondaryButton", string? tooltip = null)
-        {
-            var button = new Button { Content = content }.Styled(style);
-            if (tooltip != null) button.ToolTip = tooltip;
-            if (content is string text) AutomationName(button, text);
-            button.Click += (_, e) =>
-            {
-                e.Handled = true;
-                onClick();
-            };
-            return button;
-        }
-
-        public static Button Link(string text, Action onClick, string? tooltip = null, bool mono = false)
-        {
-            var label = new TextBlock { Text = text, TextTrimming = TextTrimming.CharacterEllipsis };
-            if (mono) label.SetResourceReference(TextBlock.FontFamilyProperty, "Omp.MonoFont");
-            var button = Button(label, onClick, "Omp.LinkButton", tooltip);
             AutomationName(button, text);
-            return button;
         }
 
-        public static void AutomationName(DependencyObject element, string name) =>
-            System.Windows.Automation.AutomationProperties.SetName(element, name);
-
-        /// <summary>Tells screen readers that the live region <paramref name="element"/> (which has a live setting) changed.</summary>
-        public static void Announce(UIElement element)
+        button.Click += (_, e) =>
         {
-            if (!AutomationPeer.ListenerExists(AutomationEvents.LiveRegionChanged)) return;
-            var peer = UIElementAutomationPeer.FromElement(element) ?? UIElementAutomationPeer.CreatePeerForElement(element);
-            peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+            e.Handled = true;
+            onClick();
+        };
+
+        return button;
+    }
+
+    public static Button Link(string text, Action onClick, string? tooltip = null, bool mono = false)
+    {
+        var label = new TextBlock { Text = text, TextTrimming = TextTrimming.CharacterEllipsis };
+        if (mono)
+        {
+            label.SetResourceReference(TextBlock.FontFamilyProperty, "Omp.MonoFont");
         }
 
-        public static Border Card(UIElement child, Thickness padding)
+        var button = Button(label, onClick, "Omp.LinkButton", tooltip);
+        AutomationName(button, text);
+
+        return button;
+    }
+
+    public static void AutomationName(DependencyObject element, string name) =>
+        System.Windows.Automation.AutomationProperties.SetName(element, name);
+
+    /// <summary>Tells screen readers that the live region <paramref name="element"/> (which has a live setting) changed.</summary>
+    public static void Announce(UIElement element)
+    {
+        if (!AutomationPeer.ListenerExists(AutomationEvents.LiveRegionChanged))
         {
-            return new Border { Child = child, Padding = padding }.Styled("Omp.Card");
+            return;
         }
 
-        /// <summary>Selectable monospace text that never captures the mouse wheel of the transcript.</summary>
-        public static TextBox Pre(string text, object? brushKey = null)
+        var peer = UIElementAutomationPeer.FromElement(element) ?? UIElementAutomationPeer.CreatePeerForElement(element);
+        peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+    }
+
+    public static Border Card(UIElement child, Thickness padding) => new Border { Child = child, Padding = padding }.Styled("Omp.Card");
+
+    /// <summary>Selectable monospace text that never captures the mouse wheel of the transcript.</summary>
+    public static TextBox Pre(string text, object? brushKey = null)
+    {
+        var box = new TextBox { Text = text }.Styled("Omp.ReadOnlyText");
+        if (brushKey is not null)
         {
-            var box = new TextBox { Text = text }.Styled("Omp.ReadOnlyText");
-            if (brushKey != null) box.SetResourceReference(Control.ForegroundProperty, brushKey);
-            BubbleWheel(box);
-            return box;
+            box.SetResourceReference(Control.ForegroundProperty, brushKey);
         }
 
-        /// <summary>
-        /// Read-only prose the user can select and copy (proportional font, wrapping), filled by <paramref name="fill"/>.
-        /// Hyperlinks inside it stay clickable.
-        /// </summary>
-        public static RichTextBox Prose(Action<InlineCollection> fill, object? brushKey = null, bool small = false)
+        BubbleWheel(box);
+
+        return box;
+    }
+
+    /// <summary>
+    /// Read-only prose the user can select and copy (proportional font, wrapping), filled by <paramref name="fill"/>.
+    /// Hyperlinks inside it stay clickable.
+    /// </summary>
+    public static RichTextBox Prose(Action<InlineCollection> fill, object? brushKey = null, bool small = false)
+    {
+        var paragraph = new Paragraph { Margin = new Thickness(0) };
+        fill(paragraph.Inlines);
+        var document = new FlowDocument(paragraph) { TextAlignment = TextAlignment.Left };
+        var box = new ProseBox(document).Styled("Omp.Prose");
+        if (brushKey is not null)
         {
-            var paragraph = new Paragraph { Margin = new Thickness(0) };
-            fill(paragraph.Inlines);
-            var document = new FlowDocument(paragraph) { TextAlignment = TextAlignment.Left };
-            var box = new ProseBox(document).Styled("Omp.Prose");
-            if (brushKey != null) box.SetResourceReference(Control.ForegroundProperty, brushKey);
-            if (small) Small(box);
-            BubbleWheel(box);
-            return box;
+            box.SetResourceReference(Control.ForegroundProperty, brushKey);
         }
 
-        /// <summary>Selectable prose of plain <paramref name="text"/>; new lines are kept.</summary>
-        public static RichTextBox Prose(string text, object? brushKey = null, bool small = false) =>
-            Prose(inlines => AddLines(inlines, text), brushKey, small);
-
-        /// <summary>
-        /// A rich text box whose document keeps no page padding: the template application puts 5px back on each
-        /// side whenever the box (re)enters the tree, which would inset the text and make sized prose wrap early.
-        /// </summary>
-        private sealed class ProseBox : RichTextBox
+        if (small)
         {
-            public ProseBox(FlowDocument document) : base(document) { }
+            Small(box);
+        }
 
-            public override void OnApplyTemplate()
+        BubbleWheel(box);
+
+        return box;
+    }
+
+    /// <summary>Selectable prose of plain <paramref name="text"/>; new lines are kept.</summary>
+    public static RichTextBox Prose(string text, object? brushKey = null, bool small = false) =>
+        Prose(inlines => AddLines(inlines, text), brushKey, small);
+
+    /// <summary>
+    /// A rich text box whose document keeps no page padding: the template application puts 5px back on each
+    /// side whenever the box (re)enters the tree, which would inset the text and make sized prose wrap early.
+    /// </summary>
+    private sealed class ProseBox : RichTextBox
+    {
+        public ProseBox(FlowDocument document) : base(document) { }
+
+        public override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+            Document.PagePadding = new Thickness(0);
+        }
+    }
+
+    /// <summary>
+    /// Selectable prose whose lines never break, sized to its content (horizontally scrolled diffs), which a rich
+    /// text box alone does not: a hidden text block with the same inlines sets the size and the prose is laid over it.
+    /// </summary>
+    public static FrameworkElement SizedProse(Action<InlineCollection> fill)
+    {
+        var sizer = new TextBlock { TextWrapping = TextWrapping.NoWrap, Visibility = Visibility.Hidden, HorizontalAlignment = HorizontalAlignment.Left };
+        fill(sizer.Inlines);
+        var box = Prose(fill);
+        box.Document.PageWidth = NoWrapPageWidth;
+        box.HorizontalAlignment = HorizontalAlignment.Left;
+        box.VerticalAlignment = VerticalAlignment.Top;
+        box.SetBinding(FrameworkElement.WidthProperty, new System.Windows.Data.Binding(nameof(FrameworkElement.ActualWidth)) { Source = sizer, Converter = CaretSlack.Instance });
+        var grid = new Grid();
+        grid.Children.Add(sizer);
+        grid.Children.Add(box);
+
+        return grid;
+    }
+
+    /// <summary>A page wider than any line, so unwrapped prose keeps every line whole.</summary>
+    private const double NoWrapPageWidth = 1_000_000;
+
+    /// <summary>Widens the prose a little past its text so the caret's reserved width never forces an extra line break.</summary>
+    private sealed class CaretSlack : System.Windows.Data.IValueConverter
+    {
+        public static readonly CaretSlack Instance = new CaretSlack();
+
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => (double)value + 4;
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => throw new NotSupportedException();
+    }
+
+    /// <summary>Appends <paramref name="text"/> as runs separated by line breaks.</summary>
+    public static void AddLines(InlineCollection inlines, string text)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (i > 0)
             {
-                base.OnApplyTemplate();
-                Document.PagePadding = new Thickness(0);
+                inlines.Add(new LineBreak());
             }
+
+            inlines.Add(new Run(lines[i]));
+        }
+    }
+
+    /// <summary>Passes mouse-wheel scrolling to the enclosing scroll viewer.</summary>
+    public static void BubbleWheel(UIElement element) => element.PreviewMouseWheel += (sender, e) =>
+                                                              {
+                                                                  if (e.Handled)
+                                                                  {
+                                                                      return;
+                                                                  }
+
+                                                                  e.Handled = true;
+                                                                  var forwarded = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta) { RoutedEvent = UIElement.MouseWheelEvent, Source = sender };
+                                                                  ((sender as FrameworkElement)?.Parent as UIElement)?.RaiseEvent(forwarded);
+                                                              };
+
+    public static StackPanel Row(params UIElement[] children)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        foreach (var child in children)
+        {
+            panel.Children.Add(child);
         }
 
-        /// <summary>
-        /// Selectable prose whose lines never break, sized to its content (horizontally scrolled diffs), which a rich
-        /// text box alone does not: a hidden text block with the same inlines sets the size and the prose is laid over it.
-        /// </summary>
-        public static FrameworkElement SizedProse(Action<InlineCollection> fill)
+        return panel;
+    }
+
+    public static StackPanel Column(double spacing, params UIElement?[] children)
+    {
+        var panel = new StackPanel();
+        foreach (var child in children)
         {
-            var sizer = new TextBlock { TextWrapping = TextWrapping.NoWrap, Visibility = Visibility.Hidden, HorizontalAlignment = HorizontalAlignment.Left };
-            fill(sizer.Inlines);
-            var box = Prose(fill);
-            box.Document.PageWidth = NoWrapPageWidth;
-            box.HorizontalAlignment = HorizontalAlignment.Left;
-            box.VerticalAlignment = VerticalAlignment.Top;
-            box.SetBinding(FrameworkElement.WidthProperty, new System.Windows.Data.Binding(nameof(FrameworkElement.ActualWidth)) { Source = sizer, Converter = CaretSlack.Instance });
-            var grid = new Grid();
-            grid.Children.Add(sizer);
-            grid.Children.Add(box);
-            return grid;
-        }
-
-        /// <summary>A page wider than any line, so unwrapped prose keeps every line whole.</summary>
-        private const double NoWrapPageWidth = 1_000_000;
-
-        /// <summary>Widens the prose a little past its text so the caret's reserved width never forces an extra line break.</summary>
-        private sealed class CaretSlack : System.Windows.Data.IValueConverter
-        {
-            public static readonly CaretSlack Instance = new CaretSlack();
-
-            public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => (double)value + 4;
-
-            public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => throw new NotSupportedException();
-        }
-
-        /// <summary>Appends <paramref name="text"/> as runs separated by line breaks.</summary>
-        public static void AddLines(InlineCollection inlines, string text)
-        {
-            var lines = text.Replace("\r\n", "\n").Split('\n');
-            for (var i = 0; i < lines.Length; i++)
+            if (child is null)
             {
-                if (i > 0) inlines.Add(new LineBreak());
-                inlines.Add(new Run(lines[i]));
+                continue;
             }
-        }
 
-        /// <summary>Passes mouse-wheel scrolling to the enclosing scroll viewer.</summary>
-        public static void BubbleWheel(UIElement element)
-        {
-            element.PreviewMouseWheel += (sender, e) =>
+            if (panel.Children.Count > 0 && child is FrameworkElement fe)
             {
-                if (e.Handled) return;
-                e.Handled = true;
-                var forwarded = new MouseWheelEventArgs(e.MouseDevice, e.Timestamp, e.Delta) { RoutedEvent = UIElement.MouseWheelEvent, Source = sender };
-                ((sender as FrameworkElement)?.Parent as UIElement)?.RaiseEvent(forwarded);
-            };
-        }
-
-        public static StackPanel Row(params UIElement[] children)
-        {
-            var panel = new StackPanel { Orientation = Orientation.Horizontal };
-            foreach (var child in children) panel.Children.Add(child);
-            return panel;
-        }
-
-        public static StackPanel Column(double spacing, params UIElement?[] children)
-        {
-            var panel = new StackPanel();
-            foreach (var child in children)
-            {
-                if (child == null) continue;
-                if (panel.Children.Count > 0 && child is FrameworkElement fe) fe.Margin = new Thickness(fe.Margin.Left, fe.Margin.Top + spacing, fe.Margin.Right, fe.Margin.Bottom);
-                panel.Children.Add(child);
+                fe.Margin = new Thickness(fe.Margin.Left, fe.Margin.Top + spacing, fe.Margin.Right, fe.Margin.Bottom);
             }
-            return panel;
+
+            panel.Children.Add(child);
         }
 
-        /// <summary>Runs <paramref name="action"/> when Escape is pressed inside <paramref name="element"/>.</summary>
-        public static void OnEscape(UIElement element, Action action)
+        return panel;
+    }
+
+    /// <summary>Runs <paramref name="action"/> when Escape is pressed inside <paramref name="element"/>.</summary>
+    public static void OnEscape(UIElement element, Action action) => element.PreviewKeyDown += (_, e) =>
+                                                                          {
+                                                                              if (e.Key != Key.Escape)
+                                                                              {
+                                                                                  return;
+                                                                              }
+
+                                                                              e.Handled = true;
+                                                                              action();
+                                                                          };
+
+    public static Popup Popup(UIElement target, UIElement content)
+    {
+        var popup = new Popup
         {
-            element.PreviewKeyDown += (_, e) =>
-            {
-                if (e.Key != Key.Escape) return;
-                e.Handled = true;
-                action();
-            };
-        }
-
-        public static Popup Popup(UIElement target, UIElement content)
+            PlacementTarget = target,
+            Placement = PlacementMode.Top,
+            StaysOpen = false,
+            AllowsTransparency = true,
+            Child = new Border { Child = content }.Styled("Omp.PopupBorder"),
+        };
+        KeyboardNavigation.SetTabNavigation(popup.Child, KeyboardNavigationMode.Cycle);
+        popup.Opened += (_, __) =>
         {
-            var popup = new Popup
+            var owner = FindOwner(target);
+            if (owner is null)
             {
-                PlacementTarget = target,
-                Placement = PlacementMode.Top,
-                StaysOpen = false,
-                AllowsTransparency = true,
-                Child = new Border { Child = content }.Styled("Omp.PopupBorder"),
-            };
-            KeyboardNavigation.SetTabNavigation(popup.Child, KeyboardNavigationMode.Cycle);
-            popup.Opened += (_, __) =>
-            {
-                var owner = FindOwner(target);
-                if (owner == null) return;
-                var child = (FrameworkElement)popup.Child;
-                child.LayoutTransform = owner.ZoomTransform;
-                child.SetBinding(TextElement.FontFamilyProperty, new System.Windows.Data.Binding(nameof(Control.FontFamily)) { Source = owner });
-                child.SetBinding(TextElement.FontSizeProperty, new System.Windows.Data.Binding(nameof(Control.FontSize)) { Source = owner });
-            };
-            OnEscape(popup.Child, () =>
-            {
-                popup.IsOpen = false;
-                (target as UIElement)?.Focus();
-            });
-            return popup;
-        }
+                return;
+            }
 
-        /// <summary>The zoom factor applied to <paramref name="element"/>'s chat control; 1 outside one.</summary>
-        public static double ZoomOf(DependencyObject element) => FindOwner(element)?.ZoomTransform.ScaleX ?? 1;
-
-        private static OmpChatControl? FindOwner(DependencyObject? element)
+            var child = (FrameworkElement)popup.Child;
+            child.LayoutTransform = owner.ZoomTransform;
+            child.SetBinding(TextElement.FontFamilyProperty, new System.Windows.Data.Binding(nameof(Control.FontFamily)) { Source = owner });
+            child.SetBinding(TextElement.FontSizeProperty, new System.Windows.Data.Binding(nameof(Control.FontSize)) { Source = owner });
+        };
+        OnEscape(popup.Child, () =>
         {
-            while (element != null && element is not OmpChatControl)
-                element = element is Visual || element is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(element) : LogicalTreeHelper.GetParent(element);
-            return element as OmpChatControl;
+            popup.IsOpen = false;
+            (target as UIElement)?.Focus();
+        });
+
+        return popup;
+    }
+
+    /// <summary>The zoom factor applied to <paramref name="element"/>'s chat control; 1 outside one.</summary>
+    public static double ZoomOf(DependencyObject element) => FindOwner(element)?.ZoomTransform.ScaleX ?? 1;
+
+    private static OmpChatControl? FindOwner(DependencyObject? element)
+    {
+        while (element is not null && element is not OmpChatControl)
+        {
+            element = element is Visual || element is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(element) : LogicalTreeHelper.GetParent(element);
         }
+
+        return element as OmpChatControl;
     }
 }

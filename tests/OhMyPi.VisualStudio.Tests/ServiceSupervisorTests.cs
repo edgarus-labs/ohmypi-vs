@@ -1,9 +1,9 @@
+using OhMyPi.VisualStudio.Logic;
+using Omp.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Omp.Core;
-using OhMyPi.VisualStudio.Logic;
 
 namespace OhMyPi.VisualStudio.Tests;
 
@@ -20,21 +20,35 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
 
         public IReadOnlyList<(string Message, string[] Actions)> Errors
         {
-            get { lock (_gate) return _errors.ToArray(); }
+            get
+            {
+                lock (_gate)
+                {
+                    return _errors.ToArray();
+                }
+            }
         }
 
         public int LogShown => System.Threading.Volatile.Read(ref _logShown);
+
         public int SettingsOpened => System.Threading.Volatile.Read(ref _settingsOpened);
+
         public int Closed => System.Threading.Volatile.Read(ref _closed);
 
         public Task<string?> ShowErrorAsync(string message, params string[] actions)
         {
-            lock (_gate) _errors.Add((message, actions));
+            lock (_gate)
+            {
+                _errors.Add((message, actions));
+            }
+
             return Task.FromResult(Choose(message));
         }
 
         public void CloseErrors() => System.Threading.Interlocked.Increment(ref _closed);
+
         public void ShowLog() => System.Threading.Interlocked.Increment(ref _logShown);
+
         public void OpenSettings() => System.Threading.Interlocked.Increment(ref _settingsOpened);
     }
 
@@ -46,28 +60,48 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
 
         public IReadOnlyList<(string Message, Exception? Error)> Errors
         {
-            get { lock (_gate) return _errors.ToArray(); }
+            get
+            {
+                lock (_gate)
+                {
+                    return _errors.ToArray();
+                }
+            }
         }
 
         public IReadOnlyList<string> Infos
         {
-            get { lock (_gate) return _infos.ToArray(); }
+            get
+            {
+                lock (_gate)
+                {
+                    return _infos.ToArray();
+                }
+            }
         }
 
         public void Error(string message, Exception? error = null)
         {
-            lock (_gate) _errors.Add((message, error));
+            lock (_gate)
+            {
+                _errors.Add((message, error));
+            }
         }
 
         public void Warn(string message, Exception? error = null) { }
 
         public void Info(string message, Exception? error = null)
         {
-            lock (_gate) _infos.Add(message);
+            lock (_gate)
+            {
+                _infos.Add(message);
+            }
         }
 
         public void Debug(string message, Exception? error = null) { }
+
         public bool TraceEnabled => false;
+
         public void Trace(string direction, string frame) { }
     }
 
@@ -90,25 +124,42 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
         {
             Create = () =>
             {
-                if (_createError != null) throw _createError;
+                if (_createError is not null)
+                {
+                    throw _createError;
+                }
+
                 var service = new FakeOmpService();
-                lock (_services) _services.Add(service);
+                lock (_services)
+                {
+                    _services.Add(service);
+                }
+
                 return service;
             },
             SetService = service =>
             {
-                lock (_consumed) _consumed.Add(service);
+                lock (_consumed)
+                {
+                    _consumed.Add(service);
+                }
             },
             ShowUnavailable = (message, executableNotFound) =>
             {
-                lock (_unavailable) _unavailable.Add((message, executableNotFound));
+                lock (_unavailable)
+                {
+                    _unavailable.Add((message, executableNotFound));
+                }
             },
             ResumeOptions = preferred => preferred == null ? null : new StartOptions { ResumeSessionFile = preferred },
             Startup = () => _startup,
             SettingsChanged = () => _settingsChanged,
             OnSession = (service, session) =>
             {
-                lock (_sessions) _sessions.Add((service, session));
+                lock (_sessions)
+                {
+                    _sessions.Add((service, session));
+                }
             },
             Logger = _logger,
             Notifier = _notifier,
@@ -125,7 +176,11 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
         var deadline = DateTime.UtcNow + Timeout;
         while (!condition())
         {
-            if (DateTime.UtcNow > deadline) throw new TimeoutException("The condition did not become true in time.");
+            if (DateTime.UtcNow > deadline)
+            {
+                throw new TimeoutException("The condition did not become true in time.");
+            }
+
             await Task.Delay(1);
         }
     }
@@ -133,6 +188,7 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
     private static async Task<T> Within<T>(Task<T> task)
     {
         Assert.Same(task, await Task.WhenAny(task, Task.Delay(Timeout)));
+
         return await task;
     }
 
@@ -146,6 +202,7 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
     private static async Task<bool> StillPending(Task task)
     {
         await Task.WhenAny(task, Task.Delay(100));
+
         return !task.IsCompleted;
     }
 
@@ -156,6 +213,7 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
         service.SetConnection(ConnectionState.Ready);
         service.Starts[0].Done.SetResult(true);
         await Within(_supervisor.EnsureServiceAsync());
+
         return service;
     }
 
@@ -544,7 +602,11 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
         var reads = 0;
         service.OnConnectionRead = () =>
         {
-            if (++reads != 2) return;
+            if (++reads != 2)
+            {
+                return;
+            }
+
             service.OnConnectionRead = null;
             resume = _supervisor.EnsureServiceAsync(new StartOptions { ResumeSessionFile = "a.jsonl" });
         };
@@ -552,7 +614,11 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
         var start = Assert.Single(service.Starts);
         start.Done.SetResult(true);
         Assert.Same(service, await Within(created));
-        if (resume != null) await Within(resume);
+        if (resume is not null)
+        {
+            await Within(resume);
+        }
+
         var freshSessions = (start.Options?.NewSession == true ? 1 : 0) + service.NewSessions;
         Assert.Equal(1, freshSessions);
     }

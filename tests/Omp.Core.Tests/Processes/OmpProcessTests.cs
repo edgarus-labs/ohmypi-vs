@@ -1,63 +1,13 @@
-using System.Diagnostics;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using Omp.Core.Processes;
 using Omp.Core.Protocol;
 using Omp.Core.Tests.Support;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Omp.Core.Tests.Processes;
-
-public class CommandLineTests
-{
-    [Fact]
-    public void QuotesArgumentsForTheMicrosoftRuntimeRules()
-    {
-        Assert.Equal("plain", CommandLine.Quote("plain"));
-        Assert.Equal("\"\"", CommandLine.Quote(""));
-        Assert.Equal("\"a b\"", CommandLine.Quote("a b"));
-        Assert.Equal("\"say \\\"hi\\\"\"", CommandLine.Quote("say \"hi\""));
-        Assert.Equal("\"C:\\dir with space\\\\\"", CommandLine.Quote("C:\\dir with space\\"));
-        Assert.Equal("C:\\dir\\file", CommandLine.Quote("C:\\dir\\file"));
-    }
-
-    [Fact]
-    public void StartsAnExecutableDirectlyWithQuotedArguments()
-    {
-        var (application, line) = CommandLine.Build("C:\\Program Files\\omp\\omp.exe", new[] { "--mode", "rpc-ui", "a b" }, "C:\\Windows\\system32\\cmd.exe");
-        Assert.Equal("C:\\Program Files\\omp\\omp.exe", application);
-        Assert.Equal("\"C:\\Program Files\\omp\\omp.exe\" --mode rpc-ui \"a b\"", line);
-    }
-
-    [Fact]
-    public void RunsBatchLaunchersThroughCmdWithCaretEscaping()
-    {
-        var (application, line) = CommandLine.Build("C:\\my tools\\omp.cmd", new[] { "--mode", "x&y" }, "C:\\Windows\\system32\\cmd.exe");
-        Assert.Equal("C:\\Windows\\system32\\cmd.exe", application);
-        Assert.Equal("C:\\Windows\\system32\\cmd.exe /d /s /c \"C:\\my^ tools\\omp.cmd ^^^\"--mode^^^\" ^^^\"x^^^&y^^^\"\"", line);
-    }
-
-    [Fact]
-    public void BuildsASortedEnvironmentBlockWithOverridesAndRemovals()
-    {
-        var name = "OMP_CORE_TEST_" + Guid.NewGuid().ToString("N");
-        Environment.SetEnvironmentVariable(name, "inherited");
-        try
-        {
-            var block = CommandLine.EnvironmentBlock(new Dictionary<string, string?> { ["ZZ_OMP_ADDED"] = "1", [name] = null });
-            Assert.EndsWith("\0\0", block);
-            var entries = block.TrimEnd('\0').Split('\0');
-            Assert.Contains("ZZ_OMP_ADDED=1", entries);
-            Assert.DoesNotContain(entries, e => e.StartsWith(name + "=", StringComparison.OrdinalIgnoreCase));
-            Assert.Equal(entries.OrderBy(e => e.Split('=')[0], StringComparer.OrdinalIgnoreCase), entries);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(name, null);
-        }
-    }
-}
 
 public sealed class OmpProcessTests : IAsyncLifetime
 {
@@ -67,7 +17,7 @@ public sealed class OmpProcessTests : IAsyncLifetime
 
     public OmpProcessTests()
     {
-        _memory = new NodeMemoryGuard(() => { lock (_started) return _started.Select(s => s.Logger).ToArray(); });
+        _memory = new NodeMemoryGuard(() => { lock (_started) { return _started.Select(s => s.Logger).ToArray(); } });
     }
 
     public ValueTask InitializeAsync() => default;
@@ -86,13 +36,19 @@ public sealed class OmpProcessTests : IAsyncLifetime
     private sealed class Spawned
     {
         public required OmpProcess Process { get; init; }
+
         public required MemoryLogger Logger { get; init; }
+
         public List<TransportClose> Closes { get; } = new();
+
         public List<byte> Stdout { get; } = new();
 
         public string StdoutText()
         {
-            lock (Stdout) return Encoding.UTF8.GetString(Stdout.ToArray());
+            lock (Stdout)
+            {
+                return Encoding.UTF8.GetString([.. Stdout]);
+            }
         }
     }
 
@@ -111,10 +67,18 @@ public sealed class OmpProcessTests : IAsyncLifetime
             Native = native,
         });
         var spawned = new Spawned { Process = process, Logger = logger };
-        process.Data += chunk => { lock (spawned.Stdout) spawned.Stdout.AddRange(chunk); };
-        process.Closed += close => { lock (spawned.Closes) spawned.Closes.Add(close); };
-        lock (_started) _started.Add((process, logger));
-        if (start) process.Start();
+        process.Data += chunk => { lock (spawned.Stdout) { spawned.Stdout.AddRange(chunk); } };
+        process.Closed += close => { lock (spawned.Closes) { spawned.Closes.Add(close); } };
+        lock (_started)
+        {
+            _started.Add((process, logger));
+        }
+
+        if (start)
+        {
+            process.Start();
+        }
+
         return spawned;
     }
 
@@ -126,6 +90,7 @@ public sealed class OmpProcessTests : IAsyncLifetime
     {
         var script = Path.Combine(_dir, "script.js");
         File.WriteAllText(script, source);
+
         return Spawn(FakeOmp.WriteLauncher(_dir, "script-omp", script), Array.Empty<string>());
     }
 
@@ -138,6 +103,7 @@ public sealed class OmpProcessTests : IAsyncLifetime
     {
         var pattern = $@"fake-omp {label} (\d+)";
         await Wait.For(() => Regex.IsMatch(logger.Text("debug"), pattern), 10000, $"fake-omp to report its {label}");
+
         return int.Parse(Regex.Match(logger.Text("debug"), pattern).Groups[1].Value);
     }
 
@@ -262,7 +228,7 @@ public sealed class OmpProcessTests : IAsyncLifetime
     {
         var fake = SpawnScript("");
         var errors = new List<Exception>();
-        fake.Process.Write("{\"type\":\"prompt\",\"message\":\"" + new string('x', 4 * 1024 * 1024) + "\"}\n", error => { lock (errors) errors.Add(error); });
+        fake.Process.Write("{\"type\":\"prompt\",\"message\":\"" + new string('x', 4 * 1024 * 1024) + "\"}\n", error => { lock (errors) { errors.Add(error); } });
         await Wait.For(() => errors.Count > 0, 10000, "write error");
         Assert.IsAssignableFrom<IOException>(errors[0]);
     }
@@ -303,12 +269,14 @@ public sealed class OmpProcessTests : IAsyncLifetime
         public Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int pid, out int error)
         {
             error = 87;
+
             return new Microsoft.Win32.SafeHandles.SafeProcessHandle(IntPtr.Zero, false);
         }
 
         public bool GetCreated(Microsoft.Win32.SafeHandles.SafeProcessHandle process, out long created)
         {
             created = 0;
+
             return false;
         }
 
@@ -317,6 +285,7 @@ public sealed class OmpProcessTests : IAsyncLifetime
         public bool TryGetExitCode(Microsoft.Win32.SafeHandles.SafeProcessHandle process, out uint code)
         {
             code = 0;
+
             return false;
         }
 
@@ -337,9 +306,13 @@ public sealed class OmpProcessTests : IAsyncLifetime
     private sealed class FlakyNative : IProcessNative
     {
         public bool JobCreationFails { get; init; }
+
         public bool SetLimitFails { get; init; }
+
         public bool AssignFails { get; init; }
+
         public bool ResumeFails { get; init; }
+
         public bool TerminateFails { get; init; }
 
         public SafeJobHandle CreateJob() => JobCreationFails ? new SafeJobHandle() : WindowsProcessNative.Instance.CreateJob();

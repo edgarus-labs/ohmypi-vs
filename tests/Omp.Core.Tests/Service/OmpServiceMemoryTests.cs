@@ -11,7 +11,10 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var service in _services) await Wait.Settle(service.StopAsync());
+        foreach (var service in _services)
+        {
+            await Wait.Settle(service.StopAsync());
+        }
     }
 
     private (OmpService Service, MemoryLogger Logger, List<InteractionRequest> Interactions) Create(MemoryOmp omp, bool autoRestart = false)
@@ -22,7 +25,8 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
             new OmpServiceTuning { Spawn = _ => omp, ShutdownGraceMs = 50 });
         _services.Add(service);
         var interactions = new List<InteractionRequest>();
-        service.InteractionRequested += (_, request) => { lock (interactions) interactions.Add(request); };
+        service.InteractionRequested += (_, request) => { lock (interactions) { interactions.Add(request); } };
+
         return (service, logger, interactions);
     }
 
@@ -72,7 +76,7 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         var omp = new MemoryOmp();
         var (service, _, _) = Create(omp);
         var published = new List<IReadOnlyList<SlashCommandView>>();
-        service.CommandsChanged += (_, commands) => { lock (published) published.Add(commands); };
+        service.CommandsChanged += (_, commands) => { lock (published) { published.Add(commands); } };
         await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         omp.Emit(JObject.Parse("""
             {"type":"available_commands_update","commands":[
@@ -87,7 +91,10 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         Assert.Equal(new[] { "models" }, model.Aliases);
         Assert.Null(model.Hint);
         Assert.Equal(("security", "<plan|scan>"), (service.Commands[1].Name, service.Commands[1].Hint));
-        lock (published) Assert.Same(service.Commands, published.Last());
+        lock (published)
+        {
+            Assert.Same(service.Commands, published.Last());
+        }
     }
 
     [Fact]
@@ -220,6 +227,7 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
             ["set_event_filter"] = (frame, transport) =>
             {
                 transport.Fail(frame, "no filter", "unsupported");
+
                 return MemoryOmp.NoReply;
             },
         });
@@ -331,8 +339,11 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
             ["content"] = new JArray(new JObject { ["type"] = "text", ["text"] = "ok" }),
             ["usage"] = new JObject
             {
-                ["input"] = input, ["output"] = output, ["cacheRead"] = cacheRead, ["cacheWrite"] = 0,
-                ["cost"] = cost == null ? null : new JObject { ["total"] = cost },
+                ["input"] = input,
+                ["output"] = output,
+                ["cacheRead"] = cacheRead,
+                ["cacheWrite"] = 0,
+                ["cost"] = cost is null ? null : new JObject { ["total"] = cost },
             },
             ["timestamp"] = 1,
         },
@@ -435,11 +446,16 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
                 Spawn = _ =>
                 {
                     var omp = new MemoryOmp();
-                    lock (spawned) spawned.Add(omp);
+                    lock (spawned)
+                    {
+                        spawned.Add(omp);
+                    }
+
                     return omp;
                 },
             });
         _services.Add(service);
+
         return (service, logger, spawned);
     }
 
@@ -451,6 +467,7 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
             ["set_subagent_subscription"] = (_, o) =>
             {
                 o.Close(1, o.Pid, "fatal: config.yml is broken");
+
                 return MemoryOmp.NoReply;
             },
         });
@@ -509,8 +526,13 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         {
             ["prompt"] = (frame, o) =>
             {
-                if (Interlocked.Increment(ref prompts) < 3) return null;
+                if (Interlocked.Increment(ref prompts) < 3)
+                {
+                    return null;
+                }
+
                 o.Fail(frame, "steering is not possible now");
+
                 return MemoryOmp.NoReply;
             },
         });
@@ -527,26 +549,33 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
     [Fact]
     public async Task DoesNotRestartOmpOnceAStopRacesTheRestart()
     {
-        var (service, _, spawned) = CreateRestarting(new[] { 1 });
+        var (service, _, spawned) = CreateRestarting([1]);
         var restarting = 0;
         service.ConnectionChanged += (_, c) =>
         {
-            if (c.State == ConnectionState.Restarting && ++restarting == 2) _ = service.StopAsync();
+            if (c.State == ConnectionState.Restarting && ++restarting == 2)
+            {
+                _ = service.StopAsync();
+            }
         };
         await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         spawned[0].Close(3, spawned[0].Pid);
         await Wait.For(() => restarting == 2, 2000, "restart attempt");
         await Task.Delay(100, TestContext.Current.CancellationToken);
-        lock (spawned) Assert.Single(spawned);
+        lock (spawned)
+        {
+            Assert.Single(spawned);
+        }
+
         Assert.Equal(ConnectionState.Stopped, service.Connection.State);
     }
 
     [Fact]
     public async Task BacksOffEachRestartByItsOwnDelayAndSaysSo()
     {
-        var (service, _, spawned) = CreateRestarting(new[] { 10, 30, 50 });
+        var (service, _, spawned) = CreateRestarting([10, 30, 50]);
         var details = new List<string>();
-        service.ConnectionChanged += (_, c) => { if (c.State == ConnectionState.Restarting && c.Detail!.Contains("; restart")) lock (details) details.Add(c.Detail); };
+        service.ConnectionChanged += (_, c) => { if (c.State == ConnectionState.Restarting && c.Detail!.Contains("; restart")) { lock (details) { details.Add(c.Detail); } } };
         await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         for (var i = 0; i < 3; i++)
         {
@@ -554,7 +583,10 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
             current.Close(3, current.Pid);
             await Wait.For(() => service.Connection.State == ConnectionState.Ready && spawned.Count == i + 2, 2000, $"restart {i + 1}");
         }
-        lock (details) Assert.Equal(new[] { "restart 1/3 in 10 ms", "restart 2/3 in 30 ms", "restart 3/3 in 50 ms" }, details.Select(d => d.Substring(d.IndexOf("restart ", StringComparison.Ordinal))));
+        lock (details)
+        {
+            Assert.Equal(new[] { "restart 1/3 in 10 ms", "restart 2/3 in 30 ms", "restart 3/3 in 50 ms" }, details.Select(d => d.Substring(d.IndexOf("restart ", StringComparison.Ordinal))));
+        }
     }
 
     [Fact]
@@ -637,6 +669,7 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
             {
                 sent = (string?)f["message"];
                 o.Emit(new JObject { ["type"] = "command_output", ["text"] = UsageText });
+
                 return new JObject();
             },
         });
@@ -660,6 +693,7 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
             ["prompt"] = (_, o) =>
             {
                 o.Emit(new JObject { ["type"] = "command_output", ["text"] = UsageText });
+
                 return new JObject();
             },
         });

@@ -86,8 +86,5 @@ public sealed class UsageReportTests
     [Theory]
     [InlineData("")]
     [InlineData("Unknown command: usage")]
-    public void Text_that_is_not_a_usage_report_reads_as_no_providers(string text)
-    {
-        Assert.Empty(UsageReport.Parse(text));
-    }
+    public void Text_that_is_not_a_usage_report_reads_as_no_providers(string text) => Assert.Empty(UsageReport.Parse(text));
 }

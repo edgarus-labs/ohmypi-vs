@@ -2,234 +2,234 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:v="clr-namespace:OhMyPi.VisualStudio.UI.Views">
 
-    <!--
+	<!--
     The model picker follows the Visual Studio theme: every color is a theme resource, referenced dynamically so a
     theme change restyles an open picker. Provider markers take the theme accent's saturation and lightness with a hue
     spread by the provider name.
     Sizes are DIPs, which match the CSS pixels of its design.
     -->
-    <FontFamily x:Key="OmpPicker.Font">Segoe UI</FontFamily>
-    <FontFamily x:Key="OmpPicker.Mono">Cascadia Mono, Consolas</FontFamily>
+	<FontFamily x:Key="OmpPicker.Font">Segoe UI</FontFamily>
+	<FontFamily x:Key="OmpPicker.Mono">Cascadia Mono, Consolas</FontFamily>
 
-    <!-- Icon button of the search bar (favorites, recent, close): 30x30, muted, the theme's hover surface. -->
-    <Style x:Key="Omp.PickerIconButton" TargetType="ButtonBase">
-        <Setter Property="Width" Value="30" />
-        <Setter Property="Height" Value="30" />
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Muted}}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FontFamily" Value="{DynamicResource Omp.IconFont}" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ButtonBase">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.Hover}}" />
-                            <Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Foreground}}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+	<!-- Icon button of the search bar (favorites, recent, close): 30x30, muted, the theme's hover surface. -->
+	<Style x:Key="Omp.PickerIconButton" TargetType="ButtonBase">
+		<Setter Property="Width" Value="30" />
+		<Setter Property="Height" Value="30" />
+		<Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Muted}}" />
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="FontFamily" Value="{DynamicResource Omp.IconFont}" />
+		<Setter Property="FocusVisualStyle" Value="{x:Null}" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ButtonBase">
+					<Border Background="{TemplateBinding Background}" CornerRadius="4">
+						<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.Hover}}" />
+							<Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Foreground}}" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
 
-    <!-- Favorite star at the end of every model row: a quiet outline, filled in the theme's gold when the model is a favorite. -->
-    <Style x:Key="Omp.ModelStar" TargetType="ToggleButton">
-        <Setter Property="Width" Value="26" />
-        <Setter Property="Height" Value="24" />
-        <Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Subtle}}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="IsTabStop" Value="False" />
-        <Setter Property="ToolTip" Value="Favorite (Ctrl+D)" />
-        <Setter Property="AutomationProperties.Name" Value="Favorite" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ToggleButton">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
-                        <TextBlock x:Name="Glyph" Text="&#xE734;" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+	<!-- Favorite star at the end of every model row: a quiet outline, filled in the theme's gold when the model is a favorite. -->
+	<Style x:Key="Omp.ModelStar" TargetType="ToggleButton">
+		<Setter Property="Width" Value="26" />
+		<Setter Property="Height" Value="24" />
+		<Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Subtle}}" />
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="IsTabStop" Value="False" />
+		<Setter Property="ToolTip" Value="Favorite (Ctrl+D)" />
+		<Setter Property="AutomationProperties.Name" Value="Favorite" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ToggleButton">
+					<Border Background="{TemplateBinding Background}" CornerRadius="4">
+						<TextBlock x:Name="Glyph" Text="&#xE734;" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
                                    FontFamily="{DynamicResource Omp.IconFont}" Foreground="{TemplateBinding Foreground}" />
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.Hover}}" />
-                            <Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Foreground}}" />
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Glyph" Property="Text" Value="&#xE735;" />
-                            <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Warning}}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.Hover}}" />
+							<Setter Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Foreground}}" />
+						</Trigger>
+						<Trigger Property="IsChecked" Value="True">
+							<Setter TargetName="Glyph" Property="Text" Value="&#xE735;" />
+							<Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource {x:Static v:ThemeKeys.Warning}}" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
 
-    <!--
+	<!--
     A row of the model list. Provider header: marker, name, count, chevron. Model: name and context badge on the left,
     price and the check or star on the right, the id under them only where two models share a name. Hover and the
     keyboard highlight take the theme accent, faded so the text stays readable; the model in use has the accent bar
     and a fainter accent tint.
     -->
-    <Style x:Key="Omp.ModelListItem" TargetType="ListBoxItem">
-        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="Padding" Value="0" />
-        <Setter Property="Margin" Value="0" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-        <Setter Property="AutomationProperties.Name" Value="{Binding AutomationName}" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListBoxItem">
-                    <Border x:Name="Row" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="3,0,0,0" SnapsToDevicePixels="True">
-                        <Grid>
-                            <Border x:Name="Active" Opacity="0.14" Visibility="Collapsed" IsHitTestVisible="False"
+	<Style x:Key="Omp.ModelListItem" TargetType="ListBoxItem">
+		<Setter Property="HorizontalContentAlignment" Value="Stretch" />
+		<Setter Property="Padding" Value="0" />
+		<Setter Property="Margin" Value="0" />
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="FocusVisualStyle" Value="{x:Null}" />
+		<Setter Property="AutomationProperties.Name" Value="{Binding AutomationName}" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ListBoxItem">
+					<Border x:Name="Row" Background="{TemplateBinding Background}" BorderBrush="Transparent" BorderThickness="3,0,0,0" SnapsToDevicePixels="True">
+						<Grid>
+							<Border x:Name="Active" Opacity="0.14" Visibility="Collapsed" IsHitTestVisible="False"
                                     Background="{DynamicResource {x:Static v:ThemeKeys.ThemeAccent}}" />
-                            <Border x:Name="Hover" Opacity="0.22" Visibility="Collapsed" IsHitTestVisible="False"
+							<Border x:Name="Hover" Opacity="0.22" Visibility="Collapsed" IsHitTestVisible="False"
                                     Background="{DynamicResource {x:Static v:ThemeKeys.ThemeAccent}}" />
-                            <ContentPresenter />
-                        </Grid>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Hover" Property="Visibility" Value="Visible" />
-                        </Trigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Hover" Property="Visibility" Value="Visible" />
-                        </Trigger>
-                        <DataTrigger Binding="{Binding IsActive}" Value="True">
-                            <Setter TargetName="Active" Property="Visibility" Value="Visible" />
-                            <Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.ThemeAccent}}" />
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding IsGroup}" Value="True">
-                            <Setter TargetName="Row" Property="BorderThickness" Value="0" />
-                            <Setter TargetName="Hover" Property="Visibility" Value="Collapsed" />
-                        </DataTrigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
+							<ContentPresenter />
+						</Grid>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Hover" Property="Visibility" Value="Visible" />
+						</Trigger>
+						<Trigger Property="IsSelected" Value="True">
+							<Setter TargetName="Hover" Property="Visibility" Value="Visible" />
+						</Trigger>
+						<DataTrigger Binding="{Binding IsActive}" Value="True">
+							<Setter TargetName="Active" Property="Visibility" Value="Visible" />
+							<Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.ThemeAccent}}" />
+						</DataTrigger>
+						<DataTrigger Binding="{Binding IsGroup}" Value="True">
+							<Setter TargetName="Row" Property="BorderThickness" Value="0" />
+							<Setter TargetName="Hover" Property="Visibility" Value="Collapsed" />
+						</DataTrigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
 
-    <!-- Provider header, shared by the list rows and the header pinned at the top of the list. -->
-    <DataTemplate x:Key="Omp.ProviderHeaderTemplate">
-        <Border Height="30" Padding="14,0" Cursor="Hand" BorderThickness="0,1,0,1"
+	<!-- Provider header, shared by the list rows and the header pinned at the top of the list. -->
+	<DataTemplate x:Key="Omp.ProviderHeaderTemplate">
+		<Border Height="30" Padding="14,0" Cursor="Hand" BorderThickness="0,1,0,1"
                 Background="{DynamicResource {x:Static v:ThemeKeys.Card}}" BorderBrush="{DynamicResource {x:Static v:ThemeKeys.Divider}}">
-            <DockPanel VerticalAlignment="Center" LastChildFill="False">
-                <Border Width="8" Height="8" CornerRadius="2" VerticalAlignment="Center"
+			<DockPanel VerticalAlignment="Center" LastChildFill="False">
+				<Border Width="8" Height="8" CornerRadius="2" VerticalAlignment="Center"
                         v:ThemeTint.Provider="{Binding Provider}" v:ThemeTint.Accent="{DynamicResource {x:Static v:ThemeKeys.ThemeAccent}}" />
-                <TextBlock Text="{Binding ProviderCaps}" Margin="8,0,0,0" FontFamily="{StaticResource OmpPicker.Font}" FontSize="11.5" FontWeight="SemiBold"
+				<TextBlock Text="{Binding ProviderCaps}" Margin="8,0,0,0" FontFamily="{StaticResource OmpPicker.Font}" FontSize="11.5" FontWeight="SemiBold"
                            Foreground="{DynamicResource {x:Static v:ThemeKeys.Muted}}" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding CountText}" Margin="8,0,0,0" FontFamily="{StaticResource OmpPicker.Font}" FontSize="11.5"
+				<TextBlock Text="{Binding CountText}" Margin="8,0,0,0" FontFamily="{StaticResource OmpPicker.Font}" FontSize="11.5"
                            Foreground="{DynamicResource {x:Static v:ThemeKeys.Subtle}}" VerticalAlignment="Center" />
-                <TextBlock x:Name="Chevron" DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="{DynamicResource Omp.IconFont}" FontSize="12"
+				<TextBlock x:Name="Chevron" DockPanel.Dock="Right" Text="&#xE76C;" FontFamily="{DynamicResource Omp.IconFont}" FontSize="12"
                            Foreground="{DynamicResource {x:Static v:ThemeKeys.Subtle}}" VerticalAlignment="Center" />
-            </DockPanel>
-        </Border>
-        <DataTemplate.Triggers>
-            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
-                <Setter TargetName="Chevron" Property="Text" Value="&#xE70D;" />
-            </DataTrigger>
-        </DataTemplate.Triggers>
-    </DataTemplate>
+			</DockPanel>
+		</Border>
+		<DataTemplate.Triggers>
+			<DataTrigger Binding="{Binding IsExpanded}" Value="True">
+				<Setter TargetName="Chevron" Property="Text" Value="&#xE70D;" />
+			</DataTrigger>
+		</DataTemplate.Triggers>
+	</DataTemplate>
 
-    <DataTemplate x:Key="Omp.ModelEntryTemplate">
-        <Grid Margin="18,8,14,8" ToolTip="{Binding Id}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <DockPanel LastChildFill="False" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource OmpPicker.Font}" FontSize="14" FontWeight="SemiBold"
+	<DataTemplate x:Key="Omp.ModelEntryTemplate">
+		<Grid Margin="18,8,14,8" ToolTip="{Binding Id}">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="Auto" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="Auto" />
+			</Grid.RowDefinitions>
+			<DockPanel LastChildFill="False" VerticalAlignment="Center">
+				<TextBlock Text="{Binding Name}" FontFamily="{StaticResource OmpPicker.Font}" FontSize="14" FontWeight="SemiBold"
                            Foreground="{DynamicResource {x:Static v:ThemeKeys.Foreground}}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                <Border x:Name="Badge" Margin="8,0,0,0" Padding="6,1" CornerRadius="3" VerticalAlignment="Center"
+				<Border x:Name="Badge" Margin="8,0,0,0" Padding="6,1" CornerRadius="3" VerticalAlignment="Center"
                         Background="{DynamicResource {x:Static v:ThemeKeys.Card}}">
-                    <TextBlock Text="{Binding Context}" FontFamily="{StaticResource OmpPicker.Font}" FontSize="11" Foreground="{DynamicResource {x:Static v:ThemeKeys.Muted}}" />
-                </Border>
-            </DockPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Price}" FontFamily="{StaticResource OmpPicker.Font}" FontSize="12.5" Foreground="{DynamicResource {x:Static v:ThemeKeys.Muted}}"
+					<TextBlock Text="{Binding Context}" FontFamily="{StaticResource OmpPicker.Font}" FontSize="11" Foreground="{DynamicResource {x:Static v:ThemeKeys.Muted}}" />
+				</Border>
+			</DockPanel>
+			<StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
+				<TextBlock Text="{Binding Price}" FontFamily="{StaticResource OmpPicker.Font}" FontSize="12.5" Foreground="{DynamicResource {x:Static v:ThemeKeys.Muted}}"
                            Typography.NumeralAlignment="Tabular" VerticalAlignment="Center" />
-                <Grid Width="14" Height="14" Margin="10,0,0,0" VerticalAlignment="Center">
-                    <TextBlock x:Name="Check" Text="&#xE73E;" FontFamily="{DynamicResource Omp.IconFont}" FontSize="14" Visibility="Hidden"
+				<Grid Width="14" Height="14" Margin="10,0,0,0" VerticalAlignment="Center">
+					<TextBlock x:Name="Check" Text="&#xE73E;" FontFamily="{DynamicResource Omp.IconFont}" FontSize="14" Visibility="Hidden"
                                Foreground="{DynamicResource {x:Static v:ThemeKeys.ThemeAccent}}" />
-                </Grid>
-                <ToggleButton Margin="6,0,-6,0" Style="{StaticResource Omp.ModelStar}" IsChecked="{Binding IsFavorite, Mode=TwoWay}" />
-            </StackPanel>
-            <TextBlock x:Name="Id" Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Id}" Margin="0,2,0,0" FontFamily="{StaticResource OmpPicker.Mono}" FontSize="12"
+				</Grid>
+				<ToggleButton Margin="6,0,-6,0" Style="{StaticResource Omp.ModelStar}" IsChecked="{Binding IsFavorite, Mode=TwoWay}" />
+			</StackPanel>
+			<TextBlock x:Name="Id" Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding Id}" Margin="0,2,0,0" FontFamily="{StaticResource OmpPicker.Mono}" FontSize="12"
                        Foreground="{DynamicResource {x:Static v:ThemeKeys.Subtle}}" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
-        </Grid>
-        <DataTemplate.Triggers>
-            <DataTrigger Binding="{Binding HasContext}" Value="False">
-                <Setter TargetName="Badge" Property="Visibility" Value="Collapsed" />
-            </DataTrigger>
-            <DataTrigger Binding="{Binding IsActive}" Value="True">
-                <Setter TargetName="Check" Property="Visibility" Value="Visible" />
-            </DataTrigger>
-            <DataTrigger Binding="{Binding ShowId}" Value="True">
-                <Setter TargetName="Id" Property="Visibility" Value="Visible" />
-            </DataTrigger>
-        </DataTemplate.Triggers>
-    </DataTemplate>
+		</Grid>
+		<DataTemplate.Triggers>
+			<DataTrigger Binding="{Binding HasContext}" Value="False">
+				<Setter TargetName="Badge" Property="Visibility" Value="Collapsed" />
+			</DataTrigger>
+			<DataTrigger Binding="{Binding IsActive}" Value="True">
+				<Setter TargetName="Check" Property="Visibility" Value="Visible" />
+			</DataTrigger>
+			<DataTrigger Binding="{Binding ShowId}" Value="True">
+				<Setter TargetName="Id" Property="Visibility" Value="Visible" />
+			</DataTrigger>
+		</DataTemplate.Triggers>
+	</DataTemplate>
 
-    <DataTemplate x:Key="Omp.ModelRowTemplate">
-        <ContentControl x:Name="Content" Content="{Binding}" Focusable="False" ContentTemplate="{StaticResource Omp.ModelEntryTemplate}" />
-        <DataTemplate.Triggers>
-            <DataTrigger Binding="{Binding IsGroup}" Value="True">
-                <Setter TargetName="Content" Property="ContentTemplate" Value="{StaticResource Omp.ProviderHeaderTemplate}" />
-            </DataTrigger>
-        </DataTemplate.Triggers>
-    </DataTemplate>
+	<DataTemplate x:Key="Omp.ModelRowTemplate">
+		<ContentControl x:Name="Content" Content="{Binding}" Focusable="False" ContentTemplate="{StaticResource Omp.ModelEntryTemplate}" />
+		<DataTemplate.Triggers>
+			<DataTrigger Binding="{Binding IsGroup}" Value="True">
+				<Setter TargetName="Content" Property="ContentTemplate" Value="{StaticResource Omp.ProviderHeaderTemplate}" />
+			</DataTrigger>
+		</DataTemplate.Triggers>
+	</DataTemplate>
 
-    <Style x:Key="Omp.ModelList" TargetType="ListBox">
-        <Style.Resources>
-            <!-- Slim thumb without arrows, in the theme's scroll bar color. -->
-            <Style TargetType="ScrollBar">
-                <Setter Property="Width" Value="8" />
-                <Setter Property="MinWidth" Value="8" />
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ScrollBar">
-                            <Track x:Name="PART_Track" IsDirectionReversed="True">
-                                <Track.DecreaseRepeatButton>
-                                    <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False" />
-                                </Track.DecreaseRepeatButton>
-                                <Track.Thumb>
-                                    <Thumb>
-                                        <Thumb.Template>
-                                            <ControlTemplate TargetType="Thumb">
-                                                <Border CornerRadius="3" Margin="2" Background="{DynamicResource {x:Static v:ThemeKeys.ScrollThumb}}" />
-                                            </ControlTemplate>
-                                        </Thumb.Template>
-                                    </Thumb>
-                                </Track.Thumb>
-                                <Track.IncreaseRepeatButton>
-                                    <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False" />
-                                </Track.IncreaseRepeatButton>
-                            </Track>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-        </Style.Resources>
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="0" />
-        <Setter Property="ItemContainerStyle" Value="{StaticResource Omp.ModelListItem}" />
-        <Setter Property="ItemTemplate" Value="{StaticResource Omp.ModelRowTemplate}" />
-        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
-        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
-        <Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel" />
-        <Setter Property="KeyboardNavigation.TabNavigation" Value="Once" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-    </Style>
+	<Style x:Key="Omp.ModelList" TargetType="ListBox">
+		<Style.Resources>
+			<!-- Slim thumb without arrows, in the theme's scroll bar color. -->
+			<Style TargetType="ScrollBar">
+				<Setter Property="Width" Value="8" />
+				<Setter Property="MinWidth" Value="8" />
+				<Setter Property="Background" Value="Transparent" />
+				<Setter Property="Template">
+					<Setter.Value>
+						<ControlTemplate TargetType="ScrollBar">
+							<Track x:Name="PART_Track" IsDirectionReversed="True">
+								<Track.DecreaseRepeatButton>
+									<RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False" />
+								</Track.DecreaseRepeatButton>
+								<Track.Thumb>
+									<Thumb>
+										<Thumb.Template>
+											<ControlTemplate TargetType="Thumb">
+												<Border CornerRadius="3" Margin="2" Background="{DynamicResource {x:Static v:ThemeKeys.ScrollThumb}}" />
+											</ControlTemplate>
+										</Thumb.Template>
+									</Thumb>
+								</Track.Thumb>
+								<Track.IncreaseRepeatButton>
+									<RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False" />
+								</Track.IncreaseRepeatButton>
+							</Track>
+						</ControlTemplate>
+					</Setter.Value>
+				</Setter>
+			</Style>
+		</Style.Resources>
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="BorderThickness" Value="0" />
+		<Setter Property="Padding" Value="0" />
+		<Setter Property="ItemContainerStyle" Value="{StaticResource Omp.ModelListItem}" />
+		<Setter Property="ItemTemplate" Value="{StaticResource Omp.ModelRowTemplate}" />
+		<Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+		<Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+		<Setter Property="VirtualizingPanel.ScrollUnit" Value="Pixel" />
+		<Setter Property="KeyboardNavigation.TabNavigation" Value="Once" />
+		<Setter Property="FocusVisualStyle" Value="{x:Null}" />
+	</Style>
 </ResourceDictionary>

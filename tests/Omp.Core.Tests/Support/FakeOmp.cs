@@ -1,9 +1,8 @@
+using Omp.Core.Processes;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Omp.Core.Processes;
 
 [assembly: Xunit.v3.Parallelization(Mode = Xunit.Sdk.ParallelMode.None)]
-
 namespace Omp.Core.Tests.Support;
 
 /// <summary>
@@ -27,8 +26,19 @@ internal static class FakeOmp
             ["NODE_OPTIONS"] = NodeMemoryCap,
             ["FAKE_OMP_SESSION_DIR"] = sessionDir,
         };
-        if (logFile != null) env["FAKE_OMP_LOG"] = logFile;
-        if (extra != null) foreach (var pair in extra) env[pair.Key] = pair.Value;
+        if (logFile is not null)
+        {
+            env["FAKE_OMP_LOG"] = logFile;
+        }
+
+        if (extra is not null)
+        {
+            foreach (var pair in extra)
+            {
+                env[pair.Key] = pair.Value;
+            }
+        }
+
         return env;
     }
 
@@ -37,6 +47,7 @@ internal static class FakeOmp
     {
         var file = Path.Combine(dir, name + ".cmd");
         File.WriteAllText(file, $"@\"{Node}\" {NodeMemoryCap} \"{script}\" %*\r\n");
+
         return file;
     }
 
@@ -45,6 +56,7 @@ internal static class FakeOmp
         try
         {
             using var process = Process.GetProcessById(pid);
+
             return !process.HasExited;
         }
         catch (ArgumentException)
@@ -69,7 +81,10 @@ internal static class FakeOmp
             try
             {
                 using var process = Process.GetProcessById(pid);
-                if (process.ProcessName.Equals("node", StringComparison.OrdinalIgnoreCase)) KillTree(process);
+                if (process.ProcessName.Equals("node", StringComparison.OrdinalIgnoreCase))
+                {
+                    KillTree(process);
+                }
             }
             catch (ArgumentException)
             {
@@ -85,11 +100,15 @@ internal static class FakeOmp
 
     private static string FindNode()
     {
-        foreach (var dir in (System.Environment.GetEnvironmentVariable("PATH") ?? "").Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+        foreach (var dir in (System.Environment.GetEnvironmentVariable("PATH") ?? "").Split([';'], StringSplitOptions.RemoveEmptyEntries))
         {
             var candidate = Path.Combine(dir.Trim('"'), "node.exe");
-            if (File.Exists(candidate)) return candidate;
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
         }
+
         throw new FileNotFoundException("node.exe is not on PATH; the fake OMP tests need Node.js");
     }
 }
@@ -117,7 +136,10 @@ internal sealed class NodeMemoryGuard
     {
         _stop.Cancel();
         await _sampling;
-        lock (_violations) Assert.True(_violations.Count == 0, string.Join("\n", _violations));
+        lock (_violations)
+        {
+            Assert.True(_violations.Count == 0, string.Join("\n", _violations));
+        }
     }
 
     private async Task SampleAsync()
@@ -129,8 +151,16 @@ internal sealed class NodeMemoryGuard
                 try
                 {
                     using var process = Process.GetProcessById(pid);
-                    if (process.HasExited || process.PrivateMemorySize64 <= CapBytes) continue;
-                    lock (_violations) _violations.Add($"node {pid} used {process.PrivateMemorySize64 / (1024 * 1024)} MB; killed");
+                    if (process.HasExited || process.PrivateMemorySize64 <= CapBytes)
+                    {
+                        continue;
+                    }
+
+                    lock (_violations)
+                    {
+                        _violations.Add($"node {pid} used {process.PrivateMemorySize64 / (1024 * 1024)} MB; killed");
+                    }
+
                     FakeOmp.KillTree(process);
                 }
                 catch (ArgumentException)

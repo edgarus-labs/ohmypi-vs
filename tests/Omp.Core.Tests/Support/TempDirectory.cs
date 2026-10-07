@@ -7,6 +7,7 @@ public static class TempDirectory
     {
         var dir = Path.Combine(Path.GetTempPath(), prefix + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
+
         return dir;
     }
 
@@ -22,7 +23,11 @@ public static class TempDirectory
         {
             try
             {
-                if (Directory.Exists(dir)) Directory.Delete(dir, true);
+                if (Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, true);
+                }
+
                 return;
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
@@ -30,6 +35,7 @@ public static class TempDirectory
                 if (DateTime.UtcNow > deadline)
                 {
                     Console.Error.WriteLine($"Left {dir} behind: {error.Message}");
+
                     return;
                 }
             }
