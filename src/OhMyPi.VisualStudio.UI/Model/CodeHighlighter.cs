@@ -24,23 +24,24 @@ internal readonly struct CodeToken
 }
 
 /// <summary>
-/// Lexical coloring of code for reading: comments, strings, numbers, keywords, JSON and YAML keys and XML tags, by
-/// language family. It never parses, so cut or invalid code still colors; an unknown language gets strings and
-/// numbers only, and the tokens always cover the whole text in order.
+/// Lexical coloring of code for reading: comments, strings, numbers, keywords, JSON, YAML and INI keys and XML tags,
+/// by language family. It never parses, so cut or invalid code still colors; an unknown language gets strings and
+/// numbers only, plain text none, and the tokens always cover the whole text in order.
 /// </summary>
 internal static class CodeHighlighter
 {
     private sealed class Syntax
     {
-        public string? LineComment;
+        public string[] LineComments = Array.Empty<string>();
+        public bool CommentsAfterSpace;
         public (string Open, string Close)? BlockComment;
         public string Quotes = "\"'";
+        public string RawQuotes = "";
         public bool TripleQuotes;
         public bool BacktickEscapes;
         public bool JsonKeys;
-        public bool YamlKeys;
+        public string? KeySeparators;
         public bool Xml;
-        public bool IgnoreCase;
         public bool Commands;
         public HashSet<string> Openers = new HashSet<string>(StringComparer.Ordinal);
         public HashSet<string> Keywords = new HashSet<string>(StringComparer.Ordinal);
@@ -77,24 +78,32 @@ internal static class CodeHighlighter
         ["c"] = CLike("auto bool boolean break case catch char class const continue default define do double else enum extends extern false final finally float for fun goto if implements import include inline int interface long namespace new null nullptr override package private protected public return short signed sizeof static struct super switch template this throw throws true try typedef typename union unsigned using val var virtual void volatile while"),
         ["go"] = CLike("break case chan const continue default defer else fallthrough false for func go goto if import interface map nil package range return select struct switch true type var", "\"'`"),
         ["rust"] = CLike("as async await break const continue crate dyn else enum extern false fn for if impl in let loop match mod move mut pub ref return self Self static struct super trait true type unsafe use where while"),
-        ["python"] = new Syntax { LineComment = "#", TripleQuotes = true, Keywords = Words("False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield self") },
-        ["bash"] = new Syntax { LineComment = "#", Quotes = "\"'`", Commands = true, Openers = Words("if then else elif do while until time sudo exec nohup env xargs"), Keywords = Words("alias case cd declare do done echo elif else esac exit export fi for function if in local readonly return select set source then time unset until while") },
-        ["powershell"] = new Syntax { LineComment = "#", BlockComment = ("<#", "#>"), BacktickEscapes = true, IgnoreCase = true, Commands = true, Keywords = Words("begin break catch class continue do dynamicparam else elseif end enum filter finally for foreach from function if in param process return switch throw trap try until using while", ignoreCase: true) },
-        ["sql"] = new Syntax { LineComment = "--", BlockComment = ("/*", "*/"), IgnoreCase = true, Keywords = Words("add all alter and as asc begin between by case check column commit constraint count create cross default delete desc distinct drop else end exists foreign from full group having in index inner insert into is join key left like limit not null offset on or order outer primary references right rollback select set table then top transaction union unique update values view when where with", ignoreCase: true) },
+        ["python"] = new Syntax { LineComments = new[] { "#" }, TripleQuotes = true, Keywords = Words("False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield self") },
+        ["bash"] = new Syntax { LineComments = new[] { "#" }, CommentsAfterSpace = true, Quotes = "\"'`", RawQuotes = "'", Commands = true, Openers = Words("if then else elif do while until time sudo exec nohup env xargs"), Keywords = Words("alias case cd declare do done echo elif else esac exit export fi for function if in local readonly return select set source then time unset until while") },
+        ["powershell"] = new Syntax { LineComments = new[] { "#" }, CommentsAfterSpace = true, BlockComment = ("<#", "#>"), RawQuotes = "'", BacktickEscapes = true, Commands = true, Keywords = Words("begin break catch class continue do dynamicparam else elseif end enum filter finally for foreach from function if in param process return switch throw trap try until using while", ignoreCase: true) },
+        ["sql"] = new Syntax { LineComments = new[] { "--" }, BlockComment = ("/*", "*/"), Keywords = Words("add all alter and as asc begin between by case check column commit constraint count create cross default delete desc distinct drop else end exists foreign from full group having in index inner insert into is join key left like limit not null offset on or order outer primary references right rollback select set table then top transaction union unique update values view when where with", ignoreCase: true) },
         ["json"] = new Syntax { Quotes = "\"'", JsonKeys = true, Keywords = Words("true false null") },
-        ["yaml"] = new Syntax { LineComment = "#", YamlKeys = true, Keywords = Words("true false null yes no on off ~") },
-        ["ini"] = new Syntax { LineComment = "#", YamlKeys = true, Keywords = Words("true false") },
-        ["xml"] = new Syntax { BlockComment = ("<!--", "-->"), Xml = true },
+        ["yaml"] = new Syntax { LineComments = new[] { "#" }, CommentsAfterSpace = true, RawQuotes = "'", KeySeparators = ":", Keywords = Words("true false null yes no on off ~") },
+        ["ini"] = new Syntax { LineComments = new[] { "#", ";" }, CommentsAfterSpace = true, RawQuotes = "'", KeySeparators = "=:", Keywords = Words("true false") },
+        ["xml"] = new Syntax { BlockComment = ("<!--", "-->"), RawQuotes = "\"'", Xml = true },
     };
 
     private static Syntax CLike(string keywords, string quotes = "\"'") =>
-        new Syntax { LineComment = "//", BlockComment = ("/*", "*/"), Quotes = quotes, Keywords = Words(keywords) };
+        new Syntax { LineComments = new[] { "//" }, BlockComment = ("/*", "*/"), Quotes = quotes, Keywords = Words(keywords) };
 
     private static HashSet<string> Words(string words, bool ignoreCase = false) =>
         new HashSet<string>(words.Split(' '), ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
     /// <summary>The language family <paramref name="language"/> (a fence info string or file extension) belongs to, or null when it is unknown or plain text.</summary>
     public static string? Normalize(string? language)
+    {
+        var word = Label(language);
+
+        return word is null || Plain.Contains(word) ? null : Aliases.TryGetValue(word, out var family) ? family : null;
+    }
+
+    /// <summary>The first word of a fence info string or file extension, or null when there is none.</summary>
+    private static string? Label(string? language)
     {
         if (string.IsNullOrWhiteSpace(language))
         {
@@ -103,17 +112,15 @@ internal static class CodeHighlighter
 
         var word = language!.Trim();
         var space = word.IndexOfAny(new[] { ' ', '\t', '{', ':' });
-        if (space > 0)
-        {
-            word = word.Substring(0, space);
-        }
 
-        return Plain.Contains(word) ? null : Aliases.TryGetValue(word, out var family) ? family : null;
+        return space > 0 ? word.Substring(0, space) : word;
     }
 
     /// <summary>
-    /// The language of unlabeled code: JSON for an object or array, XML for a tag, else the family whose telltale
-    /// words (a using or namespace line, def/import, const/function, func/package) the text starts with; null otherwise.
+    /// The language of unlabeled code: JSON for text that opens with <c>{</c> or <c>[</c> followed by a quote, bracket,
+    /// brace, digit, minus or whitespace and ends with the matching closer; XML for text that opens with <c>&lt;</c>
+    /// followed by a letter, <c>?</c> or <c>!</c>; else the family with a telltale line (a using or namespace line or a
+    /// member declaration, def/import, const/function, func/package) anywhere in the text; null otherwise.
     /// </summary>
     public static string? GuessLanguage(string text)
     {
@@ -123,12 +130,12 @@ internal static class CodeHighlighter
             return null;
         }
 
-        if (trimmed[0] == '{' || trimmed[0] == '[')
+        if (LooksLikeJson(trimmed))
         {
             return "json";
         }
 
-        if (trimmed[0] == '<')
+        if (trimmed[0] == '<' && trimmed.Length > 1 && (char.IsLetter(trimmed[1]) || trimmed[1] == '?' || trimmed[1] == '!'))
         {
             return "xml";
         }
@@ -144,15 +151,38 @@ internal static class CodeHighlighter
         return null;
     }
 
+    /// <summary>Whether <paramref name="trimmed"/> (non-empty, no leading whitespace) opens like a JSON object or array and ends with its closer.</summary>
+    private static bool LooksLikeJson(string trimmed)
+    {
+        var close = trimmed[0] == '{' ? '}' : trimmed[0] == '[' ? ']' : '\0';
+        if (close == '\0' || trimmed.Length < 2)
+        {
+            return false;
+        }
+
+        var last = trimmed.Length - 1;
+        while (char.IsWhiteSpace(trimmed[last]))
+        {
+            last--;
+        }
+
+        var next = trimmed[1];
+
+        return trimmed[last] == close && (char.IsWhiteSpace(next) || char.IsDigit(next) || "\"{[]}-".IndexOf(next) >= 0);
+    }
+
     private static readonly (Regex Pattern, string Language)[] Telltales =
     {
-        (new Regex(@"^\s*(using\s+[\w.]+;|namespace\s+[\w.]+|(public|internal|private|protected)\s+(static\s+|sealed\s+|abstract\s+|async\s+|override\s+|virtual\s+|readonly\s+)*(class|interface|record|struct|enum|void|var|[A-Z]\w*(<[^>]*>)?(\[\])?)\s)", RegexOptions.Multiline | RegexOptions.Compiled), "csharp"),
-        (new Regex(@"^\s*(def\s+\w+\(|class\s+\w+(\(.*\))?:|import\s+[\w.]+\s*$|from\s+[\w.]+\s+import\s)", RegexOptions.Multiline | RegexOptions.Compiled), "python"),
-        (new Regex(@"^\s*(const\s+\w+\s*=|let\s+\w+\s*=|function\s+\w*\s*\(|export\s+(default\s+|const\s+|function\s+|class\s+)|import\s+.*\sfrom\s+['""])", RegexOptions.Multiline | RegexOptions.Compiled), "javascript"),
-        (new Regex(@"^\s*(package\s+\w+$|func\s+(\(\w+\s+\*?\w+\)\s+)?\w+\()", RegexOptions.Multiline | RegexOptions.Compiled), "go"),
+        (new Regex(@"^[ \t]*(using\s+[\w.]+;|namespace\s+[\w.]+|(public|internal|private|protected)\s+(static\s+|sealed\s+|abstract\s+|async\s+|override\s+|virtual\s+|readonly\s+)*(class|interface|record|struct|enum|void|var|[A-Z]\w*(<[^>]*>)?(\[\])?)\s)", RegexOptions.Multiline | RegexOptions.Compiled), "csharp"),
+        (new Regex(@"^[ \t]*(def\s+\w+\(|class\s+\w+(\(.*\))?:|import\s+[\w.]+\s*$|from\s+[\w.]+\s+import\s)", RegexOptions.Multiline | RegexOptions.Compiled), "python"),
+        (new Regex(@"^[ \t]*(const\s+\w+\s*=|let\s+\w+\s*=|function\s+\w*\s*\(|export\s+(default\s+|const\s+|function\s+|class\s+)|import\s+.*\sfrom\s+['""])", RegexOptions.Multiline | RegexOptions.Compiled), "javascript"),
+        (new Regex(@"^[ \t]*(package\s+\w+$|func\s+(\(\w+\s+\*?\w+\)\s+)?\w+\()", RegexOptions.Multiline | RegexOptions.Compiled), "go"),
     };
 
-    /// <summary>The tokens of <paramref name="code"/> in <paramref name="language"/> (any alias; see <see cref="Normalize"/>), covering it whole and in order.</summary>
+    /// <summary>
+    /// The tokens of <paramref name="code"/> in <paramref name="language"/> (any alias; see <see cref="Normalize"/>),
+    /// covering it whole and in order; plain text labels such as <c>txt</c> or <c>log</c> give one text token.
+    /// </summary>
     public static IReadOnlyList<CodeToken> Tokens(string code, string? language)
     {
         var tokens = new List<CodeToken>();
@@ -161,7 +191,15 @@ internal static class CodeHighlighter
             return tokens;
         }
 
-        var family = Normalize(language);
+        var word = Label(language);
+        if (word is not null && Plain.Contains(word))
+        {
+            tokens.Add(new CodeToken(0, code.Length, CodeTokenKind.Text));
+
+            return tokens;
+        }
+
+        var family = word is not null && Aliases.TryGetValue(word, out var alias) ? alias : null;
         var syntax = family is not null && Syntaxes.TryGetValue(family, out var known) ? known : new Syntax();
         new Lexer(code, syntax, tokens).Run();
 
@@ -239,14 +277,14 @@ internal static class CodeHighlighter
                 return;
             }
 
-            if (_x.LineComment is not null && At(_x.LineComment))
+            if (AtLineComment())
             {
                 Emit(LineEnd(), CodeTokenKind.Comment);
 
                 return;
             }
 
-            if (_x.Quotes.IndexOf(c) >= 0)
+            if (_x.Quotes.IndexOf(c) >= 0 && (_x.KeySeparators is null || ScalarStartsAt(_i)))
             {
                 var end = StringEnd();
                 Emit(end, _x.JsonKeys && NextNonSpace(end) == ':' ? CodeTokenKind.Key : CodeTokenKind.String);
@@ -283,7 +321,7 @@ internal static class CodeHighlighter
                 }
 
                 var word = _s.Substring(_i, end - _i);
-                if (_x.YamlKeys && AtLineStart() && NextNonSpace(end) == ':')
+                if (_x.KeySeparators is not null && AtLineStart() && _x.KeySeparators.IndexOf(NextNonSpace(end)) >= 0)
                 {
                     Emit(end, CodeTokenKind.Key);
                 }
@@ -370,16 +408,22 @@ internal static class CodeHighlighter
             _i++;
         }
 
-        /// <summary>Index just past the string starting at the current quote: its matching quote (escapes skipped), the line end for a single-line quote, or the text end.</summary>
+        /// <summary>
+        /// Index just past the string starting at the current quote: its matching quote (escapes skipped unless the
+        /// quote is raw, where a doubled quote stands for one; a shell <c>$'…'</c> string keeps its escapes), the line
+        /// end for a single-line quote, or the text end.
+        /// </summary>
         private int StringEnd()
         {
             var quote = _s[_i];
             var triple = _x.TripleQuotes && At(new string(quote, 3));
+            var raw = _x.RawQuotes.IndexOf(quote) >= 0 && !(_x.Commands && Prev() == '$');
+            var escape = raw ? '\0' : _x.BacktickEscapes ? '`' : '\\';
             var j = _i + (triple ? 3 : 1);
             while (j < _s.Length)
             {
                 var c = _s[j];
-                if (c == (_x.BacktickEscapes ? '`' : '\\') && j + 1 < _s.Length)
+                if (c == escape && escape != '\0' && j + 1 < _s.Length)
                 {
                     j += 2;
                     continue;
@@ -394,6 +438,12 @@ internal static class CodeHighlighter
                 }
                 else if (c == quote)
                 {
+                    if (raw && j + 1 < _s.Length && _s[j + 1] == quote)
+                    {
+                        j += 2;
+                        continue;
+                    }
+
                     return j + 1;
                 }
                 else if (c == '\n')
@@ -448,6 +498,62 @@ internal static class CodeHighlighter
             }
 
             return true;
+        }
+
+        /// <summary>Whether a line comment starts here: one of the syntax's markers, at line start or after whitespace when the syntax requires it.</summary>
+        private bool AtLineComment()
+        {
+            if (_x.CommentsAfterSpace && !char.IsWhiteSpace(Prev()))
+            {
+                return false;
+            }
+
+            foreach (var marker in _x.LineComments)
+            {
+                if (At(marker))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Whether a quote at <paramref name="at"/> opens a YAML or INI scalar: at line start after indent, after
+        /// <c>[</c>, <c>{</c> or <c>,</c>, after <c>=</c> when it separates keys, or after <c>:</c> or <c>-</c>
+        /// followed by whitespace; a tag (<c>!Sub</c>) or anchor (<c>&amp;n</c>) in front of the scalar is skipped.
+        /// </summary>
+        private bool ScalarStartsAt(int at)
+        {
+            var k = at - 1;
+            while (k >= 0 && (_s[k] == ' ' || _s[k] == '\t'))
+            {
+                k--;
+            }
+
+            if (k < 0 || _s[k] == '\n')
+            {
+                return true;
+            }
+
+            var p = _s[k];
+            var spaced = k < at - 1;
+            if (spaced)
+            {
+                var token = k;
+                while (token > 0 && !char.IsWhiteSpace(_s[token - 1]))
+                {
+                    token--;
+                }
+
+                if (_s[token] == '!' || (token < k && _s[token] == '&'))
+                {
+                    return ScalarStartsAt(token);
+                }
+            }
+
+            return p == '[' || p == '{' || p == ',' || (p == '=' && _x.KeySeparators!.IndexOf('=') >= 0) || (spaced && (p == ':' || p == '-'));
         }
 
         private int NextNonSpaceIndex(int from)

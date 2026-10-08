@@ -14,9 +14,9 @@ namespace OhMyPi.VisualStudio.UI.Views;
 
 /// <summary>
 /// A tool call: a header row (status icon, name, primary argument, detail right-aligned) and below it, indented to
-/// the name, a short dim preview of the result. The parameters the header does not show and the whole result open
-/// together on "show more" or "details", remembered per call; the generic parts stand in when the specialized
-/// renderer throws.
+/// the name, a short dim preview of the result. Its texts open together on "show more", remembered per call; a
+/// finished read shows only its header until opened. The generic parts stand in when the specialized renderer
+/// throws.
 /// </summary>
 internal static class ToolView
 {
@@ -43,7 +43,7 @@ internal static class ToolView
 
     /// <summary>
     /// A tool row; while the tool runs, newer output goes into the open output box instead of a new row. Its texts
-    /// and detail sections open together under one remembered key.
+    /// and the sections shown only while open follow one remembered key.
     /// </summary>
     internal sealed class ToolRow : Border, ILiveView
     {
@@ -53,7 +53,6 @@ internal static class ToolView
         private readonly List<UIElement> _closedOnly = new List<UIElement>();
         private ToolItem _item;
         private CodeBlock? _liveOutput;
-        private Button? _toggle;
 
         public ToolRow(ToolItem item, RenderContext ctx)
         {
@@ -76,6 +75,9 @@ internal static class ToolView
         /// <summary>Registers the output box of a running tool's body once the body is built.</summary>
         public void Track(CodeBlock output) => _liveOutput = output;
 
+        /// <summary>Whether the row hides sections while closed; it then closes by its own "collapse", so its texts offer none.</summary>
+        public bool ClosesToHeader => _details.Count > 0;
+
         /// <summary>Registers a text that is cut while the row is collapsed.</summary>
         public void Register(CodeBlock text) => _texts.Add(text);
 
@@ -93,22 +95,7 @@ internal static class ToolView
             _closedOnly.Add(element);
         }
 
-        /// <summary>The "details" link that opens the row when none of its texts is cut; hidden once the row is open.</summary>
-        public UIElement? Toggle()
-        {
-            if (_details.Count == 0 || Expanded)
-            {
-                return null;
-            }
-
-            _toggle = Ui.Link("details", Expand);
-            _toggle.HorizontalAlignment = HorizontalAlignment.Left;
-            _toggle.Visibility = _texts.Any(text => text.Cut) ? Visibility.Collapsed : Visibility.Visible;
-
-            return _toggle;
-        }
-
-        /// <summary>Opens the whole row: every cut text shows up to its expanded limit and the detail sections appear.</summary>
+        /// <summary>Opens the whole row: every cut text shows up to its expanded limit and the sections shown only while open appear.</summary>
         public void Expand()
         {
             _ctx.Open.SetOpen(Key, true);
@@ -126,14 +113,9 @@ internal static class ToolView
             {
                 element.Visibility = Visibility.Collapsed;
             }
-
-            if (_toggle is not null)
-            {
-                _toggle.Visibility = Visibility.Collapsed;
-            }
         }
 
-        /// <summary>Closes the row again: texts go back to their preview and the detail sections hide.</summary>
+        /// <summary>Closes the row again: texts go back to their preview and the sections shown only while open hide.</summary>
         public void Collapse()
         {
             _ctx.Open.SetOpen(Key, false);
@@ -150,11 +132,6 @@ internal static class ToolView
             foreach (var element in _closedOnly)
             {
                 element.Visibility = Visibility.Visible;
-            }
-
-            if (_toggle is not null)
-            {
-                _toggle.Visibility = _texts.Any(text => text.Cut) ? Visibility.Collapsed : Visibility.Visible;
             }
         }
 
@@ -193,25 +170,42 @@ internal static class ToolView
         Grid.SetColumn(header, 1);
         layout.Children.Add(icon);
         layout.Children.Add(header);
+        var card = new Border { Margin = new Thickness(0, PartGap, 0, 0) }.Styled(head.State == ToolState.Failed ? "Omp.OutputBlockFailed" : "Omp.OutputBlock");
+        var headerOnly = item.Name == "read" && head.State == ToolState.Done;
+        if (headerOnly)
+        {
+            row.RegisterDetail(card);
+        }
+
         var body = Body(item, ctx, row);
         if (body is not null)
         {
-            var card = new Border { Child = body, Margin = new Thickness(0, PartGap, 0, 0) }.Styled(head.State == ToolState.Failed ? "Omp.OutputBlockFailed" : "Omp.OutputBlock");
+            card.Child = body;
+            if (!headerOnly)
+            {
+                card.SetBinding(UIElement.VisibilityProperty, new Binding(nameof(UIElement.Visibility)) { Source = body });
+            }
+
             Grid.SetRow(card, 1);
             Grid.SetColumn(card, 1);
             layout.Children.Add(card);
-            if (item.Name == "read" && head.State == ToolState.Done)
+            if (headerOnly)
             {
-                row.RegisterDetail(card);
                 var lines = ToolFormat.ProseText(item.Result?.Text ?? "").TrimEnd('\r', '\n').Split('\n').Length;
                 var open = Ui.Link($"show more ({lines} lines)", row.Expand);
-                open.HorizontalAlignment = HorizontalAlignment.Left;
-                open.Margin = new Thickness(0, 2, 0, 0);
+                var close = Ui.Link("collapse", row.Collapse);
                 layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                Grid.SetRow(open, 2);
-                Grid.SetColumn(open, 1);
-                layout.Children.Add(open);
+                foreach (var link in new[] { open, close })
+                {
+                    link.HorizontalAlignment = HorizontalAlignment.Left;
+                    link.Margin = new Thickness(0, 2, 0, 0);
+                    Grid.SetRow(link, 2);
+                    Grid.SetColumn(link, 1);
+                    layout.Children.Add(link);
+                }
+
                 row.RegisterClosedOnly(open);
+                row.RegisterDetail(close);
             }
         }
 
@@ -248,7 +242,11 @@ internal static class ToolView
         return icon;
     }
 
-    /// <summary>The call's only file when the header's primary argument is exactly that file's link text: the header then is the link, so the path is not shown twice.</summary>
+    /// <summary>
+    /// The call's only file when the header's primary argument is that file's link text, alone or followed by a
+    /// selector (<c>:12-20</c>, <c>:raw</c>): the header then is the link, so the path is not shown twice. A
+    /// selector keeps the link labeled with the whole argument; a bare path is labeled with the line it opens.
+    /// </summary>
     private static ToolFile? HeaderFile(ToolItem item, RenderContext ctx, ToolHeadline head)
     {
         if (ToolFormat.PickRenderer(item.Name) != RendererKind.File)
@@ -291,7 +289,8 @@ internal static class ToolView
         FrameworkElement primary;
         if (inHeader is not null)
         {
-            var link = (Button)FileLink(ctx, inHeader.Path, inHeader.Line);
+            var bare = head.Primary == ToolFormat.FileLinkLabel(inHeader.Path, null, ctx.Cwd);
+            var link = (Button)FileLink(ctx, inHeader.Path, inHeader.Line, bare ? null : head.Primary);
             link.HorizontalAlignment = HorizontalAlignment.Left;
             primary = link;
         }
@@ -326,8 +325,9 @@ internal static class ToolView
         state == ToolState.Running ? "running" : state == ToolState.Failed ? "failed" : state == ToolState.Background ? "running in the background" : "done";
 
     /// <summary>
-    /// The parts under the header, one per row: the first error line, the parts the specialized view gives (detail
-    /// sections hidden until the row is open) and the "details" link; null when the tool has nothing to show.
+    /// The parts under the header, one per row: the first error line and the parts the specialized view gives,
+    /// each rule between them hidden with the part under it, and the whole body hidden with its only part; null when
+    /// the tool has nothing to show.
     /// </summary>
     private static StackPanel? Body(ToolItem item, RenderContext ctx, ToolRow row)
     {
@@ -344,7 +344,7 @@ internal static class ToolView
         }
         var firstErrorLine = ToolFormat.Headline(item, ctx.Cwd).Error;
         var present = new UIElement?[] { firstErrorLine is null ? null : Ui.Text(firstErrorLine, ThemeKeys.Foreground, wrap: true, small: true) }
-            .Concat(parts).Concat(new[] { row.Toggle() }).Where(p => p != null).Cast<UIElement>().ToList();
+            .Concat(parts).Where(p => p != null).Cast<UIElement>().ToList();
         if (present.Count == 0)
         {
             return null;
@@ -357,11 +357,17 @@ internal static class ToolView
             {
                 var rule = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Margin = new Thickness(-10, PartGap, -10, PartGap) }
                     .Theme(Border.BorderBrushProperty, ThemeKeys.CodeSurfaceBorder);
+                rule.SetBinding(UIElement.VisibilityProperty, new Binding(nameof(UIElement.Visibility)) { Source = part });
                 column.Children.Add(rule);
             }
 
             column.Children.Add(part);
         }
+        if (present.Count == 1)
+        {
+            column.SetBinding(UIElement.VisibilityProperty, new Binding(nameof(UIElement.Visibility)) { Source = present[0] });
+        }
+
         System.Windows.Automation.AutomationProperties.SetAutomationId(column, "tool-body");
 
         return column;
@@ -452,7 +458,8 @@ internal static class ToolView
 
     /// <summary>
     /// A part of the body with a short uppercase label (IN, OUT) in a narrow column at its left, so what the agent
-    /// sent and what it got back read apart at a glance. Both are always on screen; only their length is cut.
+    /// sent and what it got back read apart at a glance. The label hides with its content, such as the output box of
+    /// a running tool that has no output yet.
     /// </summary>
     private static UIElement Labeled(string label, UIElement content)
     {
@@ -465,6 +472,7 @@ internal static class ToolView
         Grid.SetColumn(content, 1);
         grid.Children.Add(caption);
         grid.Children.Add(content);
+        grid.SetBinding(UIElement.VisibilityProperty, new Binding(nameof(UIElement.Visibility)) { Source = content });
 
         return grid;
     }
@@ -508,12 +516,10 @@ internal static class ToolView
         return row;
     }
 
-    /// <summary>A link that opens <paramref name="path"/> (as OMP wrote it; the host resolves it) at <paramref name="line"/>.</summary>
-    private static UIElement FileLink(RenderContext ctx, string path, int? line)
+    /// <summary>A link that opens <paramref name="path"/> (as OMP wrote it; the host resolves it) at <paramref name="line"/>, labeled <paramref name="label"/> or else the path and line.</summary>
+    private static UIElement FileLink(RenderContext ctx, string path, int? line, string? label = null)
     {
-        var label = ToolFormat.FileLinkLabel(path, line, ctx.Cwd);
-
-        return Ui.Link(label, () => ctx.OpenFile(path, line), $"Open {(line.HasValue ? $"{path}:{line}" : path)}", mono: true);
+        return Ui.Link(label ?? ToolFormat.FileLinkLabel(path, line, ctx.Cwd), () => ctx.OpenFile(path, line), $"Open {(line.HasValue ? $"{path}:{line}" : path)}", mono: true);
     }
 
     /// <summary>The call's arguments as <c>name: value</c> lines (copying yields the indented JSON); null for a call without any.</summary>
@@ -527,7 +533,7 @@ internal static class ToolView
         return Labeled("IN", Quiet(row, ToolFormat.FlatArgs(item.Args), "Input", original: ToolFormat.IndentedJson(item.Args), language: "yaml"));
     }
 
-    /// <summary>Input text the header does not show: muted, never on the code background, and only while the row is open.</summary>
+    /// <summary>Input text the header does not show: muted, never on the code background, cut like the result.</summary>
     private static UIElement Quiet(ToolRow row, string text, string name, string? original = null, string? language = null, UIElement? trailer = null)
     {
         var input = new CodeBlock(row, text, ThemeKeys.Muted, original: original, language: language, trailer: trailer);
@@ -553,7 +559,7 @@ internal static class ToolView
         var failed = item.Result?.IsError == true;
         if (!running && !failed && ToolFormat.LooksLikeDiff(text!))
         {
-            return Labeled("OUT", DiffView(ctx, row.Key, text!));
+            return Labeled("OUT", DiffView(ctx, $"{item.Id}:out:more", text!));
         }
 
         if (!running && ToolFormat.RendersMarkdown(item))

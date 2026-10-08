@@ -362,19 +362,11 @@ internal static class ToolFormat
         return (string.Join("\n", kept), language);
     }
 
-    /// <summary>Whether a one-line result is code (an object, array or tag) that belongs in a code box rather than in a sentence.</summary>
-    public static bool LooksLikeCode(string text)
-    {
-        var trimmed = text.TrimStart();
-
-        return trimmed.Length > 0 && trimmed.IndexOf('\n') < 0 && "{[<".IndexOf(trimmed[0]) >= 0;
-    }
-
     private static readonly Regex MarkdownHeading = new Regex(@"^#{1,6} \S", RegexOptions.Compiled);
 
     /// <summary>
     /// What a search tool looked for, to mark in its result: its pattern as a regex, or as literal text when it is
-    /// not a valid one; null for other tools or a call without a pattern.
+    /// not a valid one, ignoring case when the call sets <c>case</c> to false; null for other tools or a call without a pattern.
     /// </summary>
     public static Regex? SearchPattern(ToolItem item)
     {
@@ -383,23 +375,26 @@ internal static class ToolFormat
             return null;
         }
 
-        var pattern = Str((item.Args as JObject)?["pattern"]);
+        var args = item.Args as JObject;
+        var pattern = Str(args?["pattern"]);
         if (string.IsNullOrEmpty(pattern))
         {
             return null;
         }
 
+        var caseToken = args!["case"];
+        var ignoreCase = caseToken is not null && caseToken.Type == JTokenType.Boolean && !caseToken.Value<bool>() ? RegexOptions.IgnoreCase : RegexOptions.None;
         try
         {
-            return new Regex(pattern!, RegexOptions.Multiline, TimeSpan.FromMilliseconds(200));
+            return new Regex(pattern!, RegexOptions.Multiline | ignoreCase, TimeSpan.FromMilliseconds(200));
         }
         catch (ArgumentException)
         {
-            return new Regex(Regex.Escape(pattern!), RegexOptions.None, TimeSpan.FromMilliseconds(200));
+            return new Regex(Regex.Escape(pattern!), ignoreCase, TimeSpan.FromMilliseconds(200));
         }
     }
 
-    /// <summary>The extension of the file a file tool names (lower case, without the dot), which is the language of its result; null for other tools or a file without one.</summary>
+    /// <summary>The extension of the file a file tool names, without its read selector (lower case, without the dot), which is the language of its result; null for other tools or a file without one.</summary>
     public static string? FileLanguage(ToolItem item)
     {
         if (PickRenderer(item.Name) != RendererKind.File || !(item.Args is JObject args))
@@ -407,12 +402,13 @@ internal static class ToolFormat
             return null;
         }
 
-        var path = Str(args["path"]) ?? Str(args["file"]) ?? Str(args["file_path"]);
-        if (path is null)
+        var raw = Str(args["path"]) ?? Str(args["file"]) ?? Str(args["file_path"]);
+        if (raw is null)
         {
             return null;
         }
 
+        var path = SplitSelector(raw).Path;
         var name = path.Substring(path.LastIndexOfAny(['/', '\\']) + 1);
         var dot = name.LastIndexOf('.');
 
@@ -464,13 +460,18 @@ internal static class ToolFormat
         public string Code { get; }
     }
 
-    /// <summary>Splits a read result into its line-number gutter and clean code; null unless every line after the header carries an <c>N:</c> or <c>N-M:</c> prefix.</summary>
+    /// <summary>
+    /// Splits a read result into its line-number gutter and clean code. Lines carry an <c>N:</c>, <c>*N:</c> or
+    /// <c>N-M:</c> prefix; null unless at least one does, each numbered line directly below another starts after
+    /// the line or range above it ends (gaps allowed), and, without a <c>[path#id]</c> header, numbered lines make
+    /// up at least 60% of the non-blank lines that are not OMP's <c>…</c> elisions or <c>[…]</c> notices.
+    /// </summary>
     public static Listing? SplitLineNumbers(string text)
     {
         var lines = text.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
         var start = 0;
         string? header = null;
-        if (lines.Length > 0 && lines[0].StartsWith("[", StringComparison.Ordinal) && lines[0].EndsWith("]", StringComparison.Ordinal))
+        if (lines.Length > 0 && IsBracketed(lines[0]) && lines[0].IndexOf('#') > 1)
         {
             header = lines[0];
             start = 1;
@@ -485,16 +486,34 @@ internal static class ToolFormat
         var code = new string[lines.Length - start];
         var numbered = 0;
         var filled = 0;
+        long? previousEnd = null;
         for (var i = start; i < lines.Length; i++)
         {
             var match = NumberedLine.Match(lines[i]);
-            numbered += match.Success ? 1 : 0;
-            filled += lines[i].Trim().Length > 0 ? 1 : 0;
+            var trimmed = lines[i].Trim();
+            filled += match.Success || (trimmed.Length > 0 && trimmed != "…" && !IsBracketed(trimmed)) ? 1 : 0;
+            if (match.Success)
+            {
+                if (!long.TryParse(match.Groups["from"].Value, out var from)
+                    || !long.TryParse(match.Groups["to"].Success ? match.Groups["to"].Value : match.Groups["from"].Value, out var to)
+                    || from <= previousEnd)
+                {
+                    return null;
+                }
+
+                numbered++;
+                previousEnd = to;
+            }
+            else
+            {
+                previousEnd = null;
+            }
+
             numbers.Add(match.Success ? match.Groups["n"].Value : "");
             code[i - start] = match.Success ? match.Groups["rest"].Value : lines[i];
         }
 
-        if (numbered == 0 || (numbers[0].Length == 0 && (numbered < 2 || numbered * 5 < filled * 3)))
+        if (numbered == 0 || (header is null && numbered * 5 < filled * 3))
         {
             return null;
         }
@@ -502,7 +521,9 @@ internal static class ToolFormat
         return new Listing(header, numbers, string.Join("\n", code));
     }
 
-    private static readonly Regex NumberedLine = new Regex(@"^(?<n>\*?\d+(?:-\d+)?):(?<rest>.*)$", RegexOptions.Compiled);
+    private static bool IsBracketed(string line) => line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal);
+
+    private static readonly Regex NumberedLine = new Regex(@"^(?<n>\*?(?<from>\d+)(?:-(?<to>\d+))?):(?<rest>.*)$", RegexOptions.Compiled);
 
     /// <summary>Whether tool output is Markdown prose: an ATX heading line and at least one other non-blank line, which code and plain output lack.</summary>
     public static bool LooksLikeMarkdown(string text)

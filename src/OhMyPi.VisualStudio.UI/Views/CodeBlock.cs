@@ -1,5 +1,6 @@
 using OhMyPi.VisualStudio.UI.Model;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -12,12 +13,14 @@ using System.Windows.Media;
 namespace OhMyPi.VisualStudio.UI.Views;
 
 /// <summary>
-/// The one view of a tool's text, code or prose in a row. Text is cut to its first lines and prose to a
-/// preview height, with "show more" under it that opens the whole row; open, it sits in a viewport of at most
-/// <see cref="ExpandedHeight"/> that scrolls inside, with "show all" to lift that, "collapse" to close the row and
-/// "Copy all" for text past <see cref="ToolView.ExpandedLines"/> / <see cref="ToolView.ExpandedChars"/>. Code gets
-/// the gutter, token colors and search marks of <see cref="CodeSegments"/>. A trailer sits between the content and
-/// the links. A wheel turn at the edge of the inner viewport scrolls the chat.
+/// The one view of a tool's text, code or prose in a row. Text is cut to its first lines and prose to a preview
+/// height, with "show more" under it that opens the whole row; open, it sits in a viewport of at most
+/// <see cref="ExpandedHeight"/> that scrolls inside, with "collapse" to close the row (unless the row closes to its
+/// header, which then offers its own) and "Copy all" when text past <see cref="ToolView.ExpandedLines"/> /
+/// <see cref="ToolView.ExpandedChars"/> is withheld. A numbered listing is split into gutter and code once, so the
+/// preview and the open text number their lines alike; code gets the gutter, token colors and search marks of
+/// <see cref="CodeSegments"/>. File paths in plain text and code open on click. A trailer sits between the content
+/// and the links. A wheel turn at the edge of the inner viewport scrolls the chat.
 /// </summary>
 internal sealed class CodeBlock
 {
@@ -42,18 +45,24 @@ internal sealed class CodeBlock
     private readonly Button _copyAll;
     private string _text = "";
     private string _original = "";
+    private bool _hasOriginal;
+    private ToolFormat.Listing? _listing;
+    private string _body = "";
+    private string[] _lines = { "" };
     private string _shown = "";
+    private string[] _shownNumbers = Array.Empty<string>();
     private string? _longest;
 
     /// <param name="brushKey">Text color; null keeps the body color.</param>
-    /// <param name="original">What copying yields when it differs from <paramref name="text"/> (text shown reformatted); null means the text itself.</param>
-    /// <param name="language">The language whose tokens are colored; null shows plain text with clickable file paths unless the text is a numbered listing.</param>
+    /// <param name="original">What copying yields when it differs from <paramref name="text"/> (text shown reformatted); null means what is shown.</param>
+    /// <param name="language">The language whose tokens are colored; with neither a language nor <paramref name="mark"/>, text that is not a numbered listing shows as plain wrapping text.</param>
     /// <param name="mark">Search matches to mark in the code; null marks nothing.</param>
     /// <param name="trailer">Content shown under the text, before its links.</param>
     public CodeBlock(ToolView.ToolRow row, string text, object? brushKey, string? original = null, string? language = null, Regex? mark = null, UIElement? trailer = null)
         : this(row, language, mark, trailer)
     {
-        if (language is null && ToolFormat.SplitLineNumbers(text) is null)
+        var listing = ToolFormat.SplitLineNumbers(text);
+        if (language is null && mark is null && listing is null)
         {
             _pre = Ui.Pre("", brushKey);
             _pre.TextWrapping = TextWrapping.Wrap;
@@ -65,6 +74,7 @@ internal sealed class CodeBlock
         else
         {
             _code = Ui.Code("", language, brushKey);
+            FileClicks.Attach(_code, row.Context);
             DataObject.AddCopyingHandler(_code, CopyOriginal);
             _gutter = new TextBlock { TextAlignment = TextAlignment.Right, Margin = new Thickness(0, 0, 8, 0), IsHitTestVisible = false, VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
             _gutter.SetResourceReference(TextElement.FontFamilyProperty, "Omp.MonoFont");
@@ -82,7 +92,7 @@ internal sealed class CodeBlock
             _frame.Child = grid;
         }
 
-        SetText(text, original);
+        Apply(text, original, listing);
     }
 
     /// <summary>Prose rendered from <paramref name="source"/> (its lines count for the labels), cut to a preview height.</summary>
@@ -139,26 +149,35 @@ internal sealed class CodeBlock
     /// <summary>Re-applies the row's expand state to what is shown.</summary>
     public void Refresh() => Show();
 
-    /// <summary>Replaces the text; growth of what is on screen is appended, so a selection in it survives.</summary>
-    public void SetText(string text, string? original = null)
+    /// <summary>Replaces the text; growth of plain text on screen is appended, so a selection in it survives.</summary>
+    public void SetText(string text, string? original = null) => Apply(text, original, _code is not null ? ToolFormat.SplitLineNumbers(text) : null);
+
+    /// <param name="listing">The numbered listing <paramref name="text"/> is, split once for preview and open text alike; null for other text.</param>
+    private void Apply(string text, string? original, ToolFormat.Listing? listing)
     {
         _text = text.TrimEnd('\r', '\n');
         _original = original ?? text;
+        _hasOriginal = original is not null;
+        _listing = listing;
+        _body = listing?.Code ?? _text;
+        _lines = _body.Split('\n');
+
         Show();
     }
 
     /// <summary>
     /// Fills a box made by <see cref="Ui.Code"/>: tokens take their colors, comments turn italic and search matches
-    /// sit on the raised code surface. A numbered listing's numbers go into <paramref name="gutter"/>, a column
-    /// beside the box that selection never touches, and its lines stop wrapping so each keeps its number; without
-    /// a gutter the numbers sit dimmed in front of each line.
+    /// stand out on the raised code surface (in high contrast, in the system highlight colors). The
+    /// <paramref name="numbers"/> of a numbered listing go into <paramref name="gutter"/>, a column beside the box
+    /// that selection never touches, and its lines stop wrapping so each keeps its number.
     /// </summary>
+    /// <param name="numbers">The gutter number of each line of <paramref name="code"/>; null for code without line numbers.</param>
     /// <returns>The longest line of a numbered listing, which sets the box's width; null when the text wraps instead.</returns>
-    public static string? Fill(RichTextBox box, string text, string? language, Regex? mark = null, TextBlock? gutter = null)
+    public static string? Fill(RichTextBox box, string code, IReadOnlyList<string>? numbers, string? language, Regex? mark = null, TextBlock? gutter = null)
     {
         var inlines = ((Paragraph)box.Document.Blocks.FirstBlock).Inlines;
         inlines.Clear();
-        var lines = CodeSegments.Build(text, language, mark);
+        var lines = CodeSegments.Build(code, numbers, language, mark);
         var numbered = lines.Any(l => l.Number.Length > 0);
         string? longest = null;
         if (gutter is not null)
@@ -183,13 +202,6 @@ internal sealed class CodeBlock
                 inlines.Add(new LineBreak());
             }
 
-            if (numbered && gutter is null)
-            {
-                var cell = new Run(lines[i].Number + "  ");
-                cell.SetResourceReference(TextElement.ForegroundProperty, ThemeKeys.Subtle);
-                inlines.Add(cell);
-            }
-
             foreach (var segment in lines[i].Segments)
             {
                 if (segment.Text.Length == 0)
@@ -211,7 +223,16 @@ internal sealed class CodeBlock
 
                 if (segment.Marked)
                 {
-                    run.SetResourceReference(TextElement.BackgroundProperty, ThemeKeys.CodeSurfaceBorder);
+                    if (SystemParameters.HighContrast)
+                    {
+                        run.SetResourceReference(TextElement.BackgroundProperty, SystemColors.HighlightBrushKey);
+                        run.SetResourceReference(TextElement.ForegroundProperty, SystemColors.HighlightTextBrushKey);
+                    }
+                    else
+                    {
+                        run.SetResourceReference(TextElement.BackgroundProperty, ThemeKeys.CodeSurfaceBorder);
+                    }
+
                     run.FontWeight = FontWeights.SemiBold;
                 }
 
@@ -242,10 +263,10 @@ internal sealed class CodeBlock
         _code.Document.PageWidth = Math.Ceiling(measured.WidthIncludingTrailingWhitespace * 1.02) + 8;
     }
 
-    /// <summary>Copying everything that is shown yields the original text rather than its reformatted display.</summary>
+    /// <summary>Copying everything that is shown yields the original text given for it rather than its reformatted display.</summary>
     private void CopyOriginal(object sender, DataObjectCopyingEventArgs e)
     {
-        if (Cut || _original == _text || !WholeSelected())
+        if (Cut || !_hasOriginal || !WholeSelected())
         {
             return;
         }
@@ -288,51 +309,60 @@ internal sealed class CodeBlock
 
     private void Show()
     {
-        var lines = _text.Split('\n');
         var expanded = _row.Expanded;
         if (_prose is not null)
         {
-            Cut = lines.Length > ToolView.PreviewLines;
+            Cut = !expanded && _lines.Length > ToolView.PreviewLines;
         }
         else
         {
-            ShowText(lines, expanded);
+            ShowText(expanded);
         }
 
         _viewport.MaxHeight = expanded ? ExpandedHeight : _prose is not null && Cut ? PreviewHeight : double.PositiveInfinity;
         _viewport.VerticalScrollBarVisibility = expanded ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled;
         Element.Visibility = _text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         _more.Visibility = Cut && !expanded ? Visibility.Visible : Visibility.Collapsed;
-        SetLabel(_more, $"show more ({lines.Length} lines)");
-        _less.Visibility = expanded && (lines.Length > ToolView.PreviewLines || _text.Length > ToolView.PreviewChars) ? Visibility.Visible : Visibility.Collapsed;
+        SetLabel(_more, $"show more ({_lines.Length} lines)");
+        var longerThanPreview = _lines.Length > ToolView.PreviewLines || (_prose is null && _body.Length > ToolView.PreviewChars);
+        _less.Visibility = expanded && longerThanPreview && !_row.ClosesToHeader ? Visibility.Visible : Visibility.Collapsed;
         _copyAll.Visibility = Cut && expanded ? Visibility.Visible : Visibility.Collapsed;
-        SetLabel(_copyAll, $"Copy all {lines.Length} lines");
+        SetLabel(_copyAll, $"Copy all {_lines.Length} lines");
     }
 
-    private void ShowText(string[] lines, bool expanded)
+    /// <summary>
+    /// Shows the code or text up to the preview or open limits; a listing keeps the numbers of the lines shown. Code
+    /// is filled again only when its text or numbers change, so an update that leaves them alone keeps a selection.
+    /// </summary>
+    private void ShowText(bool expanded)
     {
         var shown = expanded
-            ? CutTo(_text, lines, ToolView.ExpandedLines, ToolView.ExpandedChars)
-            : CutTo(_text, lines, ToolView.PreviewLines, ToolView.PreviewChars);
-        if (_pre is not null && shown.Length > _shown.Length && shown.StartsWith(_shown, StringComparison.Ordinal))
+            ? CutTo(_body, _lines, ToolView.ExpandedLines, ToolView.ExpandedChars)
+            : CutTo(_body, _lines, ToolView.PreviewLines, ToolView.PreviewChars);
+        if (_pre is not null)
         {
-            _pre.AppendText(shown.Substring(_shown.Length));
-        }
-        else if (shown != _shown)
-        {
-            if (_pre is not null)
+            if (shown.Length > _shown.Length && shown.StartsWith(_shown, StringComparison.Ordinal))
+            {
+                _pre.AppendText(shown.Substring(_shown.Length));
+            }
+            else if (shown != _shown)
             {
                 _pre.Text = shown;
             }
-            else
+        }
+        else
+        {
+            var numbers = _listing?.Numbers.Take(shown.Count(c => c == '\n') + 1).ToArray() ?? Array.Empty<string>();
+            if (shown != _shown || !numbers.SequenceEqual(_shownNumbers))
             {
-                _longest = Fill(_code!, shown, _language, _mark, _gutter);
+                _longest = Fill(_code!, shown, numbers.Length > 0 ? numbers : null, _language, _mark, _gutter);
+                _shownNumbers = numbers;
                 FitWidth();
             }
         }
 
         _shown = shown;
-        Cut = shown.Length < _text.Length;
+        Cut = shown.Length < _body.Length;
     }
 
     private static string CutTo(string text, string[] lines, int maxLines, int maxChars)

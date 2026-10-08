@@ -37,26 +37,27 @@ internal sealed class CodeLine
 }
 
 /// <summary>
-/// What a code block draws, computed without any control: a numbered listing is split into gutter and code (a
-/// skipped range becomes one empty line), the code is lexed by language, and search matches cut the tokens into
-/// marked and unmarked segments.
+/// What a code block draws, computed without any control: the gutter numbers of a numbered listing (a skipped
+/// range becomes one empty line), the code lexed by language, and search matches cutting the tokens into marked
+/// and unmarked segments.
 /// </summary>
 internal static class CodeSegments
 {
+    /// <param name="code">The code to draw, without line-number prefixes.</param>
+    /// <param name="numbers">The gutter number of each line of <paramref name="code"/> (see <see cref="ToolFormat.SplitLineNumbers"/>); null for code without a gutter.</param>
     /// <param name="mark">Text to mark as matches; null marks nothing.</param>
-    public static IReadOnlyList<CodeLine> Build(string text, string? language, Regex? mark)
+    public static IReadOnlyList<CodeLine> Build(string code, IReadOnlyList<string>? numbers, string? language, Regex? mark)
     {
-        var listing = ToolFormat.SplitLineNumbers(text);
-        var code = (listing?.Code ?? text).Replace("\r\n", "\n");
-        var numbers = new List<string>(listing?.Numbers ?? Array.Empty<string>());
-        if (numbers.Any(n => n.IndexOf('-') > 0))
+        code = code.Replace("\r\n", "\n");
+        var gutter = new List<string>(numbers ?? Array.Empty<string>());
+        if (gutter.Any(n => n.IndexOf('-') > 0))
         {
             var codeLines = code.Split('\n');
-            for (var i = 0; i < numbers.Count && i < codeLines.Length; i++)
+            for (var i = 0; i < gutter.Count && i < codeLines.Length; i++)
             {
-                if (numbers[i].IndexOf('-') > 0)
+                if (gutter[i].IndexOf('-') > 0)
                 {
-                    numbers[i] = "";
+                    gutter[i] = "";
                     codeLines[i] = "";
                 }
             }
@@ -65,7 +66,7 @@ internal static class CodeSegments
         }
 
         var width = 0;
-        foreach (var number in numbers)
+        foreach (var number in gutter)
         {
             width = Math.Max(width, number.Length);
         }
@@ -92,7 +93,8 @@ internal static class CodeSegments
         var lines = new List<CodeLine>();
         var segments = new List<CodeSegment>();
         var line = 0;
-        string Number() => line < numbers.Count ? numbers[line].PadLeft(width) : "";
+        var nextMark = 0;
+        string Number() => line < gutter.Count ? gutter[line].PadLeft(width) : "";
         foreach (var token in CodeHighlighter.Tokens(code, language))
         {
             var start = token.Start;
@@ -101,7 +103,7 @@ internal static class CodeSegments
             {
                 var newline = code.IndexOf('\n', start, end - start);
                 var stop = newline < 0 ? end : newline;
-                AddSegments(segments, code, start, stop, token.Kind, marks);
+                AddSegments(segments, code, start, stop, token.Kind, marks, ref nextMark);
                 if (newline < 0)
                 {
                     break;
@@ -119,17 +121,22 @@ internal static class CodeSegments
         return lines;
     }
 
-    /// <summary>Adds <paramref name="code"/>[<paramref name="start"/>..<paramref name="end"/>) split where a mark begins or ends.</summary>
-    private static void AddSegments(List<CodeSegment> segments, string code, int start, int end, CodeTokenKind kind, List<(int Start, int End)> marks)
+    /// <summary>
+    /// Adds <paramref name="code"/>[<paramref name="start"/>..<paramref name="end"/>) split where a mark begins or
+    /// ends. Pieces come in text order, so <paramref name="nextMark"/> (the first mark that may still reach a later
+    /// piece) only moves forward.
+    /// </summary>
+    private static void AddSegments(List<CodeSegment> segments, string code, int start, int end, CodeTokenKind kind, List<(int Start, int End)> marks, ref int nextMark)
     {
-        var at = start;
-        foreach (var (markStart, markEnd) in marks)
+        while (nextMark < marks.Count && marks[nextMark].End <= start)
         {
-            if (markEnd <= at || markStart >= end)
-            {
-                continue;
-            }
+            nextMark++;
+        }
 
+        var at = start;
+        for (var i = nextMark; i < marks.Count && marks[i].Start < end; i++)
+        {
+            var (markStart, markEnd) = marks[i];
             if (markStart > at)
             {
                 segments.Add(new CodeSegment(code.Substring(at, markStart - at), kind, false));

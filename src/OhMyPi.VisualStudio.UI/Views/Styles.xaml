@@ -470,7 +470,7 @@
 		<Setter Property="CornerRadius" Value="6" />
 	</Style>
 
-	<!-- A tool's result (output, JSON, diffs, Markdown): a box on the output surface, which leans the other way than the code surface so a result and a message never look alike. -->
+	<!-- A tool's result (output, JSON, diffs, Markdown): a box on the output surface, a visible step from both the window and the code surface, so a result and a message never look alike. -->
 	<Style x:Key="Omp.OutputBlock" TargetType="Border">
 		<Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.OutputSurface}}" />
 		<Setter Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurfaceBorder}}" />

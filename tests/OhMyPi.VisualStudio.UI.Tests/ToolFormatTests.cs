@@ -407,15 +407,6 @@ public sealed class ToolFormatTests
     }
 
     [Theory]
-    [InlineData("{\"tool\": \"x\", \"title\": \"cut he", true)]
-    [InlineData("[1, 2, 3]", true)]
-    [InlineData("<Project Sdk=\"x\" />", true)]
-    [InlineData("{'text': 'py repr'}", true)]
-    [InlineData("Started in the background.", false)]
-    [InlineData("edited src/a.cs:7 ok", false)]
-    public void A_single_line_that_is_code_sits_in_a_code_box(string text, bool code) => Assert.Equal(code, ToolFormat.LooksLikeCode(text));
-
-    [Theory]
     [InlineData("# mcp__create_issue - edgarus/create_issue\n\nCreate an issue.\n\n## Schema\ntype Args = {", true)]
     [InlineData("Intro line.\n\n## Section\n- one\n- two", true)]
     [InlineData("{\"a\":1}", false)]
@@ -445,6 +436,9 @@ public sealed class ToolFormatTests
     [InlineData("write", "{\"file_path\":\"notes.md\"}", "md")]
     [InlineData("read", "{\"path\":\"Makefile\"}", null)]
     [InlineData("read", "{}", null)]
+    [InlineData("read", "{\"path\":\"docs/README.md:1-40\"}", "md")]
+    [InlineData("read", "{\"path\":\"a.md:raw\"}", "md")]
+    [InlineData("read", "{\"path\":\"x.cs:5-16,960-973\"}", "cs")]
     [InlineData("bash", "{\"command\":\"cat a.cs\"}", null)]
     public void A_file_tools_result_takes_its_language_from_the_files_extension(string tool, string args, string? language) =>
         Assert.Equal(language, ToolFormat.FileLanguage(Tool(tool, args)));
@@ -465,6 +459,8 @@ public sealed class ToolFormatTests
         var lead = ToolFormat.SplitLineNumbers("23\n----- 21409\n21406:    internal void M()\n21407:    {\n21408:    }")!;
         Assert.Equal(new[] { "", "", "21406", "21407", "21408" }, lead.Numbers);
         Assert.Equal("23\n----- 21409\n    internal void M()\n    {\n    }", lead.Code);
+
+        Assert.Equal(new[] { "1" }, ToolFormat.SplitLineNumbers("1:using A;")!.Numbers);
     }
 
     [Theory]
@@ -474,11 +470,21 @@ public sealed class ToolFormatTests
     [InlineData("")]
     public void Output_that_is_mostly_unnumbered_is_not_a_listing(string text) => Assert.Null(ToolFormat.SplitLineNumbers(text));
 
+    [Theory]
+    [InlineData("10:15:01 Build started\nRestoring packages...\nBuild succeeded.")]
+    [InlineData("12:30:45 INFO start\n12:31:02 INFO done")]
+    public void Output_whose_lines_start_with_timestamps_is_not_a_listing(string text) => Assert.Null(ToolFormat.SplitLineNumbers(text));
+
+    [Fact]
+    public void Only_an_omp_path_header_lets_a_sparsely_numbered_text_count_as_a_listing() =>
+        Assert.Null(ToolFormat.SplitLineNumbers("['a', 'b']\nprocessing items\nwrote report\nsee below\n3: failed item"));
+
     [Fact]
     public void A_read_of_a_markdown_file_renders_as_prose_without_the_line_number_prefixes()
     {
         const string numbered = "[docs/a.md#1A2B]\n1:Intro text.\n2:- item\n";
         Assert.True(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"docs/a.md\"}", result: Result(numbered))));
+        Assert.True(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"docs/a.md:1-40\"}", result: Result(numbered))));
         Assert.False(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"docs/a.cs\"}", result: Result(GrepStyleResult))));
         Assert.False(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"docs/a.md\"}", result: Result(numbered, isError: true))));
         Assert.Equal("Intro text.\n- item", ToolFormat.ProseText(numbered));
@@ -494,5 +500,14 @@ public sealed class ToolFormatTests
         Assert.Null(ToolFormat.SearchPattern(Tool("grep", "{}")));
         Assert.Null(ToolFormat.SearchPattern(Tool("bash", "{\"pattern\":\"x\"}")));
         Assert.Equal("# plain", ToolFormat.ProseText("# plain"));
+    }
+
+    [Fact]
+    public void A_grep_with_case_false_marks_its_pattern_ignoring_case()
+    {
+        Assert.Matches(ToolFormat.SearchPattern(Tool("grep", "{\"pattern\":\"todo\",\"case\":false}"))!, "// TODO");
+        Assert.Matches(ToolFormat.SearchPattern(Tool("grep", "{\"pattern\":\"a(b\",\"case\":false}"))!, "A(B");
+        Assert.DoesNotMatch(ToolFormat.SearchPattern(Tool("grep", "{\"pattern\":\"todo\"}"))!, "// TODO");
+        Assert.DoesNotMatch(ToolFormat.SearchPattern(Tool("grep", "{\"pattern\":\"todo\",\"case\":true}"))!, "// TODO");
     }
 }

@@ -192,13 +192,13 @@ internal static class Ui
         return box;
     }
 
-    /// <summary>Selectable, wrapping monospace code with its tokens colored by <paramref name="language"/> (see <see cref="CodeHighlighter"/>).</summary>
+    /// <summary>Selectable, wrapping monospace code with its tokens colored by <paramref name="language"/> (see <see cref="CodeHighlighter"/>), shown verbatim.</summary>
     public static RichTextBox Code(string text, string? language, object? brushKey = null)
     {
         var box = Prose(_ => { }, brushKey);
         box.SetResourceReference(TextElement.FontFamilyProperty, "Omp.MonoFont");
         Small(box, MonoScale);
-        CodeBlock.Fill(box, text, language);
+        CodeBlock.Fill(box, text, numbers: null, language);
 
         return box;
     }
