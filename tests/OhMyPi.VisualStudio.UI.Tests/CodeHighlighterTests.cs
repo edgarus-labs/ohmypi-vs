@@ -93,16 +93,10 @@ public sealed class CodeHighlighterTests
     }
 
     [Fact]
-    public void Yaml_colors_keys_at_line_start_but_not_values_or_urls()
-    {
-        Assert.Equal("Key:name|Key:on|Keyword:true|Key:url|Comment:# c|Key:steps|Key:run", Dump("name: Build\non: true\nurl: http://x\n# c\nsteps:\n  - run: dotnet test", "yaml"));
-    }
+    public void Yaml_colors_keys_at_line_start_but_not_values_or_urls() => Assert.Equal("Key:name|Key:on|Keyword:true|Key:url|Comment:# c|Key:steps|Key:run", Dump("name: Build\non: true\nurl: http://x\n# c\nsteps:\n  - run: dotnet test", "yaml"));
 
     [Fact]
-    public void Yaml_quotes_open_strings_only_at_the_start_of_a_scalar()
-    {
-        Assert.Equal("Key:description|Key:name|String:'x'|Key:items|String:\"y\"|String:'z'", Dump("description: Check the user's config\nname: 'x'\nitems:\n  - \"y\"\n  - [a, 'z']", "yaml"));
-    }
+    public void Yaml_quotes_open_strings_only_at_the_start_of_a_scalar() => Assert.Equal("Key:description|Key:name|String:'x'|Key:items|String:\"y\"|String:'z'", Dump("description: Check the user's config\nname: 'x'\nitems:\n  - \"y\"\n  - [a, 'z']", "yaml"));
 
     [Fact]
     public void A_yaml_quoted_scalar_after_a_tag_or_anchor_is_a_string()
@@ -130,10 +124,7 @@ public sealed class CodeHighlighterTests
     }
 
     [Fact]
-    public void Ini_files_color_keys_before_equals_and_semicolon_or_hash_comments()
-    {
-        Assert.Equal("Comment:; comment|Key:indent_style|Key:ASPNETCORE_ENVIRONMENT|Key:version|String:\"1.0\"|Comment:# c|Key:pattern", Dump("; comment\nindent_style = space\nASPNETCORE_ENVIRONMENT=Development\nversion = \"1.0\" # c\npattern = C#", "ini"));
-    }
+    public void Ini_files_color_keys_before_equals_and_semicolon_or_hash_comments() => Assert.Equal("Comment:; comment|Key:indent_style|Key:ASPNETCORE_ENVIRONMENT|Key:version|String:\"1.0\"|Comment:# c|Key:pattern", Dump("; comment\nindent_style = space\nASPNETCORE_ENVIRONMENT=Development\nversion = \"1.0\" # c\npattern = C#", "ini"));
 
     [Fact]
     public void Backslashes_escape_quotes_only_in_strings_that_have_escapes()

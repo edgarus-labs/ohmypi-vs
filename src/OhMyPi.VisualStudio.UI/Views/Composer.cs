@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
@@ -89,6 +90,7 @@ internal sealed class Composer : Border
         _placeholder.Margin = new Thickness(Input.Padding.Left + 1, Input.Padding.Top, Input.Padding.Right, 0);
         _placeholder.VerticalAlignment = VerticalAlignment.Top;
         var inputGrid = new Grid();
+        inputGrid.SetResourceReference(TextElement.FontSizeProperty, ThemeKeys.ChatFontSize);
         inputGrid.Children.Add(Input);
         inputGrid.Children.Add(_placeholder);
 

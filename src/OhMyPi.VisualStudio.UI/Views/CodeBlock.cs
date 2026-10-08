@@ -48,9 +48,9 @@ internal sealed class CodeBlock
     private bool _hasOriginal;
     private ToolFormat.Listing? _listing;
     private string _body = "";
-    private string[] _lines = { "" };
+    private string[] _lines = [""];
     private string _shown = "";
-    private string[] _shownNumbers = Array.Empty<string>();
+    private string[] _shownNumbers = [];
     private string? _longest;
 
     /// <param name="brushKey">Text color; null keeps the body color.</param>
@@ -352,7 +352,7 @@ internal sealed class CodeBlock
         }
         else
         {
-            var numbers = _listing?.Numbers.Take(shown.Count(c => c == '\n') + 1).ToArray() ?? Array.Empty<string>();
+            var numbers = _listing?.Numbers.Take(shown.Count(c => c == '\n') + 1).ToArray() ?? [];
             if (shown != _shown || !numbers.SequenceEqual(_shownNumbers))
             {
                 _longest = Fill(_code!, shown, numbers.Length > 0 ? numbers : null, _language, _mark, _gutter);

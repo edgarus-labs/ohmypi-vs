@@ -43,6 +43,7 @@ internal static class ChatPalette
         static byte Away(byte c, bool dark)
         {
             var channelRoom = dark ? c : 255 - c;
+
             return Step(c, !dark, Math.Max(OutputDistance, (int)Math.Round(channelRoom * 0.08)));
         }
     }

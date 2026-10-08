@@ -316,6 +316,7 @@ public sealed class ToolRowTests
             Assert.True(Order(row, "Parameters") > Order(row, "Command"));
         }, service, new FakeHost());
     }
+
     [Fact]
     public void An_open_row_collapses_back_to_its_preview()
     {

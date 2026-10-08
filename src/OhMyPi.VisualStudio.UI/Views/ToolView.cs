@@ -517,10 +517,7 @@ internal static class ToolView
     }
 
     /// <summary>A link that opens <paramref name="path"/> (as OMP wrote it; the host resolves it) at <paramref name="line"/>, labeled <paramref name="label"/> or else the path and line.</summary>
-    private static UIElement FileLink(RenderContext ctx, string path, int? line, string? label = null)
-    {
-        return Ui.Link(label ?? ToolFormat.FileLinkLabel(path, line, ctx.Cwd), () => ctx.OpenFile(path, line), $"Open {(line.HasValue ? $"{path}:{line}" : path)}", mono: true);
-    }
+    private static UIElement FileLink(RenderContext ctx, string path, int? line, string? label = null) => Ui.Link(label ?? ToolFormat.FileLinkLabel(path, line, ctx.Cwd), () => ctx.OpenFile(path, line), $"Open {(line.HasValue ? $"{path}:{line}" : path)}", mono: true);
 
     /// <summary>The call's arguments as <c>name: value</c> lines (copying yields the indented JSON); null for a call without any.</summary>
     private static UIElement? ArgsSection(ToolItem item, ToolRow row)

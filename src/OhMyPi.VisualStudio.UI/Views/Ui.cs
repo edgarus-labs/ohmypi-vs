@@ -1,5 +1,4 @@
 using OhMyPi.VisualStudio.UI.Model;
-using System.Linq;
 using System;
 using System.Windows;
 using System.Windows.Automation.Peers;
