@@ -63,4 +63,17 @@ public sealed class MarkdownFlowsTests
             System.IO.Directory.Delete(dir, true);
         }
     }
+
+    [Fact]
+    public void Fenced_code_shows_lines_that_start_with_numbers_verbatim()
+    {
+        const string answer = "Log:\n\n```\n12:30:45 INFO start\n12:31:02 INFO done\n```\n\nSteps:\n\n```\n1-3: setup\n```";
+        var service = new FakeService { Transcript = new TranscriptItem[] { new AssistantItem { Id = "a1", Text = answer } } };
+        RunSta((window, control) =>
+        {
+            Assert.True(HasText(window, "12:30:45 INFO start"));
+            Assert.True(HasText(window, "12:31:02 INFO done"));
+            Assert.True(HasText(window, "1-3: setup"));
+        }, service, new FakeHost());
+    }
 }

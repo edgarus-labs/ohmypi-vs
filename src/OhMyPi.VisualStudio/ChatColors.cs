@@ -32,6 +32,7 @@ internal static class ChatColors
         var (surface, border) = ChatPalette.CodeSurface(background, new Argb(t.A, t.R, t.G, t.B), SystemParameters.HighContrast);
         resources[PaletteKeys.CodeSurface] = Freeze(surface);
         resources[PaletteKeys.CodeSurfaceBorder] = Freeze(border);
+        resources[PaletteKeys.OutputSurface] = Freeze(ChatPalette.OutputSurface(background, SystemParameters.HighContrast));
         resources[PaletteKeys.DiffAddedLine] = Freeze(ChatPalette.AddedLine(dark));
         resources[PaletteKeys.DiffRemovedLine] = Freeze(ChatPalette.RemovedLine(dark));
         resources[PaletteKeys.DiffAddedWord] = Freeze(ChatPalette.AddedWord(dark));

@@ -124,7 +124,8 @@ internal static class ItemRenderer
             children.Add(Ui.Muted($"+{item.ImageCount} image{(item.ImageCount == 1 ? "" : "s")}"));
         }
 
-        var card = Ui.Card(Ui.Column(4, [.. children]), new Thickness(10, 6, 10, 6));
+        var card = new Border { Child = Ui.Column(4, [.. children]), Padding = new Thickness(12, 4, 10, 4), BorderThickness = new Thickness(3, 0, 0, 0) }
+            .Theme(Border.BorderBrushProperty, ThemeKeys.Accent);
         Ui.AutomationName(card, "You");
 
         return WithCopy(card, item.Text, ctx);
@@ -250,7 +251,7 @@ internal static class ItemRenderer
                     continue;
                 }
 
-                part.Margin = new Thickness(0, first ? 0 : 4, 0, 0);
+                part.Margin = new Thickness(ReferenceEquals(part, _thinking) ? 0 : ToolView.IconColumn, first ? 0 : 4, 0, 0);
                 first = false;
             }
         }

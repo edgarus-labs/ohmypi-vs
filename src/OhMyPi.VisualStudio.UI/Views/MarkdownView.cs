@@ -203,9 +203,7 @@ internal static class MarkdownView
 
     private static FrameworkElement CodeBlock(MdCodeBlock code, Action<string> copy)
     {
-        var text = Ui.Pre(code.Code);
-        text.TextWrapping = TextWrapping.NoWrap;
-        text.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+        var text = Ui.Code(code.Code, code.Language);
         var copyButton = Ui.IconButton(Glyphs.Copy, "Copy code", () => copy(code.Code));
         copyButton.Width = 22;
         copyButton.Height = 22;

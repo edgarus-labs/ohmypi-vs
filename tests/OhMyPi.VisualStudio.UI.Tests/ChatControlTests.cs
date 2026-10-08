@@ -50,7 +50,7 @@ public sealed class ChatControlTests
             Assert.True(HasText(window, "npm ERR! test failed"));
             Assert.True(HasText(window, "Heads up"));
             Assert.True(HasText(window, "command output"));
-            Assert.Contains(Descendants(window).OfType<TextBox>(), t => t.Text == "var x = 1;");
+            Assert.True(HasText(window, "var x = 1;"));
 
             var worker = Task.Run(() =>
             {

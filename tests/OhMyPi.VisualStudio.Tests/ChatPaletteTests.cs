@@ -45,6 +45,29 @@ public sealed class ChatPaletteTests
         }
     }
 
+    [Theory]
+    [InlineData(0xFF, 0xFF, 0xFF)]
+    [InlineData(0xF5, 0xF5, 0xF5)]
+    [InlineData(0x1E, 0x1E, 0x1E)]
+    [InlineData(0x25, 0x25, 0x26)]
+    [InlineData(0x00, 0x00, 0x00)]
+    public void OutputSurfaceIsOpaqueAndVisiblyApartFromBothTheBackgroundAndTheCodeSurface(byte r, byte g, byte b)
+    {
+        const int visible = 6;
+        var background = new Argb(0xFF, r, g, b);
+        var text = ChatPalette.IsDark(background) ? LightText : DarkText;
+        var code = ChatPalette.CodeSurface(background, text, false).Surface;
+        var output = ChatPalette.OutputSurface(background, false);
+        Assert.Equal(0xFF, output.A);
+        foreach (var other in new[] { background, code })
+        {
+            Assert.True(Math.Abs(output.R - other.R) >= visible, $"R {output.R} vs {other.R}");
+            Assert.True(Math.Abs(output.G - other.G) >= visible, $"G {output.G} vs {other.G}");
+            Assert.True(Math.Abs(output.B - other.B) >= visible, $"B {output.B} vs {other.B}");
+        }
+        Assert.Equal(background, ChatPalette.OutputSurface(background, true));
+    }
+
     [Fact]
     public void DiffLinesAreTranslucentAndTheirChangedWordsStronger()
     {

@@ -22,7 +22,7 @@ public sealed class ScrollFollowTests
     /// <summary>One mouse wheel notch over the last visible tool output, as the reader scrolls over the conversation.</summary>
     private static void WheelOver(System.Windows.Window window, int delta)
     {
-        var target = Descendants(window).OfType<TextBox>().Last(t => t.IsVisible && t.Text.Contains("line 11 of"));
+        var target = Descendants(window).OfType<TextBox>().Last(t => t.IsVisible && t.Text.Contains("line 1 of"));
         var preview = new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, delta) { RoutedEvent = System.Windows.UIElement.PreviewMouseWheelEvent };
         target.RaiseEvent(preview);
         if (!preview.Handled)
@@ -48,7 +48,7 @@ public sealed class ScrollFollowTests
             }
 
             Assert.False(AtBottom(scroller), $"wheeling up stayed at {scroller.VerticalOffset} of {scroller.ScrollableHeight}");
-            var clicked = Descendants(window).OfType<TextBox>().First(t => t.IsVisible && t.Text.Contains("line 11 of"));
+            var clicked = Descendants(window).OfType<TextBox>().First(t => t.IsVisible && t.Text.Contains("line 1 of"));
             Assert.True(clicked.Focus(), "the output box did not take focus");
             Pump(200);
             Click(Named<Button>(window, "Jump to latest"));
@@ -103,7 +103,7 @@ public sealed class ScrollFollowTests
 
             void Wheel(int delta)
             {
-                var target = Descendants(window).OfType<TextBox>().Last(t => t.IsVisible && t.Text.Contains("line 11 of"));
+                var target = Descendants(window).OfType<TextBox>().Last(t => t.IsVisible && t.Text.Contains("line 1 of"));
                 var preview = new System.Windows.Input.MouseWheelEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, delta) { RoutedEvent = System.Windows.UIElement.PreviewMouseWheelEvent };
                 target.RaiseEvent(preview);
                 if (!preview.Handled)

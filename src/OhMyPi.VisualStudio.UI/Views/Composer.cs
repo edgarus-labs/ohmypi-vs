@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
@@ -30,7 +31,13 @@ internal sealed class Composer : Border
         [".webp"] = "image/webp",
     };
 
-    private readonly WrapPanel _chips = new WrapPanel { Margin = new Thickness(8, 6, 8, 0), Visibility = Visibility.Collapsed };
+    /// <summary>Distance from the card's edge to the text, the caret and the placeholder.</summary>
+    private const double TextInset = 12;
+
+    /// <summary>Room inside a 26 px icon button around its 13 px glyph, so the toolbar's first glyph aligns with the text above it.</summary>
+    private const double IconInset = 6.5;
+
+    private readonly WrapPanel _chips = new WrapPanel { Margin = new Thickness(TextInset, 6, TextInset, 0), Visibility = Visibility.Collapsed };
     private readonly TextBlock _placeholder;
     private readonly TextBlock _modelText;
     private readonly TextBlock _effortText;
@@ -61,11 +68,11 @@ internal sealed class Composer : Border
             AcceptsReturn = true,
             AcceptsTab = false,
             TextWrapping = TextWrapping.Wrap,
-            MinHeight = 44,
+            MinHeight = 64,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             BorderThickness = new Thickness(0),
             Background = System.Windows.Media.Brushes.Transparent,
-            Padding = new Thickness(8, 6, 8, 2),
+            Padding = new Thickness(TextInset, 8, TextInset, 4),
         }.Styled("Omp.TextBox");
         Ui.AutomationName(Input, "Prompt");
         Input.PreviewKeyDown += OnInputKey;
@@ -80,9 +87,10 @@ internal sealed class Composer : Border
 
         _placeholder = Ui.Muted("", wrap: true, small: false);
         _placeholder.IsHitTestVisible = false;
-        _placeholder.Margin = new Thickness(Input.Padding.Left + 2, Input.Padding.Top, Input.Padding.Right, 0);
+        _placeholder.Margin = new Thickness(Input.Padding.Left + 1, Input.Padding.Top, Input.Padding.Right, 0);
         _placeholder.VerticalAlignment = VerticalAlignment.Top;
         var inputGrid = new Grid();
+        inputGrid.SetResourceReference(TextElement.FontSizeProperty, ThemeKeys.ChatFontSize);
         inputGrid.Children.Add(Input);
         inputGrid.Children.Add(_placeholder);
 
@@ -123,6 +131,7 @@ internal sealed class Composer : Border
                 Submit(PromptMode.Auto);
             }
         });
+        _action.Styled("Omp.SendButton");
 
         var left = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
         foreach (var element in new UIElement[] { AttachButton, ModelButton, EffortButton, FastButton })
@@ -132,7 +141,7 @@ internal sealed class Composer : Border
 
         var right = Ui.Row(_action);
         right.VerticalAlignment = VerticalAlignment.Bottom;
-        var toolbar = new DockPanel { Margin = new Thickness(4, 2, 6, 6) };
+        var toolbar = new DockPanel { Margin = new Thickness(TextInset - IconInset, 2, 8, 8) };
         DockPanel.SetDock(right, Dock.Right);
         toolbar.Children.Add(right);
         toolbar.Children.Add(left);

@@ -57,14 +57,15 @@ public sealed class ToolFlowsTests
     }
 
     [Fact]
-    public void A_long_command_and_extra_parameters_are_shown_under_a_shell_call()
+    public void A_long_command_and_extra_parameters_are_shown_under_a_shell_call_without_opening_it()
     {
         var command = "dotnet test " + new string('x', 300);
         var service = new FakeService { Transcript = new TranscriptItem[] { Tool("t1", "bash", new JObject { ["command"] = command, ["timeout"] = 60 }.ToString(), ToolStatus.Done, new ToolResultView { Text = "ok" }) } };
         RunSta((window, control) =>
         {
-            Assert.Equal(command, Named<TextBox>(window, "Command").Text);
-            Assert.Contains("timeout", Named<TextBox>(window, "Parameters").Text);
+            string Code(string name) => new System.Windows.Documents.TextRange(Named<RichTextBox>(window, name).Document.ContentStart, Named<RichTextBox>(window, name).Document.ContentEnd).Text.TrimEnd('\r', '\n');
+            Assert.Equal(command, Code("Command"));
+            Assert.Contains("timeout", Code("Parameters"));
         }, service, new FakeHost());
     }
 
@@ -85,6 +86,23 @@ public sealed class ToolFlowsTests
             Pump();
             Assert.Equal(big, copied);
         }, service, host);
+    }
+
+    [Fact]
+    public void Showing_more_of_a_diff_result_leaves_the_rest_of_the_row_closed_when_it_is_rebuilt()
+    {
+        var command = string.Join("\n", Enumerable.Range(1, 6).Select(i => "echo " + i));
+        var item = Tool("t1", "bash", new JObject { ["command"] = command }.ToString(), ToolStatus.Done, new ToolResultView { Text = Diff(15) });
+        var service = new FakeService { Transcript = new TranscriptItem[] { item } };
+        RunSta((window, control) =>
+        {
+            Click(LinkNamed(window, "show more (31 lines)"));
+            Pump();
+            service.RaiseItem(Tool("t1", "bash", new JObject { ["command"] = command }.ToString(), ToolStatus.Done, new ToolResultView { Text = Diff(15) }));
+            Pump();
+            Assert.NotNull(LinkNamed(window, "show more (6 lines)"));
+            Assert.DoesNotContain(Descendants(window).OfType<Button>(), b => b.IsVisible && System.Windows.Automation.AutomationProperties.GetName(b) == "show more (31 lines)");
+        }, service, new FakeHost());
     }
 
     [Fact]

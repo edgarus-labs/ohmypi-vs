@@ -1,25 +1,34 @@
 using OhMyPi.VisualStudio.UI.Model;
+using System;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 
 namespace OhMyPi.VisualStudio.UI.Views;
 
 /// <summary>
 /// Opens a file named in read-only tool text when the user clicks its path; over a path the cursor becomes a hand
-/// and the tooltip names the file. A click that ends a selection only selects.
+/// and the tooltip names the file. A click that ends a selection only selects. In a rich text box only the line
+/// under the pointer is read, so moving the mouse never walks the whole document.
 /// </summary>
 internal static class FileClicks
 {
     private static readonly DependencyProperty ContextProperty =
         DependencyProperty.RegisterAttached("Context", typeof(RenderContext), typeof(FileClicks), new PropertyMetadata(null));
 
-    public static void Attach(TextBox box, RenderContext ctx)
+    public static void Attach(TextBox box, RenderContext ctx) => Attach(box, ctx, () => box.SelectionLength > 0);
+
+    /// <summary>Attaches to a box whose lines are runs separated by line breaks in one paragraph, as <see cref="CodeBlock.Fill"/> writes them.</summary>
+    public static void Attach(RichTextBox box, RenderContext ctx) => Attach(box, ctx, () => !box.Selection.IsEmpty);
+
+    private static void Attach(Control box, RenderContext ctx, Func<bool> selecting)
     {
         box.SetValue(ContextProperty, ctx);
         box.PreviewMouseLeftButtonUp += (_, e) =>
         {
-            if (box.SelectionLength == 0 && OpenAt(box, e.GetPosition(box)))
+            if (!selecting() && OpenAt(box, e.GetPosition(box)))
             {
                 e.Handled = true;
             }
@@ -37,7 +46,7 @@ internal static class FileClicks
     }
 
     /// <summary>Opens the file whose path is under <paramref name="point"/> (relative to <paramref name="box"/>); false when there is none.</summary>
-    public static bool OpenAt(TextBox box, Point point)
+    public static bool OpenAt(Control box, Point point)
     {
         var target = At(box, point);
         if (target is null)
@@ -50,21 +59,54 @@ internal static class FileClicks
         return true;
     }
 
-    private static FileTarget? At(TextBox box, Point point)
+    private static FileTarget? At(Control box, Point point)
     {
         if (!(box.GetValue(ContextProperty) is RenderContext ctx))
         {
             return null;
         }
 
+        var token = box is TextBox text ? TokenAt(text, point) : box is RichTextBox rich ? TokenAt(rich, point) : null;
+
+        return token is null ? null : ctx.ResolveFile(token);
+    }
+
+    private static string? TokenAt(TextBox box, Point point)
+    {
         var index = box.GetCharacterIndexFromPoint(point, snapToText: false);
-        if (index < 0)
+
+        return index < 0 ? null : FileLinks.TokenAt(box.Text, index);
+    }
+
+    /// <summary>The path-like token under <paramref name="point"/>, read from the runs of its line only; a hit on a character's right half belongs to that character, as in a text box.</summary>
+    private static string? TokenAt(RichTextBox box, Point point)
+    {
+        var pointer = box.GetPositionFromPoint(point, snapToText: false);
+        var run = pointer?.Parent as Run ?? pointer?.GetAdjacentElement(LogicalDirection.Forward) as Run;
+        if (pointer is null || run is null)
         {
             return null;
         }
 
-        var token = FileLinks.TokenAt(box.Text, index);
+        Inline first = run;
+        while (first.PreviousInline is Run previous)
+        {
+            first = previous;
+        }
 
-        return token is null ? null : ctx.ResolveFile(token);
+        var line = new StringBuilder();
+        var index = 0;
+        for (var inline = first; inline is Run part; inline = inline.NextInline)
+        {
+            if (part == run)
+            {
+                var trailing = pointer.LogicalDirection == LogicalDirection.Backward ? 1 : 0;
+                index = Math.Max(0, line.Length + Math.Max(0, run.ContentStart.GetOffsetToPosition(pointer)) - trailing);
+            }
+
+            line.Append(part.Text);
+        }
+
+        return FileLinks.TokenAt(line.ToString(), index);
     }
 }
