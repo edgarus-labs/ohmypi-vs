@@ -15,7 +15,11 @@ internal static class ChatPalette
     /// contrast the theme guarantees.
     /// </summary>
     public static (Argb Surface, Argb Border) CodeSurface(Argb background, Argb text, bool highContrast) =>
-        highContrast ? (background, text) : (Shift(background, 0.07, 0.04), Shift(background, 0.16, 0.12));
+        highContrast ? (background, text) : (Shift(background, 0.10, 0.06), Shift(background, 0.22, 0.16));
+
+    /// <summary>The opaque background of a tool's result: the window background nudged the other way than the code surface, so a result and a message never share a shade. High contrast keeps the window background.</summary>
+    public static Argb OutputSurface(Argb background, bool highContrast) =>
+        highContrast ? background : Shift(background, 0.08, 0.08, awayFromText: false);
 
     public static Argb AddedLine(bool darkTheme) => darkTheme ? new Argb(0x26, 0x3F, 0xB9, 0x50) : new Argb(0x33, 0x2D, 0xA4, 0x4E);
 
@@ -30,10 +34,11 @@ internal static class ChatPalette
 
     public static bool IsDark(Argb background) => IsDark(background.R, background.G, background.B);
 
-    private static Argb Shift(Argb background, double towardWhite, double towardBlack)
+    /// <param name="awayFromText">True nudges toward the text (white on dark, black on light); false nudges deeper into the background's own side.</param>
+    private static Argb Shift(Argb background, double towardWhite, double towardBlack, bool awayFromText = true)
     {
         var dark = IsDark(background);
-        var target = dark ? 255 : 0;
+        var target = dark == awayFromText ? 255 : 0;
         var fraction = dark ? towardWhite : towardBlack;
 
         return new Argb(0xFF, Mix(background.R, target, fraction), Mix(background.G, target, fraction), Mix(background.B, target, fraction));

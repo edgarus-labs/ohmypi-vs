@@ -1,3 +1,5 @@
+using OhMyPi.VisualStudio.UI.Model;
+using System.Linq;
 using System;
 using System.Windows;
 using System.Windows.Automation.Peers;
@@ -173,10 +175,13 @@ internal static class Ui
 
     public static Border Card(UIElement child, Thickness padding) => new Border { Child = child, Padding = padding }.Styled("Omp.Card");
 
-    /// <summary>Selectable monospace text that never captures the mouse wheel of the transcript.</summary>
+    /// <summary>Size of monospace text relative to the body text: a monospace face reads as large as prose a step smaller.</summary>
+    public const double MonoScale = 0.9;
+
+    /// <summary>Selectable monospace text, a step smaller than prose, that never captures the mouse wheel of the transcript.</summary>
     public static TextBox Pre(string text, object? brushKey = null)
     {
-        var box = new TextBox { Text = text }.Styled("Omp.ReadOnlyText");
+        var box = Small(new TextBox { Text = text }.Styled("Omp.ReadOnlyText"), MonoScale);
         if (brushKey is not null)
         {
             box.SetResourceReference(Control.ForegroundProperty, brushKey);
@@ -185,6 +190,36 @@ internal static class Ui
         BubbleWheel(box);
 
         return box;
+    }
+
+    /// <summary>Selectable, wrapping monospace code with its tokens colored by <paramref name="language"/> (see <see cref="CodeHighlighter"/>).</summary>
+    public static RichTextBox Code(string text, string? language, object? brushKey = null)
+    {
+        var box = Prose(_ => { }, brushKey);
+        box.SetResourceReference(TextElement.FontFamilyProperty, "Omp.MonoFont");
+        Small(box, MonoScale);
+        CodeBlock.Fill(box, text, language);
+
+        return box;
+    }
+
+    /// <summary>
+    /// Readable without saturated color: comments recede to the subtle shade, keywords, keys and tags take the soft
+    /// progress blue, strings and numbers rise to the full body color above the muted code around them. Status
+    /// colors never color code.
+    /// </summary>
+    internal static object? TokenBrush(CodeTokenKind kind)
+    {
+        switch (kind)
+        {
+            case CodeTokenKind.Comment: return ThemeKeys.Subtle;
+            case CodeTokenKind.Keyword:
+            case CodeTokenKind.Key:
+            case CodeTokenKind.Tag: return ThemeKeys.Progress;
+            case CodeTokenKind.String:
+            case CodeTokenKind.Number: return ThemeKeys.Foreground;
+            default: return null;
+        }
     }
 
     /// <summary>

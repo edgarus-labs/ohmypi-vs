@@ -87,9 +87,25 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
             }
         };
         SizeChanged += (_, __) => ApplyHeights();
+        Transcript.SetResourceReference(ChatFontSizeProperty, ThemeKeys.ChatFontSize);
         ZoomTransform = new ScaleTransform(s_zoom, s_zoom);
         ((FrameworkElement)Content).LayoutTransform = ZoomTransform;
         PreviewMouseWheel += OnPreviewMouseWheel;
+    }
+
+    /// <summary>The conversation's text size; text sized relative to the base size inside the conversation scales from it too.</summary>
+    private static readonly DependencyProperty ChatFontSizeProperty =
+        DependencyProperty.RegisterAttached("ChatFontSize", typeof(double), typeof(OmpChatControl), new PropertyMetadata(double.NaN, OnChatFontSizeChanged));
+
+    private static void OnChatFontSizeChanged(DependencyObject element, DependencyPropertyChangedEventArgs e)
+    {
+        if (!(element is Control transcript) || !(e.NewValue is double size) || double.IsNaN(size))
+        {
+            return;
+        }
+
+        transcript.FontSize = size;
+        transcript.Resources[ThemeKeys.FontSize] = size;
     }
 
     /// <summary>Zoom level shared by every chat control in this VS process, so a recreated window keeps it.</summary>

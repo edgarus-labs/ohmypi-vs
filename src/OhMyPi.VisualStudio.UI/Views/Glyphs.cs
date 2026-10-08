@@ -20,6 +20,7 @@ internal static class Glyphs
     public const string Circle = "\uEA3A";
     public const string CircleFill = "\uEA3B";
     public const string Blocked = "\uE733";
-    public const string Send = "\uE724";
+    /// <summary>The return key of a keyboard: the arrow that drops a line and turns left.</summary>
+    public const string Send = "\uE751";
     public const string Stop = "\uE71A";
 }

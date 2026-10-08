@@ -306,6 +306,236 @@ internal static class ToolFormat
         return Str(args?["command"]) ?? Str(args?["code"]) ?? Str(args?["input"]) ?? SummarizeTool(item.Name, item.Args);
     }
 
+    private static readonly string[] DescriptionKeys = ["i", "title"];
+
+    /// <summary>What the agent said a call is for (OMP's <c>i</c> intent or an <c>eval</c> title); null when it gave none.</summary>
+    public static string? Description(ToolItem item)
+    {
+        var args = item.Args as JObject;
+
+        return DescriptionKeys.Select(key => Str(args?[key])).FirstOrDefault(value => value != null);
+    }
+
+    private static readonly Regex TrailerLine = new Regex(@"^(Wall time: .*|Command exited with code \d+)\s*$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Shell output without the timing and exit-code lines OMP appends to it and the blank lines around them: the
+    /// header already carries the exit code. Lines of that shape inside the output stay.
+    /// </summary>
+    public static string StripShellTrailer(string text)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n').ToList();
+        while (lines.Count > 0 && (lines[lines.Count - 1].Trim().Length == 0 || TrailerLine.IsMatch(lines[lines.Count - 1])))
+        {
+            lines.RemoveAt(lines.Count - 1);
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    private static readonly Regex FenceLine = new Regex(@"^\s*```([\w#+.-]*)\s*$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Tool output without the Markdown code fences around its code, and the language the first labeled fence names
+    /// (null when none does): the output is shown as code anyway, so the fences only add noise.
+    /// </summary>
+    public static (string Text, string? Language) StripFences(string text)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        var kept = new List<string>(lines.Length);
+        string? language = null;
+        foreach (var line in lines)
+        {
+            var fence = FenceLine.Match(line);
+            if (!fence.Success)
+            {
+                kept.Add(line);
+                continue;
+            }
+
+            if (language is null && fence.Groups[1].Value.Length > 0)
+            {
+                language = fence.Groups[1].Value;
+            }
+        }
+
+        return (string.Join("\n", kept), language);
+    }
+
+    /// <summary>Whether a one-line result is code (an object, array or tag) that belongs in a code box rather than in a sentence.</summary>
+    public static bool LooksLikeCode(string text)
+    {
+        var trimmed = text.TrimStart();
+
+        return trimmed.Length > 0 && trimmed.IndexOf('\n') < 0 && "{[<".IndexOf(trimmed[0]) >= 0;
+    }
+
+    private static readonly Regex MarkdownHeading = new Regex(@"^#{1,6} \S", RegexOptions.Compiled);
+
+    /// <summary>
+    /// What a search tool looked for, to mark in its result: its pattern as a regex, or as literal text when it is
+    /// not a valid one; null for other tools or a call without a pattern.
+    /// </summary>
+    public static Regex? SearchPattern(ToolItem item)
+    {
+        if (PickRenderer(item.Name) != RendererKind.Search)
+        {
+            return null;
+        }
+
+        var pattern = Str((item.Args as JObject)?["pattern"]);
+        if (string.IsNullOrEmpty(pattern))
+        {
+            return null;
+        }
+
+        try
+        {
+            return new Regex(pattern!, RegexOptions.Multiline, TimeSpan.FromMilliseconds(200));
+        }
+        catch (ArgumentException)
+        {
+            return new Regex(Regex.Escape(pattern!), RegexOptions.None, TimeSpan.FromMilliseconds(200));
+        }
+    }
+
+    /// <summary>The extension of the file a file tool names (lower case, without the dot), which is the language of its result; null for other tools or a file without one.</summary>
+    public static string? FileLanguage(ToolItem item)
+    {
+        if (PickRenderer(item.Name) != RendererKind.File || !(item.Args is JObject args))
+        {
+            return null;
+        }
+
+        var path = Str(args["path"]) ?? Str(args["file"]) ?? Str(args["file_path"]);
+        if (path is null)
+        {
+            return null;
+        }
+
+        var name = path.Substring(path.LastIndexOfAny(['/', '\\']) + 1);
+        var dot = name.LastIndexOf('.');
+
+        return dot > 0 && dot < name.Length - 1 ? name.Substring(dot + 1).ToLowerInvariant() : null;
+    }
+
+    /// <summary>The text a result renders as prose: a numbered file listing loses its header and line-number prefixes first.</summary>
+    public static string ProseText(string text) => SplitLineNumbers(text)?.Code ?? text;
+
+    /// <summary>
+    /// Whether a call's result should render as Markdown prose rather than code: a read of a Markdown file, or a
+    /// text tool whose result looks like Markdown; never a failed call.
+    /// </summary>
+    public static bool RendersMarkdown(ToolItem item)
+    {
+        var text = item.Result?.Text;
+        if (text is null || item.Result?.IsError == true)
+        {
+            return false;
+        }
+
+        if (item.Name == "read")
+        {
+            var language = FileLanguage(item);
+            var path = Str((item.Args as JObject)?["path"]) ?? "";
+
+            return language == "md" || language == "markdown" || (path.Contains("://") && LooksLikeMarkdown(text));
+        }
+
+        var kind = PickRenderer(item.Name);
+
+        return (kind == RendererKind.Mcp || kind == RendererKind.Generic) && LooksLikeMarkdown(text);
+    }
+
+    /// <summary>A file listing OMP numbered: the optional <c>[path#id]</c> header, one number (or range) per line, and the code without them.</summary>
+    public sealed class Listing
+    {
+        public Listing(string? header, IReadOnlyList<string> numbers, string code)
+        {
+            Header = header;
+            Numbers = numbers;
+            Code = code;
+        }
+
+        public string? Header { get; }
+
+        public IReadOnlyList<string> Numbers { get; }
+
+        public string Code { get; }
+    }
+
+    /// <summary>Splits a read result into its line-number gutter and clean code; null unless every line after the header carries an <c>N:</c> or <c>N-M:</c> prefix.</summary>
+    public static Listing? SplitLineNumbers(string text)
+    {
+        var lines = text.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
+        var start = 0;
+        string? header = null;
+        if (lines.Length > 0 && lines[0].StartsWith("[", StringComparison.Ordinal) && lines[0].EndsWith("]", StringComparison.Ordinal))
+        {
+            header = lines[0];
+            start = 1;
+        }
+
+        if (start >= lines.Length)
+        {
+            return null;
+        }
+
+        var numbers = new List<string>(lines.Length - start);
+        var code = new string[lines.Length - start];
+        var numbered = 0;
+        var filled = 0;
+        for (var i = start; i < lines.Length; i++)
+        {
+            var match = NumberedLine.Match(lines[i]);
+            numbered += match.Success ? 1 : 0;
+            filled += lines[i].Trim().Length > 0 ? 1 : 0;
+            numbers.Add(match.Success ? match.Groups["n"].Value : "");
+            code[i - start] = match.Success ? match.Groups["rest"].Value : lines[i];
+        }
+
+        if (numbered == 0 || (numbers[0].Length == 0 && (numbered < 2 || numbered * 5 < filled * 3)))
+        {
+            return null;
+        }
+
+        return new Listing(header, numbers, string.Join("\n", code));
+    }
+
+    private static readonly Regex NumberedLine = new Regex(@"^(?<n>\*?\d+(?:-\d+)?):(?<rest>.*)$", RegexOptions.Compiled);
+
+    /// <summary>Whether tool output is Markdown prose: an ATX heading line and at least one other non-blank line, which code and plain output lack.</summary>
+    public static bool LooksLikeMarkdown(string text)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n');
+        var headings = 0;
+        var others = 0;
+        foreach (var line in lines)
+        {
+            if (MarkdownHeading.IsMatch(line))
+            {
+                headings++;
+            }
+            else if (line.Trim().Length > 0)
+            {
+                others++;
+            }
+        }
+
+        return headings > 0 && others > 0;
+    }
+
+    /// <summary>The language of a shell call's command: the language an <c>eval</c> names, <c>bash</c> for the shell; null for other tools.</summary>
+    public static string? ShellLanguage(ToolItem item)
+    {
+        if (item.Name == "eval")
+        {
+            return Str((item.Args as JObject)?["language"]);
+        }
+
+        return item.Name == "bash" ? "bash" : null;
+    }
+
     /// <summary>
     /// What a tool call really is: running, failed, a job it only started in the background (its result
     /// acknowledges the start; the work is still going), or done.
@@ -330,7 +560,7 @@ internal static class ToolFormat
     /// <summary>Whether the header's one-line summary shows <paramref name="command"/> whole: a single line without extra whitespace that is not cut.</summary>
     public static bool FitsHeader(string command) => command.Length <= MaxSummary && Whitespace.Replace(command, " ").Trim() == command;
 
-    /// <summary>The arguments of a shell tool call other than its command or code, one <c>name: value</c> per line.</summary>
+    /// <summary>The arguments of a shell tool call other than its command or code and the intent the header shows, one <c>name: value</c> per line.</summary>
     public static string ShellParameters(ToolItem item)
     {
         if (!(item.Args is JObject args))
@@ -339,8 +569,9 @@ internal static class ToolFormat
         }
 
         var commandKey = new[] { "command", "code", "input" }.FirstOrDefault(key => Str(args[key]) != null);
+        var descriptionKey = DescriptionKeys.FirstOrDefault(key => Str(args[key]) != null);
 
-        return FlatLines(args.Properties().Where(p => p.Name != commandKey));
+        return FlatLines(args.Properties().Where(p => p.Name != commandKey && p.Name != descriptionKey));
     }
 
     /// <summary>
@@ -398,7 +629,7 @@ internal static class ToolFormat
                     return pattern.Length > 0 ? OneLine($"\"{pattern}\"{(where is not null ? $" in {where}" : "")}") : "";
                 }
             case RendererKind.Shell:
-                return OneLine(ShellCommand(item));
+                return OneLine(Description(item) ?? ShellCommand(item));
 
             case RendererKind.Lsp:
                 {

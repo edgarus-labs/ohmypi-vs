@@ -361,4 +361,138 @@ public sealed class ToolFormatTests
         Assert.Equal("[\n  1,\n  2\n]", ToolFormat.FlatArgs(JToken.Parse("[1,2]")));
         Assert.Equal("\"ls\"", ToolFormat.FlatArgs(JToken.Parse("\"ls\"")));
     }
+
+    [Fact]
+    public void Headline_of_a_shell_call_shows_its_intent_instead_of_the_command()
+    {
+        var head = ToolFormat.Headline(Tool("bash", "{\"command\":\"git status --short && git log -3\",\"i\":\"Checking working tree state\"}", endedAt: 1012, result: Result("ok")), null);
+        Assert.Equal("Checking working tree state", head.Primary);
+        Assert.Equal("Checking working tree state", ToolFormat.Description(Tool("bash", "{\"command\":\"ls\",\"i\":\"Checking working tree state\"}")));
+        Assert.Equal("List files", ToolFormat.Description(Tool("eval", "{\"code\":\"ls\",\"title\":\"List files\"}")));
+        Assert.Null(ToolFormat.Description(Tool("bash", "{\"command\":\"ls\"}")));
+        Assert.Equal("ls", ToolFormat.Headline(Tool("bash", "{\"command\":\"ls\"}", endedAt: 1012), null).Primary);
+    }
+
+    [Fact]
+    public void Shell_parameters_leave_out_the_intent_the_header_shows()
+    {
+        Assert.Equal("timeout: 30", ToolFormat.ShellParameters(Tool("bash", "{\"command\":\"ls\",\"i\":\"Listing\",\"timeout\":30}")));
+        Assert.Equal("language: py", ToolFormat.ShellParameters(Tool("eval", "{\"code\":\"x\",\"title\":\"Run\",\"language\":\"py\"}")));
+    }
+
+    [Theory]
+    [InlineData("a\nb\n\n\nWall time: 0.13 seconds\n\nCommand exited with code 1\n", "a\nb")]
+    [InlineData("a\n\nWall time: 8.67 seconds", "a")]
+    [InlineData("Command exited with code 127", "")]
+    [InlineData("Wall time: 1 second\nreal output", "Wall time: 1 second\nreal output")]
+    [InlineData("plain\n", "plain")]
+    public void Shell_output_is_shown_without_its_timing_and_exit_code_trailer(string text, string shown) => Assert.Equal(shown, ToolFormat.StripShellTrailer(text));
+
+    [Theory]
+    [InlineData("{\"n\":0}\n```json\n{\n  \"n\": 0\n}\n```", "{\"n\":0}\n{\n  \"n\": 0\n}", "json")]
+    [InlineData("```\nls\n```\n", "ls\n", null)]
+    [InlineData("```\nx\n```\n```c#\ny\n```", "x\ny", "c#")]
+    [InlineData("a ``` b\nnot a fence", "a ``` b\nnot a fence", null)]
+    [InlineData("plain", "plain", null)]
+    public void Markdown_fences_around_tool_output_are_not_shown_and_name_its_language(string text, string shown, string? language) =>
+        Assert.Equal((shown, language), ToolFormat.StripFences(text));
+
+    [Fact]
+    public void The_language_of_a_shell_command_is_the_one_eval_names_or_bash()
+    {
+        Assert.Equal("py", ToolFormat.ShellLanguage(Tool("eval", "{\"code\":\"x\",\"language\":\"py\"}")));
+        Assert.Null(ToolFormat.ShellLanguage(Tool("eval", "{\"code\":\"x\"}")));
+        Assert.Equal("bash", ToolFormat.ShellLanguage(Tool("bash", "{\"command\":\"ls\"}")));
+        Assert.Null(ToolFormat.ShellLanguage(Tool("read", "{\"path\":\"a\"}")));
+    }
+
+    [Theory]
+    [InlineData("{\"tool\": \"x\", \"title\": \"cut he", true)]
+    [InlineData("[1, 2, 3]", true)]
+    [InlineData("<Project Sdk=\"x\" />", true)]
+    [InlineData("{'text': 'py repr'}", true)]
+    [InlineData("Started in the background.", false)]
+    [InlineData("edited src/a.cs:7 ok", false)]
+    public void A_single_line_that_is_code_sits_in_a_code_box(string text, bool code) => Assert.Equal(code, ToolFormat.LooksLikeCode(text));
+
+    [Theory]
+    [InlineData("# mcp__create_issue - edgarus/create_issue\n\nCreate an issue.\n\n## Schema\ntype Args = {", true)]
+    [InlineData("Intro line.\n\n## Section\n- one\n- two", true)]
+    [InlineData("{\"a\":1}", false)]
+    [InlineData("Passed 3\nFailed 0", false)]
+    [InlineData("# only a heading", false)]
+    [InlineData("x = 1 # a comment\ny = 2", false)]
+    public void Tool_output_reads_as_markdown_when_it_has_a_heading_and_prose(string text, bool markdown) =>
+        Assert.Equal(markdown, ToolFormat.LooksLikeMarkdown(text));
+
+    private const string GrepStyleResult = "# src/Web/Features/\n\n## Status.cs#D5E9\n\n9:// happens here\n*10:// quality is never populated\n";
+
+    [Theory]
+    [InlineData("mcp__github_create_issue", true)]
+    [InlineData("custom_tool", true)]
+    [InlineData("grep", false)]
+    [InlineData("read", false)]
+    [InlineData("glob", false)]
+    [InlineData("bash", false)]
+    [InlineData("edit", false)]
+    public void Only_text_tools_render_a_markdown_result_as_prose_while_file_and_shell_output_stays_code(string tool, bool prose) =>
+        Assert.Equal(prose, ToolFormat.RendersMarkdown(Tool(tool, "{}", result: Result(GrepStyleResult))));
+
+    [Theory]
+    [InlineData("read", "{\"path\":\"src/App/Factory.cs\"}", "cs")]
+    [InlineData("read", "{\"path\":\"C:\\\\repo\\\\build.PS1\"}", "ps1")]
+    [InlineData("edit", "{\"path\":\"a/b.csproj\"}", "csproj")]
+    [InlineData("write", "{\"file_path\":\"notes.md\"}", "md")]
+    [InlineData("read", "{\"path\":\"Makefile\"}", null)]
+    [InlineData("read", "{}", null)]
+    [InlineData("bash", "{\"command\":\"cat a.cs\"}", null)]
+    public void A_file_tools_result_takes_its_language_from_the_files_extension(string tool, string args, string? language) =>
+        Assert.Equal(language, ToolFormat.FileLanguage(Tool(tool, args)));
+
+    [Fact]
+    public void Line_numbers_omp_prefixes_to_a_read_are_split_into_a_gutter_and_clean_code()
+    {
+        var text = "[src/a.cs#8257]\n1:using A;\n2:\n3:var x = 1;\n26-35:    { … }\n36:";
+        var listing = ToolFormat.SplitLineNumbers(text)!;
+        Assert.Equal("[src/a.cs#8257]", listing.Header);
+        Assert.Equal(new[] { "1", "2", "3", "26-35", "36" }, listing.Numbers);
+        Assert.Equal("using A;\n\nvar x = 1;\n    { … }\n", listing.Code);
+
+        var trailer = ToolFormat.SplitLineNumbers("1:using A;\n…\n\n[truncated at 2 of 9 lines]")!;
+        Assert.Equal(new[] { "1", "", "", "" }, trailer.Numbers);
+        Assert.Equal("using A;\n…\n\n[truncated at 2 of 9 lines]", trailer.Code);
+
+        var lead = ToolFormat.SplitLineNumbers("23\n----- 21409\n21406:    internal void M()\n21407:    {\n21408:    }")!;
+        Assert.Equal(new[] { "", "", "21406", "21407", "21408" }, lead.Numbers);
+        Assert.Equal("23\n----- 21409\n    internal void M()\n    {\n    }", lead.Code);
+    }
+
+    [Theory]
+    [InlineData("using A;\nvar x = 1;")]
+    [InlineData("a\n2:x")]
+    [InlineData("count\n1:a\nb\nc\nd")]
+    [InlineData("")]
+    public void Output_that_is_mostly_unnumbered_is_not_a_listing(string text) => Assert.Null(ToolFormat.SplitLineNumbers(text));
+
+    [Fact]
+    public void A_read_of_a_markdown_file_renders_as_prose_without_the_line_number_prefixes()
+    {
+        const string numbered = "[docs/a.md#1A2B]\n1:Intro text.\n2:- item\n";
+        Assert.True(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"docs/a.md\"}", result: Result(numbered))));
+        Assert.False(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"docs/a.cs\"}", result: Result(GrepStyleResult))));
+        Assert.False(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"docs/a.md\"}", result: Result(numbered, isError: true))));
+        Assert.Equal("Intro text.\n- item", ToolFormat.ProseText(numbered));
+        Assert.True(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"xd://vs_find_commands\"}", result: Result("# vs_find_commands\n\nSearch command names.\n"))));
+        Assert.False(ToolFormat.RendersMarkdown(Tool("read", "{\"path\":\"xd://log\"}", result: Result("plain line\nanother\n"))));
+    }
+
+    [Fact]
+    public void A_search_tools_pattern_marks_its_result_as_a_regex_or_as_literal_text_when_invalid()
+    {
+        Assert.Equal("MapGet(", ToolFormat.SearchPattern(Tool("grep", "{\"pattern\":\"Map(Get|Group)\\\\(\"}"))!.Match("x.MapGet(1)").Value);
+        Assert.Equal("a(b", ToolFormat.SearchPattern(Tool("grep", "{\"pattern\":\"a(b\"}"))!.Match("xa(by").Value);
+        Assert.Null(ToolFormat.SearchPattern(Tool("grep", "{}")));
+        Assert.Null(ToolFormat.SearchPattern(Tool("bash", "{\"pattern\":\"x\"}")));
+        Assert.Equal("# plain", ToolFormat.ProseText("# plain"));
+    }
 }

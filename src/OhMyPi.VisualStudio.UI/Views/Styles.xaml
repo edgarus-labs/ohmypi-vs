@@ -152,6 +152,15 @@
 		<Setter Property="Padding" Value="0" />
 	</Style>
 
+	<!-- The composer's send/stop button: a square key with a face and an edge, like the return key it shows. -->
+	<Style x:Key="Omp.SendButton" TargetType="ButtonBase" BasedOn="{StaticResource Omp.IconButton}">
+		<Setter Property="Width" Value="30" />
+		<Setter Property="Height" Value="30" />
+		<Setter Property="FontSize" Value="14" />
+		<Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurface}}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurfaceBorder}}" />
+	</Style>
+
 	<Style x:Key="Omp.ToggleButton" TargetType="ToggleButton" BasedOn="{StaticResource Omp.IconButton}">
 		<Style.Triggers>
 			<Trigger Property="IsChecked" Value="True">
@@ -461,13 +470,19 @@
 		<Setter Property="CornerRadius" Value="6" />
 	</Style>
 
-	<!-- Multi-line tool results (output, JSON, diffs): a bordered box on the code surface, set apart from the transcript on every theme. -->
-	<Style x:Key="Omp.CodeBlock" TargetType="Border">
-		<Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurface}}" />
+	<!-- A tool's result (output, JSON, diffs, Markdown): a box on the output surface, which leans the other way than the code surface so a result and a message never look alike. -->
+	<Style x:Key="Omp.OutputBlock" TargetType="Border">
+		<Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.OutputSurface}}" />
 		<Setter Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.CodeSurfaceBorder}}" />
 		<Setter Property="BorderThickness" Value="1" />
 		<Setter Property="CornerRadius" Value="5" />
 		<Setter Property="Padding" Value="10,6" />
+	</Style>
+
+	<!-- A failed call's body: the soft removed-line red of diffs, never the saturated error color. -->
+	<Style x:Key="Omp.OutputBlockFailed" TargetType="Border" BasedOn="{StaticResource Omp.OutputBlock}">
+		<Setter Property="Background" Value="{DynamicResource {x:Static v:ThemeKeys.DiffRemovedLine}}" />
+		<Setter Property="BorderBrush" Value="{DynamicResource {x:Static v:ThemeKeys.DiffRemovedWord}}" />
 	</Style>
 
 	<!-- Section and collapsible headers: chevron + content, full width, no hover fill. -->

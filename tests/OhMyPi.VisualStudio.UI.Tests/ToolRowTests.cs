@@ -97,16 +97,21 @@ public sealed class ToolRowTests
     private static TextBox Box(System.Windows.DependencyObject root, string name) =>
         Descendants(root).OfType<TextBox>().Single(t => t.IsVisible && System.Windows.Automation.AutomationProperties.GetName(t) == name);
 
+    /// <summary>The text of the colored code box named <paramref name="name"/>, with the line ends a rich text box reports normalized away.</summary>
+    private static string Code(System.Windows.DependencyObject root, string name) =>
+        new System.Windows.Documents.TextRange(Named<RichTextBox>(root, name).Document.ContentStart, Named<RichTextBox>(root, name).Document.ContentEnd).Text.Replace("\r\n", "\n").TrimEnd('\n');
+
     [Fact]
-    public void Generic_tool_shows_its_arguments_and_output()
+    public void Generic_tool_shows_its_arguments_and_its_output_without_opening()
     {
         var item = Tool("t1", "custom_tool", "{\"query\":\"x\"}", ToolStatus.Done, new ToolResultView { Text = "result" });
         var service = new FakeService { Transcript = new TranscriptItem[] { item } };
         RunSta((window, control) =>
         {
             var row = ToolRowOf(window);
-            Assert.Equal("query: x", Box(row, "Input").Text);
             Assert.Equal("result", Box(row, "Result").Text);
+            Assert.Equal("query: x", Code(row, "Input"));
+            Assert.Empty(AllNamed<Button>(row, "details"));
         }, service, new FakeHost());
     }
 
@@ -117,8 +122,9 @@ public sealed class ToolRowTests
         var service = new FakeService { Transcript = new TranscriptItem[] { item } };
         RunSta((window, control) =>
         {
-            var box = Box(ToolRowOf(window), "Input");
-            Assert.Equal("query: x\nlimit: 5\nscope: {\"a\":1}", box.Text);
+            var row = ToolRowOf(window);
+            Assert.Equal("query: x\nlimit: 5\nscope: {\"a\":1}", Code(row, "Input"));
+            var box = Named<RichTextBox>(row, "Input");
 
             box.Focus();
             box.SelectAll();
@@ -157,9 +163,9 @@ public sealed class ToolRowTests
         RunSta((window, control) =>
         {
             var rows = ToolRows(window);
-            var box = Box(rows[0], "Result");
-            Assert.Equal("{\n  \"review_threads\": [],\n  \"totalCount\": 0\n}", box.Text);
-            Assert.Equal("{\"a\":1,}", Box(rows[1], "Result").Text);
+            var box = Named<RichTextBox>(rows[0], "Result");
+            Assert.Equal("{\r\n  \"review_threads\": [],\r\n  \"totalCount\": 0\r\n}\r\n", new System.Windows.Documents.TextRange(box.Document.ContentStart, box.Document.ContentEnd).Text);
+            Assert.Equal("{\"a\":1,}", Named<RichTextBox>(rows[1], "Result").Document.Blocks.OfType<System.Windows.Documents.Paragraph>().Single().Inlines.OfType<System.Windows.Documents.Run>().Select(r => r.Text).Aggregate(string.Concat));
 
             box.Focus();
             box.SelectAll();
@@ -167,9 +173,27 @@ public sealed class ToolRowTests
             System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
             Assert.Equal(raw, System.Windows.Clipboard.GetText());
 
-            box.Select(0, 3);
+            box.Selection.Select(box.Document.ContentStart, box.Document.ContentStart.GetPositionAtOffset(3)!);
             System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
-            Assert.Equal("{\n ", System.Windows.Clipboard.GetText());
+            Assert.StartsWith("{", System.Windows.Clipboard.GetText());
+            Assert.NotEqual(raw, System.Windows.Clipboard.GetText());
+        }, service, new FakeHost());
+    }
+
+    [Fact]
+    public void Json_results_color_only_their_keys_and_fenced_json_loses_its_fence()
+    {
+        var item = Tool("t1", "custom_tool", "{}", ToolStatus.Done, new ToolResultView { Text = "{\"n\":1}\n```json\n{\n  \"n\": 1\n}\n```" });
+        var service = new FakeService { Transcript = new TranscriptItem[] { item } };
+        RunSta((window, control) =>
+        {
+            var box = Named<RichTextBox>(window, "Result");
+            var runs = box.Document.Blocks.OfType<System.Windows.Documents.Paragraph>().Single().Inlines.OfType<System.Windows.Documents.Run>().ToList();
+            Assert.Equal("{\"n\":1}\n{\n  \"n\": 1\n}", new System.Windows.Documents.TextRange(box.Document.ContentStart, box.Document.ContentEnd).Text.Replace("\r\n", "\n").TrimEnd('\n'));
+            bool Colored(string text) => runs.First(r => r.Text == text).ReadLocalValue(System.Windows.Documents.TextElement.ForegroundProperty) != System.Windows.DependencyProperty.UnsetValue;
+            Assert.True(Colored("\"n\""));
+            Assert.True(Colored("1"));
+            Assert.False(Colored("{"));
         }, service, new FakeHost());
     }
 
@@ -190,7 +214,7 @@ public sealed class ToolRowTests
     }
 
     [Fact]
-    public void Tool_output_previews_six_lines_then_offers_show_more()
+    public void Tool_output_previews_five_lines_then_offers_show_more()
     {
         var text = string.Join("\n", Enumerable.Range(1, 50).Select(i => "line " + i));
         var item = Tool("t1", "custom_tool", "{}", ToolStatus.Done, new ToolResultView { Text = text });
@@ -198,8 +222,24 @@ public sealed class ToolRowTests
         RunSta((window, control) =>
         {
             var output = Descendants(window).OfType<TextBox>().Single(t => t.IsVisible && t.Text.StartsWith("line 1\n", StringComparison.Ordinal));
-            Assert.Equal(6, output.Text.Split('\n').Length);
+            Assert.Equal(5, output.Text.Split('\n').Length);
             Assert.NotNull(Named<Button>(window, "show more (50 lines)"));
+        }, service, new FakeHost());
+    }
+
+    [Fact]
+    public void A_shell_call_with_an_intent_shows_it_in_the_header_and_the_command_below_it()
+    {
+        var item = Tool("t1", "bash", "{\"command\":\"git status --short\",\"i\":\"Checking the working tree\"}", ToolStatus.Done,
+            new ToolResultView { Text = " M a.cs\n\nWall time: 0.05 seconds\n\nCommand exited with code 0\n", Details = JToken.Parse("{\"exitCode\":0}") });
+        var service = new FakeService { Transcript = new TranscriptItem[] { item } };
+        RunSta((window, control) =>
+        {
+            var row = ToolRowOf(window);
+            Assert.Contains("Checking the working tree", Texts(row));
+            Assert.Equal(" M a.cs", Box(row, "Result").Text);
+            Assert.Equal("git status --short", Code(row, "Command"));
+            Assert.Empty(AllNamed<Button>(row, "details"));
         }, service, new FakeHost());
     }
 
@@ -246,7 +286,7 @@ public sealed class ToolRowTests
         {
             Click(Named<Button>(window, "show more (50000 lines)"));
             Pump();
-            var shown = Descendants(window).OfType<TextBox>().Single(t => t.IsVisible && t.Text.Contains("line 50000"));
+            var shown = Descendants(window).OfType<TextBox>().Single(t => t.IsVisible && t.Text.StartsWith("line 1\nline 2\n", StringComparison.Ordinal));
             Assert.True(shown.Text.Length < text.Length / 4, $"expanded output holds {shown.Text.Length} chars");
             Assert.NotNull(Named<Button>(window, "Copy all 50000 lines"));
         }, service, new FakeHost());
@@ -261,5 +301,54 @@ public sealed class ToolRowTests
             var summary = Descendants(window).OfType<TextBlock>().Single(t => t.IsVisible && t.Text.StartsWith("Whole turn", StringComparison.Ordinal));
             Assert.Equal("Whole turn · 4m 14s · 21k in · 1.8k out · $0.2548", summary.Text);
         }, service, new FakeHost());
+    }
+
+    [Fact]
+    public void Show_more_always_follows_the_text_it_cuts_and_in_IN_comes_after_the_parameters()
+    {
+        var command = string.Join("\n", Enumerable.Range(1, 6).Select(i => "echo " + i));
+        var output = string.Join("\n", Enumerable.Range(1, 50).Select(i => "line " + i));
+        var item = Tool("t1", "bash", "{\"command\":" + Newtonsoft.Json.JsonConvert.ToString(command) + ",\"timeout\":60}", ToolStatus.Done, new ToolResultView { Text = output });
+        var service = new FakeService { Transcript = new TranscriptItem[] { item } };
+        RunSta((window, control) =>
+        {
+            var row = ToolRowOf(window);
+            Assert.True(Order(row, "show more (50 lines)") > Order(row, "Result"));
+            Assert.True(Order(row, "show more (6 lines)") > Order(row, "Parameters"));
+            Assert.True(Order(row, "Parameters") > Order(row, "Command"));
+        }, service, new FakeHost());
+    }
+    [Fact]
+    public void An_open_row_collapses_back_to_its_preview()
+    {
+        var text = string.Join("\n", Enumerable.Range(1, 50).Select(i => "line " + i));
+        var item = Tool("t1", "custom_tool", "{}", ToolStatus.Done, new ToolResultView { Text = text });
+        var service = new FakeService { Transcript = new TranscriptItem[] { item } };
+        RunSta((window, control) =>
+        {
+            Click(Named<Button>(window, "show more (50 lines)"));
+            Pump();
+            Assert.Equal(50, Box(ToolRowOf(window), "Result").Text.Split('\n').Length);
+            Click(Named<Button>(window, "collapse"));
+            Pump();
+            Assert.Equal(5, Box(ToolRowOf(window), "Result").Text.Split('\n').Length);
+            Assert.True(Named<Button>(window, "show more (50 lines)").IsVisible);
+        }, service, new FakeHost());
+    }
+
+
+    private static int Order(System.Windows.DependencyObject root, string automationName) =>
+        DepthFirst(root).ToList().FindIndex(d => d is System.Windows.FrameworkElement fe && System.Windows.Automation.AutomationProperties.GetName(fe) == automationName);
+
+    private static System.Collections.Generic.IEnumerable<System.Windows.DependencyObject> DepthFirst(System.Windows.DependencyObject node)
+    {
+        yield return node;
+        for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(node); i++)
+        {
+            foreach (var child in DepthFirst(System.Windows.Media.VisualTreeHelper.GetChild(node, i)))
+            {
+                yield return child;
+            }
+        }
     }
 }

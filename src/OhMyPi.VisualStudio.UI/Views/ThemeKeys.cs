@@ -13,8 +13,11 @@ internal static class ThemeKeys
 {
     public static object FontFamily => VsFonts.EnvironmentFontFamilyKey;
 
-    /// <summary>Base text size: one step (111%) above the environment font, still following its setting.</summary>
-    public static object FontSize => VsFonts.Environment111PercentFontSizeKey;
+    /// <summary>Base text size of the window: the environment font, as the rest of the shell, following its setting.</summary>
+    public static object FontSize => VsFonts.EnvironmentFontSizeKey;
+
+    /// <summary>Base text size of the conversation: two steps (122%) above the environment font, still following its setting.</summary>
+    public static object ChatFontSize => VsFonts.Environment122PercentFontSizeKey;
 
     /// <summary>The "Shell" color category of Visual Studio 2026, whose text tokens Solution Explorer draws with.</summary>
     private static readonly Guid ShellCategory = new Guid("73708ded-2d56-4aad-b8eb-73b20d3f4bff");
@@ -59,6 +62,7 @@ internal static class ThemeKeys
     /// <summary>Colors the host derives from the theme (see <see cref="PaletteKeys"/>): the code surface and the diff backgrounds.</summary>
     public const string CodeSurface = PaletteKeys.CodeSurface;
     public const string CodeSurfaceBorder = PaletteKeys.CodeSurfaceBorder;
+    public const string OutputSurface = PaletteKeys.OutputSurface;
     public const string DiffAddedLine = PaletteKeys.DiffAddedLine;
     public const string DiffRemovedLine = PaletteKeys.DiffRemovedLine;
     public const string DiffAddedWord = PaletteKeys.DiffAddedWord;

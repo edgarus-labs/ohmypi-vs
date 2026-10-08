@@ -11,6 +11,8 @@ public static class PaletteKeys
     public const string CodeSurface = "Omp.Surface.Code";
     /// <summary>Border of the code surface and of table frames: a little further from the window background than the surface.</summary>
     public const string CodeSurfaceBorder = "Omp.Surface.CodeBorder";
+    /// <summary>Background of a tool's result: the window background nudged the other way than the code surface, so results and messages never share a shade.</summary>
+    public const string OutputSurface = "Omp.Surface.Output";
     public const string DiffAddedLine = "Omp.Diff.AddedLine";
     public const string DiffRemovedLine = "Omp.Diff.RemovedLine";
     public const string DiffAddedWord = "Omp.Diff.AddedWord";

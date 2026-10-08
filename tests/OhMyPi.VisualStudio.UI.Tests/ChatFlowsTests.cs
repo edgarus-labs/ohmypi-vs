@@ -383,7 +383,7 @@ public sealed class ChatFlowsTests
             var bolds = Descendants(window).OfType<RichTextBox>().SelectMany(r => r.Document.Blocks.OfType<Paragraph>()).SelectMany(p => p.Inlines.OfType<Bold>());
             Assert.Contains(bolds, b => new TextRange(b.ContentStart, b.ContentEnd).Text == "bold");
             Assert.True(HasText(window, "Size"));
-            Assert.Contains(Descendants(window).OfType<TextBox>(), t => t.Text == "var x = 1;");
+            Assert.True(HasText(window, "var x = 1;"));
             Assert.False(HasText(window, "**bold**"));
         }, service, new FakeHost());
     }

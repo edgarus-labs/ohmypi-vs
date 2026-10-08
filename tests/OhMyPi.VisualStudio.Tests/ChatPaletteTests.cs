@@ -46,6 +46,17 @@ public sealed class ChatPaletteTests
     }
 
     [Fact]
+    public void OutputSurfaceLeansTheOtherWayThanTheCodeSurfaceAndStaysOpaque()
+    {
+        var onDark = ChatPalette.OutputSurface(Dark, false);
+        var onLight = ChatPalette.OutputSurface(Light, false);
+        Assert.Equal(0xFF, onDark.A);
+        Assert.True(onDark.R < Dark.R && onDark.G < Dark.G && onDark.B < Dark.B);
+        Assert.True(onLight.R > Light.R && onLight.G > Light.G && onLight.B > Light.B);
+        Assert.Equal(Dark, ChatPalette.OutputSurface(Dark, true));
+    }
+
+    [Fact]
     public void DiffLinesAreTranslucentAndTheirChangedWordsStronger()
     {
         foreach (var dark in new[] { true, false })
