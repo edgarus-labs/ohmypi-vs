@@ -7,14 +7,36 @@ namespace OhMyPi.VisualStudio.Logic.Automation;
 /// <summary>The Visual Studio tools offered to the agent: names, guidance for the model and argument schemas.</summary>
 internal static class VsToolDefinitions
 {
+    /// <summary>
+    /// The build actions.
+    /// </summary>
     public static readonly string[] BuildActions = ["build", "rebuild", "clean"];
+    /// <summary>
+    /// The severities.
+    /// </summary>
     public static readonly string[] Severities = ["error", "warning", "message", "all"];
+    /// <summary>
+    /// The debug actions.
+    /// </summary>
     public static readonly string[] DebugActions = ["start", "start_without_debugging", "stop", "break", "continue", "step_into", "step_over", "step_out", "state"];
+    /// <summary>
+    /// The breakpoint actions.
+    /// </summary>
     public static readonly string[] BreakpointActions = ["list", "add", "remove"];
+    /// <summary>
+    /// The inspect kinds.
+    /// </summary>
     public static readonly string[] InspectKinds = ["evaluate", "callstack", "locals"];
 
+    /// <summary>
+    /// Gets the collection of all.
+    /// </summary>
     public static IReadOnlyList<HostToolDefinition> All { get; } = Create();
 
+    /// <summary>
+    /// Initializes and returns a read-only list of tool definitions that define the available Visual Studio host capabilities and their associated parameters.
+    /// </summary>
+    /// <returns>A collection of iread only list items.</returns>
     private static IReadOnlyList<HostToolDefinition> Create()
     {
         const string pathNote = "Relative paths are resolved against the working directory; the file must be inside the workspace.";
@@ -148,6 +170,14 @@ internal static class VsToolDefinitions
         };
     }
 
+    /// <summary>
+    /// Creates a new HostToolDefinition by wrapping the provided name, description, and properties into a structured JSON schema object.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <param name="description">The description.</param>
+    /// <param name="properties">The properties.</param>
+    /// <param name="required">The collection of required.</param>
+    /// <returns>The host tool definition result.</returns>
     private static HostToolDefinition Tool(string name, string description, JObject properties, params string[] required) =>
         new HostToolDefinition(name, description, new JObject
         {
@@ -157,13 +187,35 @@ internal static class VsToolDefinitions
             ["additionalProperties"] = false,
         });
 
+    /// <summary>
+    /// Creates a JSON object representing a string type definition with the specified description.
+    /// </summary>
+    /// <param name="description">The description.</param>
+    /// <returns>The jobject result.</returns>
     private static JObject Str(string description) => new JObject { ["type"] = "string", ["description"] = description };
 
+    /// <summary>
+    /// Creates a JSON object representing an integer schema definition with the specified description and minimum value.
+    /// </summary>
+    /// <param name="description">The description.</param>
+    /// <param name="minimum">The minimum.</param>
+    /// <returns>The jobject result.</returns>
     private static JObject Int(string description, int minimum) =>
         new JObject { ["type"] = "integer", ["description"] = description, ["minimum"] = minimum };
 
+    /// <summary>
+    /// Creates a JSON object representing a boolean type definition with the specified description.
+    /// </summary>
+    /// <param name="description">The description.</param>
+    /// <returns>The jobject result.</returns>
     private static JObject Bool(string description) => new JObject { ["type"] = "boolean", ["description"] = description };
 
+    /// <summary>
+    /// Creates a JSON object representing a string-type schema definition with a specified description and a set of allowed enumeration values.
+    /// </summary>
+    /// <param name="description">The description.</param>
+    /// <param name="values">The collection of values.</param>
+    /// <returns>The jobject result.</returns>
     private static JObject Choice(string description, string[] values) =>
         new JObject { ["type"] = "string", ["description"] = description, ["enum"] = new JArray(values) };
 }

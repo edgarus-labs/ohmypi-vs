@@ -9,6 +9,9 @@ namespace OhMyPi.VisualStudio.Tests;
 
 public sealed class ServiceSupervisorTests : IAsyncLifetime
 {
+    /// <summary>
+    /// Provides an internal implementation of the IServiceNotifier interface to manage service-level notifications, error reporting, and application state triggers.
+    /// </summary>
     private sealed class Notifier : IServiceNotifier
     {
         private readonly object _gate = new();
@@ -16,8 +19,14 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
         private int _logShown;
         private int _settingsOpened;
         private int _closed;
+        /// <summary>
+        /// The choose.
+        /// </summary>
         public Func<string, string?> Choose = _ => null;
 
+        /// <summary>
+        /// Gets the collection of errors.
+        /// </summary>
         public IReadOnlyList<(string Message, string[] Actions)> Errors
         {
             get
@@ -29,12 +38,27 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
             }
         }
 
+        /// <summary>
+        /// Gets the log shown.
+        /// </summary>
         public int LogShown => System.Threading.Volatile.Read(ref _logShown);
 
+        /// <summary>
+        /// Gets the settings opened.
+        /// </summary>
         public int SettingsOpened => System.Threading.Volatile.Read(ref _settingsOpened);
 
+        /// <summary>
+        /// Gets the closed.
+        /// </summary>
         public int Closed => System.Threading.Volatile.Read(ref _closed);
 
+        /// <summary>
+        /// Asynchronously displays an error message with a set of optional actions and returns the user&apos;s selection.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="actions">The collection of actions.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the string?.</returns>
         public Task<string?> ShowErrorAsync(string message, params string[] actions)
         {
             lock (_gate)
@@ -45,19 +69,34 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
             return Task.FromResult(Choose(message));
         }
 
+        /// <summary>
+        /// Increments the count of closed errors in a thread-safe manner.
+        /// </summary>
         public void CloseErrors() => System.Threading.Interlocked.Increment(ref _closed);
 
+        /// <summary>
+        /// Increments the internal counter tracking the number of times the log has been displayed.
+        /// </summary>
         public void ShowLog() => System.Threading.Interlocked.Increment(ref _logShown);
 
+        /// <summary>
+        /// Increments the counter tracking the number of times the settings menu has been opened.
+        /// </summary>
         public void OpenSettings() => System.Threading.Interlocked.Increment(ref _settingsOpened);
     }
 
+    /// <summary>
+    /// Provides a concrete implementation of the IOmpLogger interface for capturing and storing diagnostic information, warnings, and errors.
+    /// </summary>
     private sealed class Logger : IOmpLogger
     {
         private readonly object _gate = new();
         private readonly List<(string Message, Exception? Error)> _errors = new();
         private readonly List<string> _infos = new();
 
+        /// <summary>
+        /// Gets the collection of errors.
+        /// </summary>
         public IReadOnlyList<(string Message, Exception? Error)> Errors
         {
             get
@@ -69,6 +108,9 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
             }
         }
 
+        /// <summary>
+        /// Gets the collection of infos.
+        /// </summary>
         public IReadOnlyList<string> Infos
         {
             get
@@ -80,6 +122,11 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
             }
         }
 
+        /// <summary>
+        /// Records a specified error message and an optional exception to the internal error collection in a thread-safe manner.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Error(string message, Exception? error = null)
         {
             lock (_gate)
@@ -88,8 +135,18 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
             }
         }
 
+        /// <summary>
+        /// Logs a warning message and an optional associated exception to the diagnostic system.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Warn(string message, Exception? error = null) { }
 
+        /// <summary>
+        /// Records an informational message and an optional exception to the internal information collection in a thread-safe manner.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Info(string message, Exception? error = null)
         {
             lock (_gate)
@@ -98,10 +155,23 @@ public sealed class ServiceSupervisorTests : IAsyncLifetime
             }
         }
 
+        /// <summary>
+        /// Logs a debug message and an optional exception to the diagnostic output.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Debug(string message, Exception? error = null) { }
 
+        /// <summary>
+        /// Gets a value indicating whether trace enabled.
+        /// </summary>
         public bool TraceEnabled => false;
 
+        /// <summary>
+        /// Records a diagnostic trace entry specifying the communication direction and the current execution frame.
+        /// </summary>
+        /// <param name="direction">The direction.</param>
+        /// <param name="frame">The frame.</param>
         public void Trace(string direction, string frame) { }
     }
 

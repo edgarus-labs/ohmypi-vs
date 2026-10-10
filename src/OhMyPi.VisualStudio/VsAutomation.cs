@@ -66,6 +66,13 @@ internal sealed partial class VsAutomation : IVsAutomation
     private CancellationTokenSource LinkToDisposal(CancellationToken cancellationToken) =>
         CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _package.DisposalToken);
 
+    /// <summary>
+    /// Asynchronously waits for the specified task to complete or for the timeout to expire, while supporting cancellation via a linked token.
+    /// </summary>
+    /// <param name="task">The task.</param>
+    /// <param name="timeout">The timeout.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result is true if successful; otherwise, false.</returns>
     private async Task<bool> WaitAsync(Task task, TimeSpan timeout, CancellationToken cancellationToken)
     {
         using (var linked = LinkToDisposal(cancellationToken))
@@ -76,9 +83,20 @@ internal sealed partial class VsAutomation : IVsAutomation
         }
     }
 
+    /// <summary>
+    /// Determines whether the specified path is rooted and contains no invalid path characters.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     private static bool IsRootedPath(string? path) =>
         !string.IsNullOrEmpty(path) && path!.IndexOfAny(InvalidPathChars) < 0 && Path.IsPathRooted(path);
 
+    /// <summary>
+    /// Determines whether two file system paths refer to the same location by comparing their full paths in a case-insensitive manner.
+    /// </summary>
+    /// <param name="left">The left.</param>
+    /// <param name="right">The right.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private static bool SamePath(string? left, string? right)
     {
         if (left is null || right is null)
@@ -94,6 +112,12 @@ internal sealed partial class VsAutomation : IVsAutomation
         return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Validates that the specified path is rooted and returns its fully qualified absolute path.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <returns>The string result.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static string FullPath(string path)
     {
         if (!IsRootedPath(path))
@@ -104,8 +128,19 @@ internal sealed partial class VsAutomation : IVsAutomation
         return Path.GetFullPath(path);
     }
 
+    /// <summary>
+    /// Returns null if the specified string is null or empty; otherwise, returns the original string.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The string? result.</returns>
     private static string? NullIfEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 
+    /// <summary>
+    /// Asynchronously retrieves detailed information about the currently open Visual Studio solution, including its path, associated projects, active build configuration, and startup projects.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the solution info.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task<SolutionInfo> GetSolutionAsync(CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -151,6 +186,12 @@ internal sealed partial class VsAutomation : IVsAutomation
         return info;
     }
 
+    /// <summary>
+    /// Retrieves the display name of a project that matches the specified unique name from a list of projects, returning the unique name if no match is found.
+    /// </summary>
+    /// <param name="projects">The collection of projects.</param>
+    /// <param name="uniqueName">The unique name.</param>
+    /// <returns>The string result.</returns>
     private static string ProjectNameByUniqueName(List<Project> projects, string uniqueName)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -165,6 +206,13 @@ internal sealed partial class VsAutomation : IVsAutomation
         return uniqueName;
     }
 
+    /// <summary>
+    /// Asynchronously searches for and retrieves a filtered list of command names from the IDE, ordered by relevance and limited to the specified maximum count.
+    /// </summary>
+    /// <param name="filter">The filter.</param>
+    /// <param name="max">The max.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public async Task<IReadOnlyList<string>> FindCommandsAsync(string filter, int max, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -192,12 +240,26 @@ internal sealed partial class VsAutomation : IVsAutomation
             .ToList();
     }
 
+    /// <summary>
+    /// Asynchronously enters the user interface and executes a named command with the specified arguments.
+    /// </summary>
+    /// <param name="command">The command containing the operation data.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task ExecuteCommandAsync(string command, string? arguments, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
         ExecuteNamedCommand(dte, command, arguments);
     }
 
+    /// <summary>
+    /// Executes a specified Visual Studio command by name with the provided arguments after validating that the command exists and is available in the current context.
+    /// </summary>
+    /// <param name="dte">The dte.</param>
+    /// <param name="command">The command containing the operation data.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static void ExecuteNamedCommand(DTE2 dte, string command, string? arguments)
     {
         ThreadHelper.ThrowIfNotOnUIThread();

@@ -9,11 +9,17 @@ public sealed class SlashCommandView
     /// <summary>Name without the leading slash.</summary>
     public string Name { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the description.
+    /// </summary>
     public string? Description { get; set; }
 
     /// <summary>Argument hint, e.g. "&lt;plan|scan&gt;".</summary>
     public string? Hint { get; set; }
 
+    /// <summary>
+    /// Gets or sets the collection of aliases.
+    /// </summary>
     public IReadOnlyList<string> Aliases { get; set; } = Array.Empty<string>();
 
     /// <summary>builtin, skill, extension, ... as reported by OMP.</summary>

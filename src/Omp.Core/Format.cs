@@ -35,6 +35,11 @@ public static class Format
         return name.EndsWith(".jsonl", StringComparison.Ordinal) && name.Length > ".jsonl".Length ? name.Substring(0, name.Length - ".jsonl".Length) : name;
     }
 
+    /// <summary>
+    /// Converts a byte count into a human-readable string representation using the most appropriate unit of measurement.
+    /// </summary>
+    /// <param name="bytes">The bytes.</param>
+    /// <returns>The string result.</returns>
     public static string FormatBytes(long bytes)
     {
         if (bytes < 1024)
@@ -115,6 +120,12 @@ public static class Format
         return string.Join("\n", lines) + "\n";
     }
 
+    /// <summary>
+    /// Converts a collection of transcript items and a title into a formatted Markdown string, handling user messages, assistant responses, tool executions, and system notices.
+    /// </summary>
+    /// <param name="title">The title.</param>
+    /// <param name="items">The collection of items.</param>
+    /// <returns>The string result.</returns>
     public static string TranscriptToMarkdown(string title, IReadOnlyList<TranscriptItem> items)
     {
         var blocks = new List<string> { "# " + title };
@@ -247,12 +258,32 @@ public static class Format
         return new string('`', Math.Max(3, longest + 1));
     }
 
+    /// <summary>
+    /// Converts the specified agent status to its lowercase string representation.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The string result.</returns>
     internal static string StatusName(AgentStatus status) => status.ToString().ToLowerInvariant();
 
+    /// <summary>
+    /// Converts the specified tool status enumeration value to its lowercase string representation.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The string result.</returns>
     internal static string ToolStatusName(ToolStatus status) => status.ToString().ToLowerInvariant();
 
+    /// <summary>
+    /// Converts the specified notice level to its lowercase string representation.
+    /// </summary>
+    /// <param name="level">The level.</param>
+    /// <returns>The string result.</returns>
     internal static string LevelName(NoticeLevel level) => level.ToString().ToLowerInvariant();
 
+    /// <summary>
+    /// Wraps the specified text with appropriate fencing characters based on the content.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>The string result.</returns>
     private static string Fenced(string text)
     {
         var fence = FenceFor(text);
@@ -260,6 +291,11 @@ public static class Format
         return $"{fence}\n{text}\n{fence}";
     }
 
+    /// <summary>
+    /// Collapses multiple consecutive whitespace characters into a single space and trims leading and trailing whitespace from the specified text.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>The string? result.</returns>
     private static string? Collapse(string? text) => text is null ? null : Whitespace.Replace(text, " ").Trim();
 
     /// <summary>JavaScript <c>+value.toFixed(digits)</c> rendered back to text: trailing zeros dropped.</summary>

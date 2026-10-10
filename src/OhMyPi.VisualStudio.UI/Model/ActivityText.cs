@@ -2,6 +2,9 @@ using Omp.Core;
 
 namespace OhMyPi.VisualStudio.UI.Model;
 
+/// <summary>
+/// Provides a centralized collection of static text labels and string constants used for activity-related display elements.
+/// </summary>
 internal static class ActivityText
 {
     /// <summary>What the agent is doing for the activity row, or null when nothing is in flight.</summary>

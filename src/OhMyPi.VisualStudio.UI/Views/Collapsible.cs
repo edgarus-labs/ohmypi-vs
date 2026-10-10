@@ -9,6 +9,16 @@ namespace OhMyPi.VisualStudio.UI.Views;
 /// <summary>Collapsible section whose body is built only once it is first opened.</summary>
 internal static class Collapsible
 {
+    /// <summary>
+    /// Creates a collapsible expander panel consisting of a toggleable header and a lazily-loaded body, managing its expanded state via the provided render context.
+    /// </summary>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="key">The key.</param>
+    /// <param name="header">The header.</param>
+    /// <param name="body">The body.</param>
+    /// <param name="defaultOpen">The default open.</param>
+    /// <param name="bodyMargin">The body margin.</param>
+    /// <returns>The stack panel result.</returns>
     public static StackPanel Create(RenderContext ctx, string key, UIElement header, Func<UIElement> body, bool defaultOpen = false, Thickness? bodyMargin = null)
     {
         var chevron = Ui.Icon(Glyphs.ChevronRight, ThemeKeys.Muted, 9);
@@ -69,6 +79,13 @@ internal static class Collapsible
         return panel;
     }
 
+    /// <summary>
+    /// Executes the provided function to generate a UI element, catching any exceptions to log the error and return a fallback error notice.
+    /// </summary>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="key">The key.</param>
+    /// <param name="body">The body.</param>
+    /// <returns>The uielement result.</returns>
     private static UIElement SafeBody(RenderContext ctx, string key, Func<UIElement> body)
     {
         try

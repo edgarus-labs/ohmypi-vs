@@ -7,6 +7,9 @@ internal sealed class SessionMemory
     private string _cwd = "";
     private string? _last;
 
+    /// <summary>
+    /// Gets the last.
+    /// </summary>
     public string? Last
     {
         get

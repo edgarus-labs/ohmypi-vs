@@ -22,6 +22,12 @@ public sealed class OmpPackage : AsyncPackage
 {
     private OmpRuntime? _runtime;
 
+    /// <summary>
+    /// Asynchronously initializes the OMP runtime by configuring options, registering commands, and starting the background execution process on the main thread.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <param name="progress">The progress.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
@@ -33,12 +39,30 @@ public sealed class OmpPackage : AsyncPackage
         Background.Run(JoinableTaskFactory, runtime.Logger, "Starting OMP", runtime.StartAsync);
     }
 
+    /// <summary>
+    /// Retrieves the asynchronous tool window factory associated with the specified tool window type if it matches the package&apos;s defined tool window identifier.
+    /// </summary>
+    /// <param name="toolWindowType">The tool window type.</param>
+    /// <returns>The ivs async tool window factory? result.</returns>
     public override IVsAsyncToolWindowFactory? GetAsyncToolWindowFactory(Guid toolWindowType) =>
         toolWindowType == PackageGuids.ToolWindow ? this : null;
 
+    /// <summary>
+    /// Retrieves the title of the specified tool window, returning a custom title for the OmpToolWindow type or the base implementation&apos;s title otherwise.
+    /// </summary>
+    /// <param name="toolWindowType">The tool window type.</param>
+    /// <param name="id">The unique identifier.</param>
+    /// <returns>The string? result.</returns>
     protected override string? GetToolWindowTitle(Type toolWindowType, int id) =>
         toolWindowType == typeof(OmpToolWindow) ? "oh-my-pi" : base.GetToolWindowTitle(toolWindowType, id);
 
+    /// <summary>
+    /// Asynchronously initializes the specified tool window by returning the current runtime instance.
+    /// </summary>
+    /// <param name="toolWindowType">The tool window type.</param>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>The system.threading.tasks.task result.</returns>
     protected override System.Threading.Tasks.Task<object?> InitializeToolWindowAsync(Type toolWindowType, int id, CancellationToken cancellationToken) =>
         System.Threading.Tasks.Task.FromResult<object?>(_runtime);
 
@@ -62,6 +86,10 @@ public sealed class OmpPackage : AsyncPackage
         return pane?.Frame is IVsWindowFrame frame && ErrorHandler.Succeeded(frame.IsOnScreen(out var onScreen)) && onScreen != 0;
     }
 
+    /// <summary>
+    /// Releases the unmanaged resources used by the current object and disposes of the runtime instance if the operation is triggered by a managed disposal.
+    /// </summary>
+    /// <param name="disposing">The disposing.</param>
     protected override void Dispose(bool disposing)
     {
         ThreadHelper.ThrowIfNotOnUIThread();

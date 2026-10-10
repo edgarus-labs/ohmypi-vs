@@ -5,6 +5,9 @@ namespace Omp.Core.Protocol;
 /// <summary>How an OMP transport ended.</summary>
 internal sealed class TransportClose
 {
+    /// <summary>
+    /// Gets or sets the code.
+    /// </summary>
     public int? Code { get; set; }
 
     /// <summary>Spawn or pipe failure that ended the transport.</summary>

@@ -2,6 +2,9 @@ using System.IO;
 
 namespace OhMyPi.VisualStudio.Logic;
 
+/// <summary>
+/// Provides utility methods and constants for validating and managing local file system paths.
+/// </summary>
 internal static class LocalPaths
 {
     private static readonly char[] InvalidPathChars = Path.GetInvalidPathChars();

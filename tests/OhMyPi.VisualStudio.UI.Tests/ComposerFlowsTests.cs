@@ -19,8 +19,14 @@ namespace OhMyPi.VisualStudio.UI.Tests;
 [Collection("wpf")]
 public sealed class ComposerFlowsTests
 {
+    /// <summary>
+    /// Represents a test harness used to capture and verify the state of the composer, including notices, logs, drafts, and action triggers.
+    /// </summary>
     private sealed class Harness
     {
+        /// <summary>
+        /// Initializes a new instance of the Harness class and configures the internal composer with event handlers for notices, logging, drafts, and stop requests.
+        /// </summary>
         public Harness()
         {
             Composer = new Composer((level, text) => Notices.Add($"{level}: {text}"), (message, _) => Logged.Add(message));
@@ -28,16 +34,34 @@ public sealed class ComposerFlowsTests
             Composer.StopRequested += () => Stops++;
         }
 
+        /// <summary>
+        /// Gets the composer.
+        /// </summary>
         public Composer Composer { get; }
 
+        /// <summary>
+        /// Gets the collection of notices.
+        /// </summary>
         public List<string> Notices { get; } = new List<string>();
 
+        /// <summary>
+        /// Gets the collection of logged.
+        /// </summary>
         public List<string> Logged { get; } = new List<string>();
 
+        /// <summary>
+        /// Gets the collection of drafts.
+        /// </summary>
         public List<Draft> Drafts { get; } = new List<Draft>();
 
+        /// <summary>
+        /// Gets or sets the stops.
+        /// </summary>
         public int Stops { get; set; }
 
+        /// <summary>
+        /// Gets the action.
+        /// </summary>
         public Button Action => Descendants(Composer).OfType<Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) is "Send" or "Stop");
     }
 

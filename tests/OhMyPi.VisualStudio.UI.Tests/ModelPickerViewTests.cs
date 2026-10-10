@@ -16,33 +16,62 @@ namespace OhMyPi.VisualStudio.UI.Tests;
 [Collection("wpf")]
 public sealed class ModelPickerViewTests
 {
+    /// <summary>
+    /// Represents the user preferences and filtering criteria for model selection, including the management of favorite and recently used model keys.
+    /// </summary>
     private sealed class Preferences : IModelPreferences, IModelPickerFilters
     {
         private bool _favoritesOnly;
         private bool _recentOnly;
 
+        /// <summary>
+        /// Gets the collection of favorite keys.
+        /// </summary>
         public List<ModelKey> FavoriteKeys { get; } = new List<ModelKey>();
 
+        /// <summary>
+        /// Gets the collection of recent keys.
+        /// </summary>
         public List<ModelKey> RecentKeys { get; } = new List<ModelKey>();
 
+        /// <summary>
+        /// Gets or sets the failure.
+        /// </summary>
         public Exception? Failure { get; set; }
 
+        /// <summary>
+        /// Gets the collection of favorites.
+        /// </summary>
         public IReadOnlyList<ModelKey> Favorites => FavoriteKeys.ToArray();
 
+        /// <summary>
+        /// Gets the collection of recents.
+        /// </summary>
         public IReadOnlyList<ModelKey> Recents => RecentKeys.ToArray();
 
+        /// <summary>
+        /// Gets or sets a value indicating whether favorites only.
+        /// </summary>
         public bool FavoritesOnly
         {
             get => Failure is not null ? throw Failure : _favoritesOnly;
             set => _favoritesOnly = Failure is not null ? throw Failure : value;
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether recent only.
+        /// </summary>
         public bool RecentOnly
         {
             get => Failure is not null ? throw Failure : _recentOnly;
             set => _recentOnly = Failure is not null ? throw Failure : value;
         }
 
+        /// <summary>
+        /// Updates the favorite status of the specified model by adding or removing its key from the favorites collection.
+        /// </summary>
+        /// <param name="model">The model.</param>
+        /// <param name="favorite">The favorite.</param>
         public void SetFavorite(ModelKey model, bool favorite)
         {
             if (Failure is not null)
@@ -57,6 +86,10 @@ public sealed class ModelPickerViewTests
             }
         }
 
+        /// <summary>
+        /// Records the specified model key as the most recently picked item by moving it to the front of the recent keys collection.
+        /// </summary>
+        /// <param name="model">The model.</param>
         public void RecordPicked(ModelKey model)
         {
             if (Failure is not null)
@@ -69,19 +102,44 @@ public sealed class ModelPickerViewTests
         }
     }
 
+    /// <summary>
+    /// Represents a basic implementation of model preferences used to manage favorite and recently accessed model keys.
+    /// </summary>
     private sealed class PlainPreferences : IModelPreferences
     {
+        /// <summary>
+        /// Gets the collection of favorites.
+        /// </summary>
         public IReadOnlyList<ModelKey> Favorites => new ModelKey[0];
 
+        /// <summary>
+        /// Gets the collection of recents.
+        /// </summary>
         public IReadOnlyList<ModelKey> Recents => new ModelKey[0];
 
+        /// <summary>
+        /// Sets the favorite status for the specified model identified by its key.
+        /// </summary>
+        /// <param name="model">The model.</param>
+        /// <param name="favorite">The favorite.</param>
         public void SetFavorite(ModelKey model, bool favorite) { }
 
+        /// <summary>
+        /// Records that the specified model has been picked.
+        /// </summary>
+        /// <param name="model">The model.</param>
         public void RecordPicked(ModelKey model) { }
     }
 
+    /// <summary>
+    /// Represents a picker component that manages the selection, tracking, and display of model row items within a user interface.
+    /// </summary>
     private sealed class Picker
     {
+        /// <summary>
+        /// Initializes a new instance of the Picker class with the specified preferences and initializes the associated picker view.
+        /// </summary>
+        /// <param name="preferences">The preferences.</param>
         public Picker(Preferences preferences)
         {
             Preferences = preferences;
@@ -90,26 +148,61 @@ public sealed class ModelPickerViewTests
             View.CloseRequested += () => Closed++;
         }
 
+        /// <summary>
+        /// Gets the preferences.
+        /// </summary>
         public Preferences Preferences { get; }
 
+        /// <summary>
+        /// Gets the view.
+        /// </summary>
         public ModelPickerView View { get; }
 
+        /// <summary>
+        /// Gets the collection of picks.
+        /// </summary>
         public List<string> Picks { get; } = new List<string>();
 
+        /// <summary>
+        /// Gets the collection of copied.
+        /// </summary>
         public List<string> Copied { get; } = new List<string>();
 
+        /// <summary>
+        /// Gets the collection of failures.
+        /// </summary>
         public List<string> Failures { get; } = new List<string>();
 
+        /// <summary>
+        /// Gets or sets the closed.
+        /// </summary>
         public int Closed { get; set; }
 
+        /// <summary>
+        /// Gets the list.
+        /// </summary>
         public ListBox List => Named<ListBox>(View, "Models");
 
+        /// <summary>
+        /// Gets the collection of rows.
+        /// </summary>
         public IReadOnlyList<ModelRowItem> Rows => List.Items.Cast<ModelRowItem>().ToList();
 
+        /// <summary>
+        /// Gets the collection of shown.
+        /// </summary>
         public string[] Shown => [.. Rows.Select(row => row.IsGroup ? (row.IsExpanded ? "v " : "> ") + row.Provider : "  " + row.Id)];
 
+        /// <summary>
+        /// Gets the highlighted.
+        /// </summary>
         public string? Highlighted => (List.SelectedItem as ModelRowItem)?.Id;
 
+        /// <summary>
+        /// Retrieves the unique row item that matches the specified identifier, considering either the provider ID for group rows or the item ID for standard rows.
+        /// </summary>
+        /// <param name="id">The unique identifier.</param>
+        /// <returns>The model row item result.</returns>
         public ModelRowItem Row(string id) => Rows.Single(row => row.IsGroup ? row.Provider == id : row.Id == id);
     }
 

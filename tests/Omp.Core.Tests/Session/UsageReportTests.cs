@@ -4,6 +4,9 @@ namespace Omp.Core.Tests.Session;
 
 public sealed class UsageReportTests
 {
+    /// <summary>
+    /// The esc.
+    /// </summary>
     private const string Esc = "\u001b";
 
     /// <summary>The shape of OMP's <c>/usage</c> output, with made-up accounts.</summary>

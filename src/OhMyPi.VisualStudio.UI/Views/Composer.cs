@@ -501,6 +501,11 @@ internal sealed class Composer : Border
         }
     }
 
+    /// <summary>
+    /// Handles the paste event by processing the clipboard data, diverting non-text content to a specialized handler, and converting specific text patterns into attachments.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnPaste(object sender, DataObjectPastingEventArgs e)
     {
         try
@@ -534,6 +539,10 @@ internal sealed class Composer : Border
         }
     }
 
+    /// <summary>
+    /// Encodes the specified bitmap source as a PNG image and adds it to the image collection with a sequenced label.
+    /// </summary>
+    /// <param name="bitmap">The bitmap.</param>
     private void AddImage(BitmapSource bitmap)
     {
         var encoder = new PngBitmapEncoder();
@@ -579,6 +588,11 @@ internal sealed class Composer : Border
         }
     }
 
+    /// <summary>
+    /// Handles the drag-over event by validating that the dropped data contains files and setting the drag-drop effect to copy.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private static void OnDragOver(object sender, DragEventArgs e)
     {
         if (!e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -590,6 +604,11 @@ internal sealed class Composer : Border
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Handles the drop event by extracting file paths from the drag-and-drop data and initiating the asynchronous process to add the dropped files.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnDrop(object sender, DragEventArgs e)
     {
         if (!(e.Data.GetData(DataFormats.FileDrop) is string[] paths) || paths.Length == 0)
@@ -643,8 +662,17 @@ internal sealed class Composer : Border
     /// <summary>Attachments are values the user added once; two equal-looking ones are still two chips.</summary>
     private sealed class ByReference : IEqualityComparer<Attachment>
     {
+        /// <summary>
+        /// The instance.
+        /// </summary>
         public static readonly ByReference Instance = new ByReference();
 
+        /// <summary>
+        /// Determines whether two attachment instances refer to the same object in memory.
+        /// </summary>
+        /// <param name="x">The x.</param>
+        /// <param name="y">The y.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool Equals(Attachment? x, Attachment? y) => ReferenceEquals(x, y);
 
         public int GetHashCode(Attachment obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);

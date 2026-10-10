@@ -11,23 +11,60 @@ namespace OhMyPi.VisualStudio.Tests;
 
 public sealed class ChangeFeedTests : IDisposable
 {
+    /// <summary>
+    /// Represents a no-op implementation of the IOmpLogger interface that suppresses all logging output.
+    /// </summary>
     private sealed class NullLogger : IOmpLogger
     {
+        /// <summary>
+        /// The errors.
+        /// </summary>
         public readonly ConcurrentQueue<string> Errors = new();
 
+        /// <summary>
+        /// Adds a specified error message and an optional exception to the internal error queue.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Error(string message, Exception? error = null) => Errors.Enqueue(message);
 
+        /// <summary>
+        /// Logs a warning message and an optional associated exception to the system diagnostic logs.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Warn(string message, Exception? error = null) { }
 
+        /// <summary>
+        /// Logs an informational message and an optional exception to the system diagnostic output.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Info(string message, Exception? error = null) { }
 
+        /// <summary>
+        /// Logs a debug message and an optional exception to the diagnostic output.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="error">The error.</param>
         public void Debug(string message, Exception? error = null) { }
 
+        /// <summary>
+        /// Gets a value indicating whether trace enabled.
+        /// </summary>
         public bool TraceEnabled => false;
 
+        /// <summary>
+        /// Records a diagnostic trace entry specifying the communication direction and the current execution frame.
+        /// </summary>
+        /// <param name="direction">The direction.</param>
+        /// <param name="frame">The frame.</param>
         public void Trace(string direction, string frame) { }
     }
 
+    /// <summary>
+    /// The cwd.
+    /// </summary>
     private const string Cwd = @"D:\work\repo";
     private readonly FakeOmpService _service = new() { Cwd = Cwd };
     private readonly ConcurrentDictionary<string, Snapshot> _files = new(StringComparer.OrdinalIgnoreCase);

@@ -11,6 +11,10 @@ internal abstract class Section : StackPanel
     private readonly TextBlock _chevron;
     private readonly TextBlock _title;
 
+    /// <summary>
+    /// Initializes a new instance of the Section class with the specified title and configures the associated header and body UI components.
+    /// </summary>
+    /// <param name="title">The title.</param>
     protected Section(string title)
     {
         _chevron = Ui.Icon(Glyphs.ChevronRight, ThemeKeys.Muted, 9);
@@ -35,10 +39,19 @@ internal abstract class Section : StackPanel
         Children.Add(Body);
     }
 
+    /// <summary>
+    /// Gets the rows.
+    /// </summary>
     protected StackPanel Rows { get; }
 
+    /// <summary>
+    /// Gets the body.
+    /// </summary>
     protected ScrollViewer Body { get; }
 
+    /// <summary>
+    /// Expands the element by checking the header, bringing it into view, and setting the input focus.
+    /// </summary>
     public void Expand()
     {
         _header.IsChecked = true;
@@ -46,12 +59,20 @@ internal abstract class Section : StackPanel
         _header.Focus();
     }
 
+    /// <summary>
+    /// Updates the header text and assigns the specified title to the UI automation name for accessibility.
+    /// </summary>
+    /// <param name="title">The title.</param>
     protected void SetTitle(string title)
     {
         _title.Text = title;
         Ui.AutomationName(_header, title);
     }
 
+    /// <summary>
+    /// Updates the chevron icon and body visibility to reflect the specified open or closed state.
+    /// </summary>
+    /// <param name="open">The open.</param>
     private void Apply(bool open)
     {
         _chevron.Text = open ? Glyphs.ChevronDown : Glyphs.ChevronRight;

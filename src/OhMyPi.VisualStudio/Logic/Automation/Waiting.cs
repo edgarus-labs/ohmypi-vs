@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 
 namespace OhMyPi.VisualStudio.Logic.Automation;
 
+/// <summary>
+/// Provides utility methods for managing asynchronous waiting operations.
+/// </summary>
 internal static class Waiting
 {
     /// <summary>Waits for <paramref name="task"/> up to <paramref name="timeout"/>; false when the time ran out first.</summary>

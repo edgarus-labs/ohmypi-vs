@@ -43,6 +43,13 @@ internal sealed class VsToolArguments
     public int RequiredInt(string name, int min) =>
         OptionalInt(name, min) ?? throw Missing(name);
 
+    /// <summary>
+    /// Retrieves and validates an optional integer value by name, ensuring it meets the specified minimum threshold and fits within the 32-bit signed integer range.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <param name="min">The min.</param>
+    /// <returns>The int? result.</returns>
+    /// <exception cref="ArgumentException">Thrown when an error occurs during execution.</exception>
     public int? OptionalInt(string name, int min)
     {
         var token = Token(name);
@@ -82,6 +89,12 @@ internal sealed class VsToolArguments
         return (int)value;
     }
 
+    /// <summary>
+    /// Retrieves a boolean value associated with the specified name, returning null if the token is missing or throwing an ArgumentException if the token is not a boolean.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The bool? result.</returns>
+    /// <exception cref="ArgumentException">Thrown when an error occurs during execution.</exception>
     public bool? OptionalBool(string name)
     {
         var token = Token(name);
@@ -98,6 +111,13 @@ internal sealed class VsToolArguments
         return (bool)token;
     }
 
+    /// <summary>
+    /// Validates that a required token exists for the specified name and returns a value from the provided set of allowed choices, throwing an ArgumentException if the token is missing.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <param name="allowed">The collection of allowed.</param>
+    /// <returns>The string result.</returns>
+    /// <exception cref="ArgumentException">Thrown when an error occurs during execution.</exception>
     public string RequiredChoice(string name, string[] allowed)
     {
         if (Token(name) is null)
@@ -108,11 +128,28 @@ internal sealed class VsToolArguments
         return Choice(name, allowed);
     }
 
+    /// <summary>
+    /// Retrieves a value for the specified name from the allowed options, returning the fallback value if the token is null.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <param name="allowed">The collection of allowed.</param>
+    /// <param name="fallback">The fallback.</param>
+    /// <returns>The string result.</returns>
     public string OptionalChoice(string name, string[] allowed, string fallback) =>
         Token(name) is null ? fallback : Choice(name, allowed);
 
+    /// <summary>
+    /// Returns the fully qualified path for a required resource identified by the specified name.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The string result.</returns>
     public string RequiredPath(string name) => Inside(name, RequiredString(name));
 
+    /// <summary>
+    /// Retrieves an optional path associated with the specified name, returning a formatted internal path if the value exists or null if it is not found.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The string? result.</returns>
     public string? OptionalPath(string name)
     {
         var raw = OptionalString(name);
@@ -120,6 +157,13 @@ internal sealed class VsToolArguments
         return raw is null ? null : Inside(name, raw);
     }
 
+    /// <summary>
+    /// Prompts the user for a string input and validates that it matches one of the specified allowed options, throwing an ArgumentException if the input is invalid.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <param name="allowed">The collection of allowed.</param>
+    /// <returns>The string result.</returns>
+    /// <exception cref="ArgumentException">Thrown when an error occurs during execution.</exception>
     private string Choice(string name, string[] allowed)
     {
         var value = ReadString(name);
@@ -134,6 +178,13 @@ internal sealed class VsToolArguments
         throw new ArgumentException($"'{name}' must be one of: {string.Join(", ", allowed)} (got '{value}')");
     }
 
+    /// <summary>
+    /// Resolves a raw path to its full representation and validates that it resides within the current workspace scope.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <param name="raw">The raw.</param>
+    /// <returns>The string result.</returns>
+    /// <exception cref="ArgumentException">Thrown when an error occurs during execution.</exception>
     private string Inside(string name, string raw)
     {
         string full;
@@ -153,6 +204,12 @@ internal sealed class VsToolArguments
         return full;
     }
 
+    /// <summary>
+    /// Retrieves a string value associated with the specified name, throwing an ArgumentException if the token is missing or is not of a string type.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The string result.</returns>
+    /// <exception cref="ArgumentException">Thrown when an error occurs during execution.</exception>
     private string ReadString(string name)
     {
         var token = Token(name);
@@ -164,6 +221,11 @@ internal sealed class VsToolArguments
         return (string)token!;
     }
 
+    /// <summary>
+    /// Retrieves the associated JSON token for the specified name from the arguments collection, returning null if the token is missing or null.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The jtoken? result.</returns>
     private JToken? Token(string name)
     {
         if (!_arguments.TryGetValue(name, out var token) || token.Type == JTokenType.Null)
@@ -174,5 +236,10 @@ internal sealed class VsToolArguments
         return token;
     }
 
+    /// <summary>
+    /// Creates an ArgumentException indicating that a required parameter with the specified name is missing.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The argument exception result.</returns>
     private static ArgumentException Missing(string name) => new ArgumentException($"'{name}' is required");
 }

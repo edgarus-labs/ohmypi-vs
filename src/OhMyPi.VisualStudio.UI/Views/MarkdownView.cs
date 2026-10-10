@@ -151,11 +151,35 @@ internal static class MarkdownView
     {
         public static readonly LineHeightOfFont Instance = new LineHeightOfFont();
 
+        /// <summary>
+        /// Converts the specified value by multiplying it by the line spacing factor.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="targetType">The target type.</param>
+        /// <param name="parameter">The parameter.</param>
+        /// <param name="culture">The culture.</param>
+        /// <returns>The object result.</returns>
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => (double)value * LineSpacing;
 
+        /// <summary>
+        /// Converts a value back to the specified target type using the provided parameter and culture information.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="targetType">The target type.</param>
+        /// <param name="parameter">The parameter.</param>
+        /// <param name="culture">The culture.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => throw new NotSupportedException();
     }
 
+    /// <summary>
+    /// Processes the specified markdown inline element to apply emphasis by adding either its child elements or its raw text to the provided span.
+    /// </summary>
+    /// <param name="span">The span.</param>
+    /// <param name="inline">The inline.</param>
+    /// <param name="links">The links.</param>
+    /// <returns>The span result.</returns>
     private static Span Emphasis(Span span, MdInline inline, MarkdownLinks links)
     {
         if (inline.Children.Count > 0)
@@ -170,6 +194,12 @@ internal static class MarkdownView
         return span;
     }
 
+    /// <summary>
+    /// Converts a markdown inline element into an inline UI element by resolving it as either a hyperlink to a web URL or a link to a local file.
+    /// </summary>
+    /// <param name="inline">The inline.</param>
+    /// <param name="links">The links.</param>
+    /// <returns>The inline result.</returns>
     private static Inline LinkInline(MdInline inline, MarkdownLinks links)
     {
         var url = inline.Url ?? "";
@@ -186,6 +216,13 @@ internal static class MarkdownView
         return link;
     }
 
+    /// <summary>
+    /// Creates a hyperlink element that opens a specified file at a given line when clicked.
+    /// </summary>
+    /// <param name="content">The content.</param>
+    /// <param name="file">The file.</param>
+    /// <param name="links">The links.</param>
+    /// <returns>The hyperlink result.</returns>
     private static Hyperlink FileLink(Run content, FileTarget file, MarkdownLinks links)
     {
         var link = new Hyperlink(content) { ToolTip = file.Line is null ? $"Open {file.Path}" : $"Open {file.Path}:{file.Line}" };
@@ -195,12 +232,23 @@ internal static class MarkdownView
         return link;
     }
 
+    /// <summary>
+    /// Determines whether the specified string is a valid web URL.
+    /// </summary>
+    /// <param name="url">The url.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     public static bool IsWebUrl(string url) => TryWebUri(url, out _);
 
     /// <summary>Parses an absolute http(s) URL; <paramref name="uri"/> carries the normalized form to hand to the browser.</summary>
     public static bool TryWebUri(string url, out Uri? uri) =>
         Uri.TryCreate(url, UriKind.Absolute, out uri) && (uri!.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
 
+    /// <summary>
+    /// Creates a UI framework element that renders a formatted code block containing the specified source code, language label, and a copy-to-clipboard button.
+    /// </summary>
+    /// <param name="code">The code.</param>
+    /// <param name="copy">The copy.</param>
+    /// <returns>The framework element result.</returns>
     private static FrameworkElement CodeBlock(MdCodeBlock code, Action<string> copy)
     {
         var text = Ui.Code(code.Code, code.Language);
@@ -220,6 +268,12 @@ internal static class MarkdownView
         return Ui.Card(stack, new Thickness(10, 2, 4, 8));
     }
 
+    /// <summary>
+    /// Converts a markdown list structure into a hierarchical FrameworkElement layout, recursively rendering ordered or unordered items with their associated links and nested children.
+    /// </summary>
+    /// <param name="list">The list.</param>
+    /// <param name="links">The links.</param>
+    /// <returns>The framework element result.</returns>
     private static FrameworkElement List(MdList list, MarkdownLinks links)
     {
         var panel = new StackPanel();
@@ -250,6 +304,12 @@ internal static class MarkdownView
 
     private static readonly Thickness CellPadding = new Thickness(8, 4, 8, 4);
 
+    /// <summary>
+    /// Converts a markdown table model into a scrollable FrameworkElement by generating a structured grid of cells with appropriate alignment, styling, and inline content.
+    /// </summary>
+    /// <param name="table">The table.</param>
+    /// <param name="links">The links.</param>
+    /// <returns>The framework element result.</returns>
     private static FrameworkElement Table(MdTable table, MarkdownLinks links)
     {
         var columns = table.Header.Count;

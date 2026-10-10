@@ -55,71 +55,200 @@ internal static class NativeMethods
         public IntPtr StdError;
     }
 
+    /// <summary>
+    /// Represents extended startup information for a process, including standard startup settings and an associated attribute list.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct StartupInfoEx
     {
+        /// <summary>
+        /// The startup info.
+        /// </summary>
         public StartupInfo StartupInfo;
+        /// <summary>
+        /// The attribute list.
+        /// </summary>
         public IntPtr AttributeList;
     }
 
+    /// <summary>
+    /// Represents the data structure containing process and thread identification details.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct ProcessInformation
     {
+        /// <summary>
+        /// The process.
+        /// </summary>
         public IntPtr Process;
+        /// <summary>
+        /// The thread.
+        /// </summary>
         public IntPtr Thread;
+        /// <summary>
+        /// The process id.
+        /// </summary>
         public int ProcessId;
+        /// <summary>
+        /// The thread id.
+        /// </summary>
         public int ThreadId;
     }
 
+    /// <summary>
+    /// Represents the basic resource limit information for a job object, including CPU time limits, memory working set sizes, and process scheduling constraints.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct JobObjectBasicLimitInformation
     {
+        /// <summary>
+        /// The per process user time limit.
+        /// </summary>
         public long PerProcessUserTimeLimit;
+        /// <summary>
+        /// The per job user time limit.
+        /// </summary>
         public long PerJobUserTimeLimit;
+        /// <summary>
+        /// The limit flags.
+        /// </summary>
         public uint LimitFlags;
+        /// <summary>
+        /// The minimum working set size.
+        /// </summary>
         public UIntPtr MinimumWorkingSetSize;
+        /// <summary>
+        /// The maximum working set size.
+        /// </summary>
         public UIntPtr MaximumWorkingSetSize;
+        /// <summary>
+        /// The active process limit.
+        /// </summary>
         public uint ActiveProcessLimit;
+        /// <summary>
+        /// The affinity.
+        /// </summary>
         public UIntPtr Affinity;
+        /// <summary>
+        /// The priority class.
+        /// </summary>
         public uint PriorityClass;
+        /// <summary>
+        /// The scheduling class.
+        /// </summary>
         public uint SchedulingClass;
     }
 
+    /// <summary>
+    /// Represents the input/output operation and transfer counts for a specific process or system resource.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct IoCounters
     {
+        /// <summary>
+        /// The read operation count.
+        /// </summary>
         public ulong ReadOperationCount;
+        /// <summary>
+        /// The write operation count.
+        /// </summary>
         public ulong WriteOperationCount;
+        /// <summary>
+        /// The other operation count.
+        /// </summary>
         public ulong OtherOperationCount;
+        /// <summary>
+        /// The read transfer count.
+        /// </summary>
         public ulong ReadTransferCount;
+        /// <summary>
+        /// The write transfer count.
+        /// </summary>
         public ulong WriteTransferCount;
+        /// <summary>
+        /// The other transfer count.
+        /// </summary>
         public ulong OtherTransferCount;
     }
 
+    /// <summary>
+    /// Represents the extended resource limit and memory usage information for a Windows job object.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct JobObjectExtendedLimitInformation
     {
+        /// <summary>
+        /// The basic limit information.
+        /// </summary>
         public JobObjectBasicLimitInformation BasicLimitInformation;
+        /// <summary>
+        /// The io info.
+        /// </summary>
         public IoCounters IoInfo;
+        /// <summary>
+        /// The process memory limit.
+        /// </summary>
         public UIntPtr ProcessMemoryLimit;
+        /// <summary>
+        /// The job memory limit.
+        /// </summary>
         public UIntPtr JobMemoryLimit;
+        /// <summary>
+        /// The peak process memory used.
+        /// </summary>
         public UIntPtr PeakProcessMemoryUsed;
+        /// <summary>
+        /// The peak job memory used.
+        /// </summary>
         public UIntPtr PeakJobMemoryUsed;
     }
 
+    /// <summary>
+    /// Represents a snapshot of a process&apos;s information, including its identifier, executable file name, and resource usage.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct ProcessEntry32
     {
+        /// <summary>
+        /// The size.
+        /// </summary>
         public int Size;
+        /// <summary>
+        /// The usage.
+        /// </summary>
         public int Usage;
+        /// <summary>
+        /// The process id.
+        /// </summary>
         public int ProcessId;
+        /// <summary>
+        /// The default heap id.
+        /// </summary>
         public IntPtr DefaultHeapId;
+        /// <summary>
+        /// The module id.
+        /// </summary>
         public int ModuleId;
+        /// <summary>
+        /// The threads.
+        /// </summary>
         public int Threads;
+        /// <summary>
+        /// The parent process id.
+        /// </summary>
         public int ParentProcessId;
+        /// <summary>
+        /// The priority class base.
+        /// </summary>
         public int PriorityClassBase;
+        /// <summary>
+        /// The flags.
+        /// </summary>
         public int Flags;
 
+        /// <summary>
+        /// The exe file.
+        /// </summary>
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
         public string ExeFile;
     }

@@ -394,6 +394,9 @@ internal static class CodeHighlighter
             _i++;
         }
 
+        /// <summary>
+        /// Processes the current character stream to identify and emit XML tokens, including comments, tags, strings, and keys.
+        /// </summary>
         private void XmlStep()
         {
             var c = _s[_i];
@@ -530,8 +533,17 @@ internal static class CodeHighlighter
             return j;
         }
 
+        /// <summary>
+        /// Determines whether the current sequence of characters at the current position matches the specified string.
+        /// </summary>
+        /// <param name="what">The what.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool At(string what) => string.CompareOrdinal(_s, _i, what, 0, what.Length) == 0;
 
+        /// <summary>
+        /// Calculates the index of the next newline character or returns the length of the string if no newline is found.
+        /// </summary>
+        /// <returns>The int result.</returns>
         private int LineEnd()
         {
             var end = _s.IndexOf('\n', _i);
@@ -539,8 +551,16 @@ internal static class CodeHighlighter
             return end < 0 ? _s.Length : end;
         }
 
+        /// <summary>
+        /// Returns the character immediately preceding the current position, or a space if the current position is at the start of the sequence.
+        /// </summary>
+        /// <returns>The char result.</returns>
         private char Prev() => _i == 0 ? ' ' : _s[_i - 1];
 
+        /// <summary>
+        /// Determines whether the current position is at the start of a line, accounting for optional leading whitespace or hyphen characters.
+        /// </summary>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool AtLineStart()
         {
             for (var k = _i - 1; k >= 0 && _s[k] != '\n'; k--)
@@ -610,6 +630,11 @@ internal static class CodeHighlighter
             return p == '[' || p == '{' || p == ',' || (p == '=' && _x.KeySeparators!.IndexOf('=') >= 0) || (spaced && (p == ':' || p == '-'));
         }
 
+        /// <summary>
+        /// Returns the index of the first non-whitespace character encountered starting from the specified position.
+        /// </summary>
+        /// <param name="from">The from.</param>
+        /// <returns>The int result.</returns>
         private int NextNonSpaceIndex(int from)
         {
             while (from < _s.Length && (_s[from] == ' ' || _s[from] == '\t'))
@@ -620,6 +645,11 @@ internal static class CodeHighlighter
             return from;
         }
 
+        /// <summary>
+        /// Retrieves the first non-whitespace character occurring at or after the specified index, returning a null character if no such character exists.
+        /// </summary>
+        /// <param name="from">The from.</param>
+        /// <returns>The char result.</returns>
         private char NextNonSpace(int from)
         {
             var k = NextNonSpaceIndex(from);
@@ -627,10 +657,25 @@ internal static class CodeHighlighter
             return k < _s.Length ? _s[k] : '\0';
         }
 
+        /// <summary>
+        /// Determines whether the specified character is a valid starting character for a word, including letters, underscores, dollar signs, or at-symbols.
+        /// </summary>
+        /// <param name="c">The c.</param>
+        /// <returns>true if the condition is met; otherwise, false.</returns>
         private static bool IsWordStart(char c) => char.IsLetter(c) || c == '_' || c == '$' || c == '@';
 
+        /// <summary>
+        /// Determines whether the specified character is a letter, a digit, or an underscore.
+        /// </summary>
+        /// <param name="c">The c.</param>
+        /// <returns>true if the condition is met; otherwise, false.</returns>
         private static bool IsWordChar(char c) => char.IsLetterOrDigit(c) || c == '_';
 
+        /// <summary>
+        /// Flushes the current text buffer and appends a new code token of the specified kind to the output collection.
+        /// </summary>
+        /// <param name="end">The end.</param>
+        /// <param name="kind">The kind.</param>
         private void Emit(int end, CodeTokenKind kind)
         {
             FlushText(_i);
@@ -639,6 +684,10 @@ internal static class CodeHighlighter
             _textStart = end;
         }
 
+        /// <summary>
+        /// Commits the accumulated text range as a CodeToken to the output collection and updates the text tracking offset.
+        /// </summary>
+        /// <param name="upTo">The up to.</param>
         private void FlushText(int upTo)
         {
             if (upTo > _textStart)

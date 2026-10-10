@@ -12,10 +12,19 @@ namespace Omp.Core.Tests.Support;
 /// </summary>
 internal static class FakeOmp
 {
+    /// <summary>
+    /// The node memory cap.
+    /// </summary>
     public const string NodeMemoryCap = "--max-old-space-size=1024";
 
+    /// <summary>
+    /// The script.
+    /// </summary>
     public static readonly string Script = Path.Combine(AppContext.BaseDirectory, "Fixtures", "fake-omp.mjs");
 
+    /// <summary>
+    /// The node.
+    /// </summary>
     public static readonly string Node = FindNode();
 
     /// <summary>Environment overrides every fake-omp process gets.</summary>
@@ -51,6 +60,11 @@ internal static class FakeOmp
         return file;
     }
 
+    /// <summary>
+    /// Determines whether a process with the specified process identifier is currently running.
+    /// </summary>
+    /// <param name="pid">The unique identifier of the p.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     public static bool IsAlive(int pid)
     {
         try
@@ -98,6 +112,11 @@ internal static class FakeOmp
     /// <summary>Ends <paramref name="process"/> and every descendant.</summary>
     public static void KillTree(Process process) => ProcessTree.Kill(process.Id, new MemoryLogger());
 
+    /// <summary>
+    /// Searches the system PATH environment variable to locate and return the full file path to the node.exe executable.
+    /// </summary>
+    /// <returns>The string result.</returns>
+    /// <exception cref="FileNotFoundException">Thrown when an error occurs during execution.</exception>
     private static string FindNode()
     {
         foreach (var dir in (System.Environment.GetEnvironmentVariable("PATH") ?? "").Split([';'], StringSplitOptions.RemoveEmptyEntries))
@@ -119,12 +138,19 @@ internal static class FakeOmp
 /// </summary>
 internal sealed class NodeMemoryGuard
 {
+    /// <summary>
+    /// The cap bytes.
+    /// </summary>
     public const long CapBytes = 1536L * 1024 * 1024;
     private readonly Func<IEnumerable<MemoryLogger>> _loggers;
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _sampling;
     private readonly List<string> _violations = new();
 
+    /// <summary>
+    /// Initializes a new instance of the NodeMemoryGuard class with a specified logger provider and starts the asynchronous memory sampling process.
+    /// </summary>
+    /// <param name="loggers">The loggers.</param>
     public NodeMemoryGuard(Func<IEnumerable<MemoryLogger>> loggers)
     {
         _loggers = loggers;
@@ -142,6 +168,10 @@ internal sealed class NodeMemoryGuard
         }
     }
 
+    /// <summary>
+    /// Asynchronously monitors reported process identifiers and terminates any process tree that exceeds the specified memory capacity threshold.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task SampleAsync()
     {
         while (!_stop.IsCancellationRequested)

@@ -188,10 +188,22 @@ internal sealed class FakeService : IOmpService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Asynchronously initializes a new session.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task NewSessionAsync() => Task.CompletedTask;
 
+    /// <summary>
+    /// Gets the collection of switches.
+    /// </summary>
     public List<string> Switches { get; } = new List<string>();
 
+    /// <summary>
+    /// Asynchronously switches the current session by adding the specified session file to the collection of active switches.
+    /// </summary>
+    /// <param name="sessionFile">The session file.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task SwitchSessionAsync(string sessionFile)
     {
         Switches.Add(sessionFile);
@@ -199,14 +211,31 @@ internal sealed class FakeService : IOmpService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Asynchronously sets the name of the current session.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task SetSessionNameAsync(string name) => Task.CompletedTask;
 
+    /// <summary>
+    /// Gets or sets the sessions error.
+    /// </summary>
     public Exception? SessionsError { get; set; }
 
+    /// <summary>
+    /// Asynchronously retrieves a read-only list of session summaries or throws a cached exception if the session state is in an error condition.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public Task<IReadOnlyList<SessionSummary>> ListSessionsAsync() => SessionsError is not null
         ? Task.FromException<IReadOnlyList<SessionSummary>>(SessionsError)
         : Task.FromResult(Sessions);
 
+    /// <summary>
+    /// Records a response for a specific interaction identified by the provided identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="response">The response.</param>
     public void RespondInteraction(string id, InteractionResponse response)
     {
         if (RespondError is not null)
@@ -217,10 +246,21 @@ internal sealed class FakeService : IOmpService
         Responses.Add((id, response));
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether cancel result.
+    /// </summary>
     public bool CancelResult { get; set; } = true;
 
+    /// <summary>
+    /// Gets the collection of cancels.
+    /// </summary>
     public List<string> Cancels { get; } = new List<string>();
 
+    /// <summary>
+    /// Asynchronously cancels the agent specified by the identifier and returns the result of the operation.
+    /// </summary>
+    /// <param name="agentId">The unique identifier of the agent.</param>
+    /// <returns>A task representing the asynchronous operation. The task result is true if successful; otherwise, false.</returns>
     public Task<bool> CancelAgentAsync(string agentId)
     {
         Cancels.Add(agentId);
@@ -228,8 +268,17 @@ internal sealed class FakeService : IOmpService
         return Task.FromResult(CancelResult);
     }
 
+    /// <summary>
+    /// Gets the collection of steers.
+    /// </summary>
     public List<(string Id, string Message)> Steers { get; } = new List<(string, string)>();
 
+    /// <summary>
+    /// Asynchronously queues a steering message for the specified agent by adding it to the internal steering collection.
+    /// </summary>
+    /// <param name="agentId">The unique identifier of the agent.</param>
+    /// <param name="message">The message.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task SteerAgentAsync(string agentId, string message)
     {
         Steers.Add((agentId, message));
@@ -237,13 +286,27 @@ internal sealed class FakeService : IOmpService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Gets or sets the collection of agent transcript.
+    /// </summary>
     public IReadOnlyList<TranscriptItem> AgentTranscript { get; set; } = Array.Empty<TranscriptItem>();
 
+    /// <summary>
+    /// Gets or sets the agent transcript error.
+    /// </summary>
     public Exception? AgentTranscriptError { get; set; }
 
+    /// <summary>
+    /// Asynchronously retrieves the transcript items associated with the specified agent identifier.
+    /// </summary>
+    /// <param name="agentId">The unique identifier of the agent.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public Task<IReadOnlyList<TranscriptItem>> GetAgentTranscriptAsync(string agentId) => AgentTranscriptError is not null
         ? Task.FromException<IReadOnlyList<TranscriptItem>>(AgentTranscriptError)
         : Task.FromResult(AgentTranscript);
 
+    /// <summary>
+    /// Releases the unmanaged resources used by the instance.
+    /// </summary>
     public void Dispose() { }
 }

@@ -128,6 +128,12 @@ internal sealed class InteractionsView : StackPanel
 
     public void StopTimer() => _timer.Stop();
 
+    /// <summary>
+    /// Constructs and displays a styled UI card containing the specified title and body elements, registers it by identifier, and announces the title for accessibility.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="title">The title.</param>
+    /// <param name="body">The collection of body.</param>
     private void Show(string id, TextBlock title, List<UIElement?> body)
     {
         var card = new Border
@@ -152,6 +158,11 @@ internal sealed class InteractionsView : StackPanel
         Changed?.Invoke();
     }
 
+    /// <summary>
+    /// Resolves the appropriate display title for a given interaction request based on its specific type and properties.
+    /// </summary>
+    /// <param name="request">The request containing the operation data.</param>
+    /// <returns>The string result.</returns>
     private static string Title(InteractionRequest request)
     {
         switch (request)
@@ -183,8 +194,18 @@ internal sealed class InteractionsView : StackPanel
         return true;
     }
 
+    /// <summary>
+    /// Creates a button labeled &quot;Cancel&quot; that triggers a cancellation response for the specified identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <returns>The button result.</returns>
     private Button CancelButton(string id) => Ui.Button("Cancel", () => Respond(id, InteractionResponse.Cancelled()));
 
+    /// <summary>
+    /// Wraps a collection of buttons within a WrapPanel and applies a consistent right margin to each button.
+    /// </summary>
+    /// <param name="buttons">The collection of buttons.</param>
+    /// <returns>The uielement result.</returns>
     private static UIElement Actions(params Button[] buttons)
     {
         var row = new WrapPanel();
@@ -197,6 +218,11 @@ internal sealed class InteractionsView : StackPanel
         return row;
     }
 
+    /// <summary>
+    /// Generates a collection of UI elements tailored to the specific type of interaction request, such as confirmation, selection, input, or editing.
+    /// </summary>
+    /// <param name="request">The request containing the operation data.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private IEnumerable<UIElement?> Body(InteractionRequest request)
     {
         switch (request)
@@ -258,6 +284,11 @@ internal sealed class InteractionsView : StackPanel
         }
     }
 
+    /// <summary>
+    /// Generates a collection of UI elements for an input request, dynamically creating either a text box or password box based on the secret requirement and configuring the associated submission logic.
+    /// </summary>
+    /// <param name="input">The input.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private IEnumerable<UIElement?> InputBody(InputRequest input)
     {
         Func<string> read;
@@ -305,6 +336,11 @@ internal sealed class InteractionsView : StackPanel
         return new UIElement?[] { placeholder, field, Actions(Ui.Button("Submit", Submit, "Omp.PrimaryButton"), CancelButton(input.Id)) };
     }
 
+    /// <summary>
+    /// Generates a collection of UI elements to render a set of questions and their corresponding options based on the provided request.
+    /// </summary>
+    /// <param name="ask">The ask.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private IEnumerable<UIElement?> AskBody(AskRequest ask)
     {
         var readers = new List<Func<AskQuestionState>>();
@@ -376,6 +412,9 @@ internal sealed class InteractionsView : StackPanel
         return elements;
     }
 
+    /// <summary>
+    /// Updates the remaining expiration time labels for all tracked items and stops the timer if no expiries remain.
+    /// </summary>
     private void Tick()
     {
         var now = DateTime.UtcNow;

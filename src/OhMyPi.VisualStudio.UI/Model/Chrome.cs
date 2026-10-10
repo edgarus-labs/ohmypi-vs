@@ -11,6 +11,14 @@ internal static class Chrome
 {
     private static readonly Regex Whitespace = new Regex(@"\s+", RegexOptions.Compiled);
 
+    /// <summary>
+    /// Determines the appropriate StateWord based on the current connection state, session phase, number of pending interactions, and availability status.
+    /// </summary>
+    /// <param name="connection">The connection.</param>
+    /// <param name="phase">The phase.</param>
+    /// <param name="pendingInteractions">The pending interactions.</param>
+    /// <param name="unavailable">The unavailable.</param>
+    /// <returns>The state word result.</returns>
     public static StateWord GetStateWord(ConnectionState connection, SessionPhase phase, int pendingInteractions, bool unavailable)
     {
         if (unavailable || connection == ConnectionState.Stopped || connection == ConnectionState.Failed)
@@ -98,6 +106,12 @@ internal static class Chrome
         return text;
     }
 
+    /// <summary>
+    /// Determines whether the specified text begins with the given prefix as a distinct word.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="prefix">The prefix.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private static bool StartsWithWord(string text, string prefix) =>
         text.StartsWith(prefix, StringComparison.Ordinal) && (text.Length == prefix.Length || text[prefix.Length] == ' ');
 

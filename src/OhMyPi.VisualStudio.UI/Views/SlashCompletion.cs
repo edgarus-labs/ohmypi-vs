@@ -16,6 +16,9 @@ namespace OhMyPi.VisualStudio.UI.Views;
 /// </summary>
 internal sealed class SlashCompletion
 {
+    /// <summary>
+    /// The max rows.
+    /// </summary>
     private const int MaxRows = 50;
 
     private readonly TextBox _input;
@@ -23,6 +26,10 @@ internal sealed class SlashCompletion
     private readonly Popup _popup;
     private IReadOnlyList<SlashCommandView> _commands = Array.Empty<SlashCommandView>();
 
+    /// <summary>
+    /// Initializes a new instance of the SlashCompletion class and associates it with the specified TextBox to provide slash command completion functionality.
+    /// </summary>
+    /// <param name="input">The input.</param>
     public SlashCompletion(TextBox input)
     {
         _input = input;
@@ -44,6 +51,9 @@ internal sealed class SlashCompletion
         input.LostKeyboardFocus += (_, __) => _popup.IsOpen = false;
     }
 
+    /// <summary>
+    /// Gets or sets the collection of commands.
+    /// </summary>
     public IReadOnlyList<SlashCommandView> Commands
     {
         get => _commands;
@@ -88,6 +98,9 @@ internal sealed class SlashCompletion
         }
     }
 
+    /// <summary>
+    /// Updates the slash command popup visibility and list items based on the current input text and matching commands.
+    /// </summary>
     private void Refresh()
     {
         var query = SlashCommands.Query(_input.Text);
@@ -109,6 +122,11 @@ internal sealed class SlashCompletion
         _popup.IsOpen = true;
     }
 
+    /// <summary>
+    /// Creates a ListBoxItem UI element that visually represents a slash command, including its name, hint, and description.
+    /// </summary>
+    /// <param name="command">The command containing the operation data.</param>
+    /// <returns>The list box item result.</returns>
     private static ListBoxItem Row(SlashCommandView command)
     {
         var name = Ui.Text("/" + command.Name);
@@ -135,6 +153,10 @@ internal sealed class SlashCompletion
         return item;
     }
 
+    /// <summary>
+    /// Updates the selected index of the list by the specified offset and scrolls the resulting item into view.
+    /// </summary>
+    /// <param name="delta">The delta.</param>
     private void Move(int delta)
     {
         if (_list.Items.Count == 0)
@@ -147,6 +169,10 @@ internal sealed class SlashCompletion
         _list.ScrollIntoView(_list.Items[index]);
     }
 
+    /// <summary>
+    /// Validates the selected list item as a slash command and populates the input field with the command&apos;s name if successful.
+    /// </summary>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private bool Accept()
     {
         if (!(_list.SelectedItem is ListBoxItem { Tag: SlashCommandView command }))

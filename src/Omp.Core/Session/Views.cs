@@ -3,6 +3,11 @@ namespace Omp.Core.Session;
 /// <summary>Copies of the published view models, so every change publishes a fresh instance.</summary>
 internal static class Views
 {
+    /// <summary>
+    /// Creates a shallow copy of the specified session view instance.
+    /// </summary>
+    /// <param name="v">The v.</param>
+    /// <returns>The session view result.</returns>
     public static SessionView Copy(SessionView v) => new SessionView
     {
         Phase = v.Phase,
@@ -24,6 +29,11 @@ internal static class Views
         LastError = v.LastError,
     };
 
+    /// <summary>
+    /// Creates a shallow copy of the specified agent view.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <returns>The agent view result.</returns>
     public static AgentView Copy(AgentView a) => new AgentView
     {
         Id = a.Id,
@@ -42,11 +52,22 @@ internal static class Views
         Error = a.Error,
     };
 
+    /// <summary>
+    /// Determines whether two AgentView instances are equivalent by comparing all of their properties.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="b">The b.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     public static bool Same(AgentView a, AgentView b) =>
         a.Id == b.Id && a.ParentId == b.ParentId && a.Name == b.Name && a.Description == b.Description && a.Model == b.Model &&
         a.Status == b.Status && a.Activity == b.Activity && a.ToolCount == b.ToolCount && a.Tokens == b.Tokens && a.CostUsd == b.CostUsd &&
         a.StartedAt == b.StartedAt && a.EndedAt == b.EndedAt && a.SessionFile == b.SessionFile && a.Error == b.Error;
 
+    /// <summary>
+    /// Creates a shallow copy of the specified AssistantItem instance.
+    /// </summary>
+    /// <param name="i">The i.</param>
+    /// <returns>The assistant item result.</returns>
     public static AssistantItem Copy(AssistantItem i) => new AssistantItem
     {
         Id = i.Id,
@@ -59,6 +80,11 @@ internal static class Views
         Usage = i.Usage,
     };
 
+    /// <summary>
+    /// Creates a shallow copy of the specified tool item.
+    /// </summary>
+    /// <param name="i">The i.</param>
+    /// <returns>The tool item result.</returns>
     public static ToolItem Copy(ToolItem i) => new ToolItem
     {
         Id = i.Id,

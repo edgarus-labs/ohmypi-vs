@@ -75,6 +75,10 @@ internal sealed class SessionPanel : StackPanel
         }
     }
 
+    /// <summary>
+    /// Populates the queue UI container with steering and follow-up chips based on the provided queue view and updates its visibility and layout properties.
+    /// </summary>
+    /// <param name="queue">The queue.</param>
     private void RenderQueue(QueueView queue)
     {
         _queue.Children.Clear();
@@ -92,6 +96,12 @@ internal sealed class SessionPanel : StackPanel
         _queue.Margin = new Thickness(0, 0, 0, 6);
     }
 
+    /// <summary>
+    /// Creates a styled UI chip element consisting of a muted category label and a truncated text body with associated automation properties.
+    /// </summary>
+    /// <param name="kind">The kind.</param>
+    /// <param name="text">The text.</param>
+    /// <returns>The uielement result.</returns>
     private static UIElement Chip(string kind, string text)
     {
         var label = Ui.Muted(kind);
@@ -152,6 +162,11 @@ internal sealed class SessionPanel : StackPanel
         }
     }
 
+    /// <summary>
+    /// Constructs a scrollable UI element that visually represents a hierarchical list of todo phases and their associated tasks, applying specific styling based on task status.
+    /// </summary>
+    /// <param name="phases">The collection of phases.</param>
+    /// <returns>The uielement result.</returns>
     private static UIElement TodoList(IReadOnlyList<TodoPhaseView> phases)
     {
         var list = new StackPanel();

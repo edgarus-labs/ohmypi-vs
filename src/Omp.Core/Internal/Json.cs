@@ -43,10 +43,27 @@ internal static class Json
 
     public static bool IsNumber(JToken? token) => token is not null && (token.Type == JTokenType.Integer || token.Type == JTokenType.Float);
 
+    /// <summary>
+    /// Attempts to parse a JSON token as a double-precision floating-point number using the invariant culture, returning null if the token is not a valid number.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <returns>The double? result.</returns>
     public static double? Num(JToken? token) => IsNumber(token) ? Convert.ToDouble(((JValue)token!).Value, System.Globalization.CultureInfo.InvariantCulture) : (double?)null;
 
+    /// <summary>
+    /// Extracts and parses a numeric value from a specified key within a JSON token.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The double? result.</returns>
     public static double? Num(JToken? token, string key) => Num(Get(token, key));
 
+    /// <summary>
+    /// Extracts a long integer value from the specified key within a JToken, returning null if the token or key is not found or cannot be converted.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The long? result.</returns>
     public static long? Long(JToken? token, string key)
     {
         var value = Num(token, key);
@@ -62,6 +79,11 @@ internal static class Json
         return value.HasValue && !double.IsNaN(value.Value) && Math.Floor(value.Value) == value.Value && Math.Abs(value.Value) <= MaxSafeInteger;
     }
 
+    /// <summary>
+    /// Attempts to cast the specified JToken to a boolean value, returning null if the token is not a boolean JValue.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <returns>The bool? result.</returns>
     public static bool? Bool(JToken? token) => token is JValue value && value.Type == JTokenType.Boolean ? (bool)value.Value! : (bool?)null;
 
     public static bool? Bool(JToken? token, string key) => Bool(Get(token, key));
@@ -96,8 +118,19 @@ internal static class Json
         }
     }
 
+    /// <summary>
+    /// Retrieves a specified child token from the provided JToken as a JArray.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The jarray? result.</returns>
     public static JArray? Array(JToken? token, string key) => Get(token, key) as JArray;
 
+    /// <summary>
+    /// Extracts a read-only list of non-null strings from a JSON array token, returning an empty list if the token is not a JArray.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <returns>A collection of iread only list items.</returns>
     public static IReadOnlyList<string> Strings(JToken? token) =>
         token is JArray array ? [.. array.Select(Str).Where(s => s != null).Select(s => s!)] : System.Array.Empty<string>();
 

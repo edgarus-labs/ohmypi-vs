@@ -26,6 +26,13 @@ internal sealed class InfoBarNotifier : IServiceNotifier
     /// <summary>Error bars on screen; UI thread only.</summary>
     private readonly List<IVsInfoBarUIElement> _errorBars = new List<IVsInfoBarUIElement>();
 
+    /// <summary>
+    /// Initializes a new instance of the InfoBarNotifier class with the specified package, logger, and action delegates for displaying logs and opening settings.
+    /// </summary>
+    /// <param name="package">The package.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="showLog">The show log.</param>
+    /// <param name="openSettings">The open settings.</param>
     public InfoBarNotifier(AsyncPackage package, IOmpLogger logger, Action showLog, Action openSettings)
     {
         _package = package;
@@ -34,10 +41,22 @@ internal sealed class InfoBarNotifier : IServiceNotifier
         _openSettings = openSettings;
     }
 
+    /// <summary>
+    /// Displays the application log output to the user.
+    /// </summary>
     public void ShowLog() => _showLog();
 
+    /// <summary>
+    /// Opens the application settings configuration interface.
+    /// </summary>
     public void OpenSettings() => _openSettings();
 
+    /// <summary>
+    /// Asynchronously displays an error message to the user with a set of optional action buttons.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="actions">The collection of actions.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string?.</returns>
     public Task<string?> ShowErrorAsync(string message, params string[] actions) =>
         _open.ShowOnceAsync(message, () => ShowNewAsync(message, KnownMonikers.StatusError, error: true, actions));
 
@@ -45,6 +64,9 @@ internal sealed class InfoBarNotifier : IServiceNotifier
     public Task<string?> ShowAsync(string message, ImageMoniker icon, params string[] actions) =>
         _open.ShowOnceAsync(message, () => ShowNewAsync(message, icon, error: false, actions));
 
+    /// <summary>
+    /// Asynchronously closes all active error notification bars on the main thread.
+    /// </summary>
     public void CloseErrors() => Background.Run(_package.JoinableTaskFactory, _logger, "Closing oh-my-pi error notifications", async () =>
                                       {
                                           await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
@@ -54,6 +76,14 @@ internal sealed class InfoBarNotifier : IServiceNotifier
                                           }
                                       });
 
+    /// <summary>
+    /// Asynchronously displays an info bar notification in the Visual Studio shell and returns the user&apos;s selected action.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="icon">The icon.</param>
+    /// <param name="error">The error.</param>
+    /// <param name="actions">The collection of actions.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string?.</returns>
     private async Task<string?> ShowNewAsync(string message, ImageMoniker icon, bool error, string[] actions)
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
@@ -100,12 +130,27 @@ internal sealed class InfoBarNotifier : IServiceNotifier
         return choice;
     }
 
+    /// <summary>
+    /// Represents an internal implementation of the info bar user interface events handler for managing user interactions such as closures and action item clicks.
+    /// </summary>
     private sealed class Events : IVsInfoBarUIEvents
     {
+        /// <summary>
+        /// The choice.
+        /// </summary>
         public readonly TaskCompletionSource<string?> Choice = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        /// <summary>
+        /// Handles the event when the specified info bar UI element is closed by completing the associated choice operation with a null result.
+        /// </summary>
+        /// <param name="infoBarUIElement">The info bar uielement.</param>
         public void OnClosed(IVsInfoBarUIElement infoBarUIElement) => Choice.TrySetResult(null);
 
+        /// <summary>
+        /// Handles the click event of an info bar action item by capturing the action context as a result and closing the associated info bar element.
+        /// </summary>
+        /// <param name="infoBarUIElement">The info bar uielement.</param>
+        /// <param name="actionItem">The action item.</param>
         public void OnActionItemClicked(IVsInfoBarUIElement infoBarUIElement, IVsInfoBarActionItem actionItem)
         {
             ThreadHelper.ThrowIfNotOnUIThread();

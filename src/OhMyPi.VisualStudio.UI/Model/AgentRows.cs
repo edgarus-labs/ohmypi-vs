@@ -8,8 +8,16 @@ namespace OhMyPi.VisualStudio.UI.Model;
 /// <summary>Agents section rows: labels, compact descriptions and the agent tree with subagents nested under their parents.</summary>
 internal static class AgentRows
 {
+    /// <summary>
+    /// The description max.
+    /// </summary>
     private const int DescriptionMax = 48;
 
+    /// <summary>
+    /// Converts the specified agent status to its lowercase string representation.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The string result.</returns>
     public static string StatusText(AgentStatus status) => status.ToString().ToLowerInvariant();
 
     /// <summary>Subagents by their OMP name (the last segment of a nested <c>Parent.Child</c> id); <c>main</c> unchanged.</summary>
@@ -45,6 +53,11 @@ internal static class AgentRows
         return text.Length > DescriptionMax ? text.Substring(0, DescriptionMax - 1) + "…" : text;
     }
 
+    /// <summary>
+    /// Determines the sorting priority of an agent status, assigning the lowest value to running agents and the highest value to inactive or stopped agents.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The int result.</returns>
     private static int Order(AgentStatus status) => status == AgentStatus.Running ? 0 : status == AgentStatus.Pending ? 1 : 2;
 
     /// <summary>Running agents first, then pending; stable otherwise.</summary>

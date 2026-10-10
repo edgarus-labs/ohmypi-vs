@@ -19,6 +19,11 @@ internal sealed class AgentDetail : Border
     private readonly ContentControl _transcript = new ContentControl { Focusable = false };
     private AgentView _agent;
 
+    /// <summary>
+    /// Initializes a new instance of the AgentDetail class with the specified agent view and action handlers, configuring the user interface components for agent steering, transcript loading, and cancellation.
+    /// </summary>
+    /// <param name="agent">The agent.</param>
+    /// <param name="actions">The actions.</param>
     public AgentDetail(AgentView agent, IAgentActions actions)
     {
         _agent = agent;
@@ -75,6 +80,10 @@ internal sealed class AgentDetail : Border
         Child = Ui.Column(0, _summary, actionsRow, _steerBox, _confirm, _transcript);
     }
 
+    /// <summary>
+    /// Updates the agent view state and synchronizes the associated UI elements based on the agent&apos;s current status.
+    /// </summary>
+    /// <param name="agent">The agent.</param>
     public void Update(AgentView agent)
     {
         _agent = agent;
@@ -87,18 +96,28 @@ internal sealed class AgentDetail : Border
         }
     }
 
+    /// <summary>
+    /// Displays the steering input interface and sets the focus to the steering input field.
+    /// </summary>
     private void ShowSteer()
     {
         _steerBox.Visibility = Visibility.Visible;
         _steerInput.Focus();
     }
 
+    /// <summary>
+    /// Displays a confirmation dialog containing the agent&apos;s name, identifier, and activity details to verify the cancellation request.
+    /// </summary>
     private void ShowConfirm()
     {
         ((TextBlock)_confirm.Tag).Text = $"Cancel agent {_agent.Name} ({_agent.Id})?{(string.IsNullOrEmpty(_agent.Activity) ? "" : "\n" + _agent.Activity)}";
         _confirm.Visibility = Visibility.Visible;
     }
 
+    /// <summary>
+    /// Asynchronously sends the steering input text to the agent and resets the input interface upon successful completion.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private Task SteerAsync()
     {
         var message = _steerInput.Text.Trim();
@@ -117,6 +136,10 @@ internal sealed class AgentDetail : Border
         });
     }
 
+    /// <summary>
+    /// Asynchronously requests the cancellation of the current agent and updates the user interface based on the operation&apos;s result.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private Task CancelAsync()
     {
         var agent = _agent;
@@ -132,6 +155,10 @@ internal sealed class AgentDetail : Border
         });
     }
 
+    /// <summary>
+    /// Asynchronously retrieves the agent&apos;s transcript and renders it as a scrollable UI component with an option to copy the content as Markdown.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private Task LoadTranscriptAsync()
     {
         var agent = _agent;

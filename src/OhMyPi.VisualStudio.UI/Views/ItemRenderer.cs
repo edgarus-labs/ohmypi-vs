@@ -74,6 +74,12 @@ internal static class ItemRenderer
     /// <summary>Whether <paramref name="item"/> is the answer to the tool calls before it, so it is set off by a rule.</summary>
     public static bool IsAnswerToTools(TranscriptItem item, TranscriptItem? previous) => item is AssistantItem && previous is ToolItem;
 
+    /// <summary>
+    /// Creates a formatted UI card element containing the processed text of a command output item with attached file click functionality.
+    /// </summary>
+    /// <param name="output">The output.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <returns>The framework element result.</returns>
     private static FrameworkElement CommandOutput(CommandOutputItem output, RenderContext ctx)
     {
         var text = Ui.Pre(output.Text);
@@ -82,6 +88,11 @@ internal static class ItemRenderer
         return Ui.Card(text, new Thickness(10, 6, 10, 6));
     }
 
+    /// <summary>
+    /// Creates a formatted UI element that displays a summarized view of a turn&apos;s token usage and metadata.
+    /// </summary>
+    /// <param name="turn">The turn.</param>
+    /// <returns>The framework element result.</returns>
     private static FrameworkElement TurnSummary(TurnSummaryItem turn)
     {
         var text = Ui.Small(Ui.Muted(Format.TurnSummary(turn), wrap: true), 0.9);
@@ -90,6 +101,12 @@ internal static class ItemRenderer
         return text;
     }
 
+    /// <summary>
+    /// Creates a FrameworkElement representation of a user message by parsing its text, pasted content, attached files, and editor context into a styled UI card.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <returns>The framework element result.</returns>
     private static FrameworkElement User(UserItem item, RenderContext ctx)
     {
         var parts = PromptFormatter.SplitUserMessage(item.Text);
@@ -131,6 +148,12 @@ internal static class ItemRenderer
         return WithCopy(card, item.Text, ctx);
     }
 
+    /// <summary>
+    /// Creates a new AssistantView instance based on the provided assistant item and render context.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <returns>The framework element result.</returns>
     private static FrameworkElement Assistant(AssistantItem item, RenderContext ctx) => new AssistantView(item, ctx);
 
     /// <summary>
@@ -155,6 +178,11 @@ internal static class ItemRenderer
         private readonly Border _rule = new Border { BorderThickness = new Thickness(0, 1, 0, 0), Margin = new Thickness(0, 0, 0, AnswerRuleGap), Visibility = Visibility.Collapsed }
             .Theme(Border.BorderBrushProperty, ThemeKeys.Divider);
 
+        /// <summary>
+        /// Initializes a new instance of the AssistantView class using the specified assistant item and render context to configure the UI layout and interaction behaviors.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <param name="ctx">The ctx.</param>
         public AssistantView(AssistantItem item, RenderContext ctx)
         {
             _ctx = ctx;
@@ -182,8 +210,16 @@ internal static class ItemRenderer
             Apply(item);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether is live.
+        /// </summary>
         public bool IsLive => _item.Streaming;
 
+        /// <summary>
+        /// Attempts to update the current item by validating that the provided transcript item is a compatible assistant item with a matching identifier before applying the changes.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        /// <returns>true if the condition is met; otherwise, false.</returns>
         public bool TryUpdate(TranscriptItem item)
         {
             if (!(item is AssistantItem next) || next.Id != _item.Id)
@@ -196,6 +232,10 @@ internal static class ItemRenderer
             return true;
         }
 
+        /// <summary>
+        /// Updates the opacity of the metadata and copy elements to indicate whether the element is currently hovered.
+        /// </summary>
+        /// <param name="on">The on.</param>
         private void Hover(bool on)
         {
             _meta.Opacity = on ? 1 : 0;
@@ -209,6 +249,10 @@ internal static class ItemRenderer
             _rule.Visibility = _separated && _item.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        /// <summary>
+        /// Updates the user interface elements to reflect the current state, content, and visibility of the specified assistant item, including its thinking process, response text, and error messages.
+        /// </summary>
+        /// <param name="item">The item.</param>
         private void Apply(AssistantItem item)
         {
             _item = item;
@@ -257,6 +301,11 @@ internal static class ItemRenderer
         }
     }
 
+    /// <summary>
+    /// Generates a formatted metadata string containing the model name, token usage, cost, and stop reason for a non-streaming assistant item.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The string result.</returns>
     private static string Meta(AssistantItem item)
     {
         if (item.Streaming)

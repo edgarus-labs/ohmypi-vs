@@ -104,6 +104,13 @@ internal sealed class CodeBlock
         SetText(source);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the CodeBlock class with the specified tool row, programming language, marking regular expression, and optional trailer element.
+    /// </summary>
+    /// <param name="row">The row.</param>
+    /// <param name="language">The language.</param>
+    /// <param name="mark">The mark.</param>
+    /// <param name="trailer">The trailer.</param>
     private CodeBlock(ToolView.ToolRow row, string? language, Regex? mark, UIElement? trailer)
     {
         _row = row;
@@ -138,6 +145,9 @@ internal sealed class CodeBlock
         row.Register(this);
     }
 
+    /// <summary>
+    /// Gets the element.
+    /// </summary>
     public FrameworkElement Element { get; }
 
     /// <summary>The selectable text box, for naming it to assistive technology.</summary>
@@ -307,6 +317,9 @@ internal sealed class CodeBlock
         (_viewport.Parent as UIElement)?.RaiseEvent(forwarded);
     }
 
+    /// <summary>
+    /// Updates the visibility, height, and label states of the viewport and its associated UI controls based on the current expansion state and content length.
+    /// </summary>
     private void Show()
     {
         var expanded = _row.Expanded;
@@ -365,6 +378,14 @@ internal sealed class CodeBlock
         Cut = shown.Length < _body.Length;
     }
 
+    /// <summary>
+    /// Truncates the specified text to a maximum number of lines and characters to ensure it fits within defined display constraints.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="lines">The collection of lines.</param>
+    /// <param name="maxLines">The max lines.</param>
+    /// <param name="maxChars">The max chars.</param>
+    /// <returns>The string result.</returns>
     private static string CutTo(string text, string[] lines, int maxLines, int maxChars)
     {
         if (lines.Length <= maxLines && text.Length <= maxChars)
@@ -381,6 +402,11 @@ internal sealed class CodeBlock
         return shown;
     }
 
+    /// <summary>
+    /// Updates the text content of the specified button&apos;s label and assigns the corresponding automation name for accessibility.
+    /// </summary>
+    /// <param name="link">The link.</param>
+    /// <param name="label">The label.</param>
     private static void SetLabel(Button link, string label)
     {
         ((TextBlock)link.Content).Text = label;

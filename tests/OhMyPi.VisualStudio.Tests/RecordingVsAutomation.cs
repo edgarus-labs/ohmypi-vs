@@ -68,29 +68,111 @@ internal sealed class RecordingVsAutomation : IVsAutomation
 
     public Task<IReadOnlyList<ErrorItem>> GetErrorsAsync(CancellationToken c) => Respond<IReadOnlyList<ErrorItem>>(c, Errors, "GetErrors");
 
+    /// <summary>
+    /// Asynchronously retrieves the output content from the specified pane, limited to the maximum number of lines.
+    /// </summary>
+    /// <param name="pane">The pane.</param>
+    /// <param name="maxLines">The max lines.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     public Task<string> ReadOutputAsync(string? pane, int maxLines, CancellationToken c) => Respond(c, Output, "ReadOutput", pane, maxLines);
 
+    /// <summary>
+    /// Asynchronously records the addition of a specified file path to a project.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task AddFileToProjectAsync(string project, string path, CancellationToken c) => Record(c, "AddFileToProject", project, path);
 
+    /// <summary>
+    /// Asynchronously removes a specified file from the designated project.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task RemoveFileFromProjectAsync(string project, string path, CancellationToken c) => Record(c, "RemoveFileFromProject", project, path);
 
+    /// <summary>
+    /// Asynchronously retrieves the current debug state of the system.
+    /// </summary>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the debug state.</returns>
     public Task<DebugState> GetDebugStateAsync(CancellationToken c) => Respond(c, State, "GetDebugState");
 
+    /// <summary>
+    /// Asynchronously processes a debug action and returns the resulting debug state.
+    /// </summary>
+    /// <param name="action">The action.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the debug state.</returns>
     public Task<DebugState> DebugAsync(DebugAction action, CancellationToken c) => Respond(c, State, "Debug", action);
 
+    /// <summary>
+    /// Asynchronously retrieves a read-only list of all configured breakpoint information.
+    /// </summary>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public Task<IReadOnlyList<BreakpointInfo>> ListBreakpointsAsync(CancellationToken c) => Respond<IReadOnlyList<BreakpointInfo>>(c, Breakpoints, "ListBreakpoints");
 
+    /// <summary>
+    /// Asynchronously records a request to add a breakpoint at the specified file path and line number, optionally including a conditional expression.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="line">The line.</param>
+    /// <param name="condition">The condition.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task AddBreakpointAsync(string path, int line, string? condition, CancellationToken c) => Record(c, "AddBreakpoint", path, line, condition);
 
+    /// <summary>
+    /// Asynchronously removes breakpoints from the specified file path and optional line number.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="line">The line.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the int.</returns>
     public Task<int> RemoveBreakpointsAsync(string path, int? line, CancellationToken c) => Respond(c, RemovedBreakpoints, "RemoveBreakpoints", path, line);
 
+    /// <summary>
+    /// Asynchronously evaluates the specified expression and returns the resulting value as a string.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     public Task<string> EvaluateAsync(string expression, CancellationToken c) => Respond(c, Evaluation, "Evaluate", expression);
 
+    /// <summary>
+    /// Asynchronously retrieves the current call stack as a read-only list of strings.
+    /// </summary>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public Task<IReadOnlyList<string>> GetCallStackAsync(CancellationToken c) => Respond<IReadOnlyList<string>>(c, CallStack, "GetCallStack");
 
+    /// <summary>
+    /// Asynchronously retrieves a read-only list of local variables.
+    /// </summary>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public Task<IReadOnlyList<LocalVariable>> GetLocalsAsync(CancellationToken c) => Respond<IReadOnlyList<LocalVariable>>(c, Locals, "GetLocals");
 
+    /// <summary>
+    /// Asynchronously retrieves a filtered list of available commands, limited to the specified maximum number of results.
+    /// </summary>
+    /// <param name="filter">The filter.</param>
+    /// <param name="max">The max.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public Task<IReadOnlyList<string>> FindCommandsAsync(string filter, int max, CancellationToken c) => Respond<IReadOnlyList<string>>(c, Commands, "FindCommands", filter, max);
 
+    /// <summary>
+    /// Asynchronously records the execution of a specified command and its associated arguments.
+    /// </summary>
+    /// <param name="command">The command containing the operation data.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="c">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task ExecuteCommandAsync(string command, string? arguments, CancellationToken c) => Record(c, "ExecuteCommand", command, arguments);
 }

@@ -14,6 +14,9 @@ internal static class ThemeTint
     public static readonly DependencyProperty AccentProperty = DependencyProperty.RegisterAttached(
         "Accent", typeof(object), typeof(ThemeTint), new PropertyMetadata(null, OnMarkerChanged));
 
+    /// <summary>
+    /// The provider property.
+    /// </summary>
     public static readonly DependencyProperty ProviderProperty = DependencyProperty.RegisterAttached(
         "Provider", typeof(string), typeof(ThemeTint), new PropertyMetadata(null, OnMarkerChanged));
 
@@ -48,14 +51,39 @@ internal static class ThemeTint
         ("grok", null),
     ];
 
+    /// <summary>
+    /// Retrieves the value of the AccentProperty from the specified DependencyObject.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns>The object result.</returns>
     public static object GetAccent(DependencyObject element) => element.GetValue(AccentProperty);
 
+    /// <summary>
+    /// Sets the accent value for the specified dependency object.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="value">The value.</param>
     public static void SetAccent(DependencyObject element, object value) => element.SetValue(AccentProperty, value);
 
+    /// <summary>
+    /// Retrieves the provider value associated with the specified dependency object.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns>The string? result.</returns>
     public static string? GetProvider(DependencyObject element) => (string?)element.GetValue(ProviderProperty);
 
+    /// <summary>
+    /// Sets the provider value for the specified dependency object.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="value">The value.</param>
     public static void SetProvider(DependencyObject element, string? value) => element.SetValue(ProviderProperty, value);
 
+    /// <summary>
+    /// Updates the background of a Border element based on the provided accent color and provider when the marker property changes.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="e">The e.</param>
     private static void OnMarkerChanged(DependencyObject element, DependencyPropertyChangedEventArgs e)
     {
         if (!(element is System.Windows.Controls.Border border))
@@ -101,6 +129,12 @@ internal static class ThemeTint
         return FromHsl(hash % 360u, Math.Max(saturation, 0.35), lightness);
     }
 
+    /// <summary>
+    /// Calculates the saturation and lightness components of a given color using the HSL color model.
+    /// </summary>
+    /// <param name="color">The color.</param>
+    /// <param name="saturation">The saturation.</param>
+    /// <param name="lightness">The lightness.</param>
     private static void SaturationAndLightness(Color color, out double saturation, out double lightness)
     {
         var r = color.R / 255.0;
@@ -113,6 +147,13 @@ internal static class ThemeTint
         saturation = delta == 0 ? 0 : lightness > 0.5 ? delta / (2 - max - min) : delta / (max + min);
     }
 
+    /// <summary>
+    /// Converts HSL (Hue, Saturation, Lightness) color values to a corresponding Color object.
+    /// </summary>
+    /// <param name="hue">The hue.</param>
+    /// <param name="saturation">The saturation.</param>
+    /// <param name="lightness">The lightness.</param>
+    /// <returns>The color result.</returns>
     private static Color FromHsl(double hue, double saturation, double lightness)
     {
         var c = (1 - Math.Abs(2 * lightness - 1)) * saturation;
@@ -129,6 +170,11 @@ internal static class ThemeTint
         return Color.FromRgb((byte)Math.Round((r + m) * 255), (byte)Math.Round((g + m) * 255), (byte)Math.Round((b + m) * 255));
     }
 
+    /// <summary>
+    /// Creates a frozen SolidColorBrush using the specified color to improve performance and ensure immutability.
+    /// </summary>
+    /// <param name="color">The color.</param>
+    /// <returns>The solid color brush result.</returns>
     private static SolidColorBrush Freeze(Color color)
     {
         var brush = new SolidColorBrush(color);

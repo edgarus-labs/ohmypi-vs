@@ -9,6 +9,9 @@ namespace Omp.Core.Tests.Support;
 /// </summary>
 internal sealed class MemoryOmp : MemoryTransport, IOmpProcessHandle
 {
+    /// <summary>
+    /// The no reply.
+    /// </summary>
     public static readonly JToken NoReply = new JValue("no reply");
     private static int _nextPid = 900_000;
 
@@ -29,19 +32,34 @@ internal sealed class MemoryOmp : MemoryTransport, IOmpProcessHandle
         ["abort"] = (_, _) => null,
     };
 
+    /// <summary>
+    /// Initializes a new instance of the MemoryOmp class with optional response overrides and assigns a unique process identifier.
+    /// </summary>
+    /// <param name="overrides">The overrides.</param>
     public MemoryOmp(Dictionary<string, Func<JObject, MemoryOmp, JToken?>>? overrides = null)
         : base((frame, transport) => Respond((MemoryOmp)transport, overrides, frame))
     {
         Pid = Interlocked.Increment(ref _nextPid);
     }
 
+    /// <summary>
+    /// Gets the pid.
+    /// </summary>
     public int? Pid { get; }
 
     /// <summary>Makes ShutdownAsync fail, as when the process tree survives being killed.</summary>
     public Exception? ShutdownError { get; set; }
 
+    /// <summary>
+    /// Asynchronously initiates the process by emitting a ready signal on a background thread.
+    /// </summary>
     public void Start() => Task.Run(() => Emit(ReadyV2));
 
+    /// <summary>
+    /// Asynchronously shuts down the process within the specified grace period, ensuring the resource is closed if it is not already.
+    /// </summary>
+    /// <param name="graceMs">The grace ms.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task ShutdownAsync(int graceMs)
     {
         if (ShutdownError is not null)
@@ -57,6 +75,12 @@ internal sealed class MemoryOmp : MemoryTransport, IOmpProcessHandle
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Processes an incoming frame by executing the corresponding handler from the provided overrides or default mappings and sending a reply via the memory OMP instance.
+    /// </summary>
+    /// <param name="omp">The omp.</param>
+    /// <param name="overrides">The overrides.</param>
+    /// <param name="frame">The frame.</param>
     private static void Respond(MemoryOmp omp, Dictionary<string, Func<JObject, MemoryOmp, JToken?>>? overrides, JObject frame)
     {
         var type = (string)frame["type"]!;

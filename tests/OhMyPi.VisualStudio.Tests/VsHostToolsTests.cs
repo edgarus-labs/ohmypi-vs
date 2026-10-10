@@ -10,6 +10,9 @@ namespace OhMyPi.VisualStudio.Tests;
 
 public sealed class VsHostToolsTests
 {
+    /// <summary>
+    /// The repo.
+    /// </summary>
     private const string Repo = @"D:\work\repo";
 
     private readonly RecordingVsAutomation _vs = new();
@@ -135,6 +138,9 @@ public sealed class VsHostToolsTests
 
     // ---- dispatch and calls ---------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Gets the valid calls.
+    /// </summary>
     public static TheoryData<string, string, string> ValidCalls => new()
     {
         { "vs_solution", "{}", "GetSolution()" },
@@ -229,6 +235,9 @@ public sealed class VsHostToolsTests
 
     // ---- argument validation --------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Gets the invalid arguments.
+    /// </summary>
     public static TheoryData<string, string, string> InvalidArguments => new()
     {
         { "vs_open_document", "{}", "path" },
@@ -313,6 +322,9 @@ public sealed class VsHostToolsTests
 
     // ---- workspace scope ------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Gets the path tools.
+    /// </summary>
     public static TheoryData<string, string> PathTools => new()
     {
         { "vs_open_document", "{'path':{PATH}}" },

@@ -384,6 +384,10 @@ internal sealed class OmpProcess : IOmpProcessHandle
         }
     }
 
+    /// <summary>
+    /// Processes a line of standard error output by logging it and maintaining a fixed-size circular buffer of the most recent entries.
+    /// </summary>
+    /// <param name="line">The line.</param>
     private void StderrLine(string line)
     {
         if (line.Trim().Length == 0)
@@ -399,6 +403,9 @@ internal sealed class OmpProcess : IOmpProcessHandle
         }
     }
 
+    /// <summary>
+    /// Processes and writes buffered data to the standard input stream, handling potential I/O failures and notifying listeners of write errors.
+    /// </summary>
     private void WriteStdin()
     {
         var stdin = _stdin!;
@@ -437,6 +444,9 @@ internal sealed class OmpProcess : IOmpProcessHandle
         }
     }
 
+    /// <summary>
+    /// Handles the process exit sequence by capturing the exit code, signaling completion, flushing remaining output streams, and reporting the transport closure.
+    /// </summary>
     private void OnExit()
     {
         uint code = 0;
@@ -483,6 +493,12 @@ internal sealed class OmpProcess : IOmpProcessHandle
         return false;
     }
 
+    /// <summary>
+    /// Asynchronously manages the shutdown sequence of the OMP process by completing pending writes and attempting a graceful exit before escalating to process tree termination if the specified grace period expires.
+    /// </summary>
+    /// <param name="graceMs">The grace ms.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="IOException">Thrown when an error occurs during execution.</exception>
     private async Task RunShutdownAsync(int graceMs)
     {
         bool started;
@@ -517,6 +533,11 @@ internal sealed class OmpProcess : IOmpProcessHandle
         await _closed.Task.ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Asynchronously waits for the process to exit or for the specified timeout period to elapse, returning true if the exit signal was received.
+    /// </summary>
+    /// <param name="ms">The ms.</param>
+    /// <returns>A task representing the asynchronous operation. The task result is true if successful; otherwise, false.</returns>
     private async Task<bool> WaitForExitAsync(int ms)
     {
         if (_exited)
@@ -538,6 +559,10 @@ internal sealed class OmpProcess : IOmpProcessHandle
         ProcessTree.Kill(pid, _logger, _options.TreeNative);
     }
 
+    /// <summary>
+    /// Finalizes the transport session by flushing buffered error output, disposing of process resources, and notifying listeners that the connection has closed.
+    /// </summary>
+    /// <param name="close">The close.</param>
     private void Report(TransportClose close)
     {
         string tail;
@@ -566,21 +591,42 @@ internal sealed class OmpProcess : IOmpProcessHandle
         _closed.TrySetResult(close);
     }
 
+    /// <summary>
+    /// Represents a pending write operation containing the byte buffer to be written and an optional error handling callback.
+    /// </summary>
     private sealed class PendingWrite
     {
+        /// <summary>
+        /// Initializes a new instance of the PendingWrite class with the specified byte array and error handling callback.
+        /// </summary>
+        /// <param name="bytes">The collection of bytes.</param>
+        /// <param name="onError">The on error.</param>
         public PendingWrite(byte[] bytes, Action<Exception>? onError)
         {
             Bytes = bytes;
             OnError = onError;
         }
 
+        /// <summary>
+        /// Gets the collection of bytes.
+        /// </summary>
         public byte[] Bytes { get; }
 
+        /// <summary>
+        /// Gets the on error.
+        /// </summary>
         public Action<Exception>? OnError { get; }
     }
 
+    /// <summary>
+    /// Represents a specialized synchronization primitive used to signal the completion or state change of a process.
+    /// </summary>
     private sealed class ProcessWaitHandle : WaitHandle
     {
+        /// <summary>
+        /// Initializes a new instance of the ProcessWaitHandle class using the specified safe wait handle.
+        /// </summary>
+        /// <param name="handle">The handle.</param>
         public ProcessWaitHandle(SafeWaitHandle handle)
         {
             SafeWaitHandle = new SafeWaitHandle(handle.DangerousGetHandle(), ownsHandle: false);

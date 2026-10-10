@@ -3,6 +3,11 @@ namespace Omp.Core.Tests.Support;
 /// <summary>Per-test scratch directories under the system temp directory.</summary>
 public static class TempDirectory
 {
+    /// <summary>
+    /// Creates a unique directory in the system&apos;s temporary path using the specified prefix and returns the full path to the created directory.
+    /// </summary>
+    /// <param name="prefix">The prefix.</param>
+    /// <returns>The string result.</returns>
     public static string Create(string prefix)
     {
         var dir = Path.Combine(Path.GetTempPath(), prefix + Guid.NewGuid().ToString("N"));

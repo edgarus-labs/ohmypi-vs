@@ -8,5 +8,8 @@ internal sealed class PastedTextAttachment : Attachment
         Text = text;
     }
 
+    /// <summary>
+    /// Gets the text.
+    /// </summary>
     public string Text { get; }
 }

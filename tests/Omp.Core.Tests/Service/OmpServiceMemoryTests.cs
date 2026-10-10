@@ -684,6 +684,9 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         await Assert.ThrowsAsync<ObjectDisposedException>(() => service.StartAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
+    /// <summary>
+    /// The usage text.
+    /// </summary>
     private const string UsageText = "```\nUsage (0s ago)\n\nAnthropic\n- Claude 5 Hour\n  user@example.com: 4.00% used (96.0% left)\n  resets in 4h\n```";
 
     [Fact]

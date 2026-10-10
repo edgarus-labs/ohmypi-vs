@@ -1208,12 +1208,19 @@ public sealed class OmpService : IOmpService
         });
     }
 
+    /// <summary>
+    /// Updates the main agent configuration based on the current session phase, model identity, and active running tool.
+    /// </summary>
     private void UpdateMainAgent()
     {
         var session = _store.Session;
         _agents.SetMain(session.Phase, session.Model is null ? null : $"{session.Model.Provider}/{session.Model.Id}", _store.RunningTool);
     }
 
+    /// <summary>
+    /// Subscribes to the OmpRpcClient event handlers to route session events, host tool calls, prompt results, and command updates to the internal state and tracking mechanisms.
+    /// </summary>
+    /// <param name="client">The client.</param>
     private void Wire(OmpRpcClient client)
     {
         void Current(Action action)
@@ -1299,6 +1306,10 @@ public sealed class OmpService : IOmpService
         client.Closed += close => OnClose(client, close);
     }
 
+    /// <summary>
+    /// Processes a session event by applying it to the store and updating the agent tracker or system state based on the event type.
+    /// </summary>
+    /// <param name="e">The e.</param>
     private void OnSessionEvent(JObject e)
     {
         _store.ApplyEvent(e);
@@ -1319,6 +1330,11 @@ public sealed class OmpService : IOmpService
         }
     }
 
+    /// <summary>
+    /// Parses an incoming JSON-RPC request and dispatches the corresponding user interface interaction, such as confirmation, selection, input, or editor prompts.
+    /// </summary>
+    /// <param name="client">The client.</param>
+    /// <param name="request">The request containing the operation data.</param>
     private void OnUiRequest(OmpRpcClient client, JObject request)
     {
         var id = Json.Str(request, "id") ?? "";
@@ -1425,6 +1441,11 @@ public sealed class OmpService : IOmpService
         }
     }
 
+    /// <summary>
+    /// Maps a JSON object containing question data to a corresponding AskQuestionView instance.
+    /// </summary>
+    /// <param name="question">The question.</param>
+    /// <returns>The ask question view result.</returns>
     private static AskQuestionView AskQuestion(JObject question) => new AskQuestionView
     {
         Id = Json.Str(question, "id") ?? "",
@@ -1484,6 +1505,11 @@ public sealed class OmpService : IOmpService
         Raise(InteractionRequested, nameof(InteractionRequested), request);
     }
 
+    /// <summary>
+    /// Removes all pending requests and interactions associated with the specified identifier and returns a value indicating whether the interaction was successfully removed.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private bool RemovePending(string id)
     {
         _pendingRequests.RemoveAll(r => r.Id == id);
@@ -1491,6 +1517,11 @@ public sealed class OmpService : IOmpService
         return _pendingInteractions.Remove(id);
     }
 
+    /// <summary>
+    /// Handles the closure of the RPC client connection by terminating the session and initiating an automatic restart if configured.
+    /// </summary>
+    /// <param name="client">The client.</param>
+    /// <param name="close">The close.</param>
     private void OnClose(OmpRpcClient client, TransportClose close)
     {
         lock (_sync)
@@ -1539,6 +1570,10 @@ public sealed class OmpService : IOmpService
         return newline < 0 ? detail + suffix : detail.Substring(0, newline) + suffix + detail.Substring(newline);
     }
 
+    /// <summary>
+    /// Schedules a connection restart based on a predefined delay budget and window, or marks the connection as failed if the maximum number of restart attempts has been exceeded.
+    /// </summary>
+    /// <param name="detail">The detail.</param>
     private void ScheduleRestart(string detail)
     {
         var now = Listeners.NowMs();
@@ -1565,6 +1600,12 @@ public sealed class OmpService : IOmpService
         timer.Change(delay, Timeout.Infinite);
     }
 
+    /// <summary>
+    /// Handles the restart trigger by asynchronously launching a new session and scheduling a subsequent retry if the restart process fails.
+    /// </summary>
+    /// <param name="timer">The timer.</param>
+    /// <param name="sessionFile">The session file.</param>
+    /// <param name="detail">The detail.</param>
     private void OnRestartDue(Timer timer, string? sessionFile, string detail) => _ = LaunchAsync(new StartOptions { ResumeSessionFile = sessionFile }, ConnectionState.Restarting, detail, timer).ContinueWith(launch =>
                                                                                        {
                                                                                            if (launch.Status == TaskStatus.RanToCompletion)

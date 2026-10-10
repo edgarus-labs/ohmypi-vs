@@ -58,6 +58,11 @@ internal static class LineEdits
         return "\r\n";
     }
 
+    /// <summary>
+    /// Normalizes all carriage return and line feed sequences in the specified text to a consistent single newline character.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>The string result.</returns>
     public static string NormalizeLineBreaks(string text) =>
         text.IndexOf('\r') < 0 ? text : text.Replace("\r\n", "\n").Replace('\r', '\n');
 

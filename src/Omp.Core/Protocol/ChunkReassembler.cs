@@ -20,11 +20,20 @@ internal sealed class ChunkReassembler
     private readonly ChunkLimits _limits;
     private Pending? _pending;
 
+    /// <summary>
+    /// Initializes a new instance of the ChunkReassembler class with the specified chunk limits.
+    /// </summary>
+    /// <param name="limits">The limits.</param>
     public ChunkReassembler(ChunkLimits limits)
     {
         _limits = limits;
     }
 
+    /// <summary>
+    /// Processes a JSON token to reassemble RPC chunks, validating the frame type and managing the state of pending sequences.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The reassembly result result.</returns>
     public ReassemblyResult Push(JToken value)
     {
         if (!(value is JObject frame))
@@ -55,6 +64,12 @@ internal sealed class ChunkReassembler
         }
     }
 
+    /// <summary>
+    /// Processes a JSON-encoded data chunk, validating its metadata and sequence before appending it to a pending reassembly buffer to reconstruct the full frame.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The reassembly result result.</returns>
+    /// <exception cref="InvalidDataException">Thrown when an error occurs during execution.</exception>
     private ReassemblyResult PushChunk(JObject value)
     {
         var chunkId = Json.Str(value, "chunkId");
@@ -135,8 +150,17 @@ internal sealed class ChunkReassembler
         return new ReassemblyResult(record, null);
     }
 
+    /// <summary>
+    /// Represents the state and metadata of a pending data chunk, including its identifier, byte length, and the collection of received parts.
+    /// </summary>
     private sealed class Pending
     {
+        /// <summary>
+        /// Initializes a new instance of the Pending class with the specified chunk identifier, count, and byte length.
+        /// </summary>
+        /// <param name="chunkId">The unique identifier of the chunk.</param>
+        /// <param name="count">The count.</param>
+        /// <param name="byteLength">The byte length.</param>
         public Pending(string chunkId, long count, long byteLength)
         {
             ChunkId = chunkId;
@@ -144,16 +168,34 @@ internal sealed class ChunkReassembler
             ByteLength = byteLength;
         }
 
+        /// <summary>
+        /// Gets the chunk id.
+        /// </summary>
         public string ChunkId { get; }
 
+        /// <summary>
+        /// Gets the count.
+        /// </summary>
         public long Count { get; }
 
+        /// <summary>
+        /// Gets the byte length.
+        /// </summary>
         public long ByteLength { get; }
 
+        /// <summary>
+        /// Gets or sets the next index.
+        /// </summary>
         public long NextIndex { get; set; }
 
+        /// <summary>
+        /// Gets the collection of parts.
+        /// </summary>
         public List<byte[]> Parts { get; } = new List<byte[]>();
 
+        /// <summary>
+        /// Gets or sets the received bytes.
+        /// </summary>
         public long ReceivedBytes { get; set; }
     }
 }

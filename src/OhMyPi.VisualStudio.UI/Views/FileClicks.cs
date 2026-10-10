@@ -18,11 +18,22 @@ internal static class FileClicks
     private static readonly DependencyProperty ContextProperty =
         DependencyProperty.RegisterAttached("Context", typeof(RenderContext), typeof(FileClicks), new PropertyMetadata(null));
 
+    /// <summary>
+    /// Attaches the specified text box to the render context, enabling the attachment when the text box has a selection.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="ctx">The ctx.</param>
     public static void Attach(TextBox box, RenderContext ctx) => Attach(box, ctx, () => box.SelectionLength > 0);
 
     /// <summary>Attaches to a box whose lines are runs separated by line breaks in one paragraph, as <see cref="CodeBlock.Fill"/> writes them.</summary>
     public static void Attach(RichTextBox box, RenderContext ctx) => Attach(box, ctx, () => !box.Selection.IsEmpty);
 
+    /// <summary>
+    /// Attaches a render context to the specified control and configures mouse event handlers to manage cursor visibility, tooltips, and the opening of target elements.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="selecting">The selecting.</param>
     private static void Attach(Control box, RenderContext ctx, Func<bool> selecting)
     {
         box.SetValue(ContextProperty, ctx);
@@ -59,6 +70,12 @@ internal static class FileClicks
         return true;
     }
 
+    /// <summary>
+    /// Resolves the file target associated with a specific point within the provided control by identifying the token at that location via the render context.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="point">The point.</param>
+    /// <returns>The file target? result.</returns>
     private static FileTarget? At(Control box, Point point)
     {
         if (!(box.GetValue(ContextProperty) is RenderContext ctx))
@@ -71,6 +88,12 @@ internal static class FileClicks
         return token is null ? null : ctx.ResolveFile(token);
     }
 
+    /// <summary>
+    /// Retrieves the token located at the specified point within the provided text box, returning null if no character exists at that position.
+    /// </summary>
+    /// <param name="box">The box.</param>
+    /// <param name="point">The point.</param>
+    /// <returns>The string? result.</returns>
     private static string? TokenAt(TextBox box, Point point)
     {
         var index = box.GetCharacterIndexFromPoint(point, snapToText: false);

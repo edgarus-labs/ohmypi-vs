@@ -10,6 +10,16 @@ namespace OhMyPi.VisualStudio.UI.Views;
 /// <summary>What transcript renderers need: remembered expand state, OMP's working directory, tracked changes and host actions.</summary>
 internal sealed class RenderContext
 {
+    /// <summary>
+    /// Initializes a new instance of the RenderContext class with the specified state and callback actions for file operations, navigation, and error logging.
+    /// </summary>
+    /// <param name="open">The open.</param>
+    /// <param name="openFile">The open file.</param>
+    /// <param name="openDiff">The open diff.</param>
+    /// <param name="showAgents">The show agents.</param>
+    /// <param name="openUrl">The open url.</param>
+    /// <param name="copy">The copy.</param>
+    /// <param name="logError">The log error.</param>
     public RenderContext(OpenState open, Action<string, int?> openFile, Action<string, string?> openDiff, Action showAgents, Action<string> openUrl, Action<string> copy, Action<string, Exception> logError)
     {
         Open = open;
@@ -21,6 +31,9 @@ internal sealed class RenderContext
         LogError = logError;
     }
 
+    /// <summary>
+    /// Gets the open.
+    /// </summary>
     public OpenState Open { get; }
 
     /// <summary>OMP working directory; paths under it render relative in collapsed rows.</summary>
@@ -35,10 +48,19 @@ internal sealed class RenderContext
     /// <summary>Opens the native diff of a tool path (raw) with the tool's own record of the old text, when it has one.</summary>
     public Action<string, string?> OpenDiff { get; }
 
+    /// <summary>
+    /// Gets the show agents.
+    /// </summary>
     public Action ShowAgents { get; }
 
+    /// <summary>
+    /// Gets the open url.
+    /// </summary>
     public Action<string> OpenUrl { get; }
 
+    /// <summary>
+    /// Gets the copy.
+    /// </summary>
     public Action<string> Copy { get; }
 
     /// <summary>Writes a rendering failure with its exception to the log.</summary>

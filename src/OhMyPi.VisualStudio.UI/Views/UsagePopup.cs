@@ -18,6 +18,9 @@ namespace OhMyPi.VisualStudio.UI.Views;
 /// </summary>
 internal sealed class UsagePopup
 {
+    /// <summary>
+    /// The top gap.
+    /// </summary>
     private const double TopGap = 6;
 
     private readonly FrameworkElement _area;
@@ -80,8 +83,14 @@ internal sealed class UsagePopup
         Popup.Closed += (_, __) => _closed();
     }
 
+    /// <summary>
+    /// Gets the popup.
+    /// </summary>
     public Popup Popup { get; }
 
+    /// <summary>
+    /// Opens the popup window, applies the required dimensions, and triggers an asynchronous content refresh.
+    /// </summary>
     public void Open()
     {
         ApplySize();
@@ -89,6 +98,9 @@ internal sealed class UsagePopup
         _ = RefreshAsync();
     }
 
+    /// <summary>
+    /// Closes the popup by setting its open state to false.
+    /// </summary>
     public void Close() => Popup.IsOpen = false;
 
     /// <summary>As wide as <see cref="_alignTo"/>, at most as tall as the area less the top gap; sizes are in the chat's unzoomed units.</summary>
@@ -108,6 +120,10 @@ internal sealed class UsagePopup
         _view.MaxHeight = Math.Max(120, _area.ActualHeight - TopGap - 2);
     }
 
+    /// <summary>
+    /// Asynchronously refreshes the usage data from the OMP source and updates the user interface with the retrieved results or an error message.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task RefreshAsync()
     {
         if (_loading)
@@ -134,6 +150,10 @@ internal sealed class UsagePopup
         }
     }
 
+    /// <summary>
+    /// Renders the provider usage limits to the user interface, displaying a muted notification if no providers report active limits.
+    /// </summary>
+    /// <param name="providers">The collection of providers.</param>
     private void Render(IReadOnlyList<ProviderUsage> providers)
     {
         _rows.Children.Clear();
@@ -169,6 +189,12 @@ internal sealed class UsagePopup
         return marker;
     }
 
+    /// <summary>
+    /// Creates a UI element representing a usage limit row, featuring a progress bar, percentage indicator, and reset information.
+    /// </summary>
+    /// <param name="limit">The limit.</param>
+    /// <param name="provider">The provider.</param>
+    /// <returns>The uielement result.</returns>
     private static UIElement LimitRow(UsageLimit limit, string provider)
     {
         var used = Math.Max(0, Math.Min(100, limit.UsedPercent));

@@ -146,12 +146,35 @@ internal sealed class FakeOmpService : IOmpService
 
     public Task SetThinkingLevelAsync(string level) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously sets whether fast mode is enabled for the current operation.
+    /// </summary>
+    /// <param name="enabled">The enabled.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task SetFastModeAsync(bool enabled) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously processes a text prompt, optionally including images and a specified prompt mode, to produce a prompt outcome.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="mode">The mode.</param>
+    /// <param name="images">The collection of images.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the prompt outcome.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task<PromptOutcome> PromptAsync(string text, PromptMode mode = PromptMode.Auto, IReadOnlyList<PromptImage>? images = null) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously aborts the current operation.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task AbortAsync() => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously increments the count of new sessions.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public Task NewSessionAsync()
     {
         Interlocked.Increment(ref NewSessions);
@@ -159,17 +182,59 @@ internal sealed class FakeOmpService : IOmpService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Asynchronously switches the current active session to the one specified by the session file path.
+    /// </summary>
+    /// <param name="sessionFile">The session file.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task SwitchSessionAsync(string sessionFile) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously updates the session name to the specified value.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task SetSessionNameAsync(string name) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously retrieves a read-only list of session summaries.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task<IReadOnlyList<SessionSummary>> ListSessionsAsync() => throw new NotSupportedException();
 
+    /// <summary>
+    /// Sends a response to a specific interaction identified by the provided identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="response">The response.</param>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public void RespondInteraction(string id, InteractionResponse response) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously cancels the agent associated with the specified identifier.
+    /// </summary>
+    /// <param name="agentId">The unique identifier of the agent.</param>
+    /// <returns>A task representing the asynchronous operation. The task result is true if successful; otherwise, false.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task<bool> CancelAgentAsync(string agentId) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously sends a steering message to a specific agent to guide its behavior or direction.
+    /// </summary>
+    /// <param name="agentId">The unique identifier of the agent.</param>
+    /// <param name="message">The message.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task SteerAgentAsync(string agentId, string message) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Asynchronously retrieves a read-only list of transcript items associated with the specified agent identifier.
+    /// </summary>
+    /// <param name="agentId">The unique identifier of the agent.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
+    /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task<IReadOnlyList<TranscriptItem>> GetAgentTranscriptAsync(string agentId) => throw new NotSupportedException();
 }

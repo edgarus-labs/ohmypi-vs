@@ -13,8 +13,14 @@ public sealed class PromptParts
     /// </summary>
     public string? EditorContext { get; set; }
 
+    /// <summary>
+    /// Gets or sets the text.
+    /// </summary>
     public string Text { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the collection of pasted.
+    /// </summary>
     public IReadOnlyList<PastedText> Pasted { get; set; } = Array.Empty<PastedText>();
 
     /// <summary>File paths as they should appear in the mention (relative to the working directory when inside it).</summary>

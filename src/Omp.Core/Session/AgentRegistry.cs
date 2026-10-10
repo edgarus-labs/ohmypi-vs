@@ -18,13 +18,22 @@ internal sealed class AgentRegistry
     private readonly Dictionary<string, long> _changedAt = new Dictionary<string, long>(StringComparer.Ordinal);
     private AgentView _main = new AgentView { Id = "main", Name = "main", Status = AgentStatus.Completed };
 
+    /// <summary>
+    /// Initializes a new instance of the AgentRegistry class and populates the initial agent collection with the main agent.
+    /// </summary>
     public AgentRegistry()
     {
         Agents = new[] { _main };
     }
 
+    /// <summary>
+    /// Occurs when changed.
+    /// </summary>
     public event Action<IReadOnlyList<AgentView>>? Changed;
 
+    /// <summary>
+    /// Gets or sets the collection of agents.
+    /// </summary>
     public IReadOnlyList<AgentView> Agents { get; private set; }
 
     /// <param name="model"><c>provider/id</c> of the session model.</param>
@@ -124,6 +133,10 @@ internal sealed class AgentRegistry
         Publish();
     }
 
+    /// <summary>
+    /// Processes a JSON frame to update subagent lifecycle states or progress tracking and publishes the resulting changes to the agent views.
+    /// </summary>
+    /// <param name="frame">The frame.</param>
     public void ApplyFrame(JObject frame)
     {
         var type = Json.Str(frame, "type");
@@ -215,6 +228,11 @@ internal sealed class AgentRegistry
         return dot == -1 ? "main" : id.Substring(0, dot);
     }
 
+    /// <summary>
+    /// Parses a string representation of an agent status into its corresponding AgentStatus enumeration value, returning null if the input is unrecognized or null.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The agent status? result.</returns>
     private static AgentStatus? ParseStatus(string? status)
     {
         switch (status)
@@ -228,6 +246,11 @@ internal sealed class AgentRegistry
         }
     }
 
+    /// <summary>
+    /// Extracts the current activity identifier from the progress object by prioritizing the current tool, followed by the last intent, and finally the most recent output entry.
+    /// </summary>
+    /// <param name="progress">The progress.</param>
+    /// <returns>The string? result.</returns>
     private static string? ActivityOf(JObject progress)
     {
         var tool = Json.Str(progress, "currentTool");
@@ -247,6 +270,12 @@ internal sealed class AgentRegistry
         return recent.Count > 0 ? recent[recent.Count - 1] : null;
     }
 
+    /// <summary>
+    /// Updates the specified agent view with progress details parsed from a JSON object.
+    /// </summary>
+    /// <param name="view">The view.</param>
+    /// <param name="progress">The progress.</param>
+    /// <returns>The agent view result.</returns>
     private static AgentView WithProgress(AgentView view, JObject? progress)
     {
         if (progress is null)
@@ -314,6 +343,9 @@ internal sealed class AgentRegistry
         _changedAt[id] = ++Version;
     }
 
+    /// <summary>
+    /// Updates the collection of agents by combining the main agent with associated sub-agents and notifies subscribers of the change.
+    /// </summary>
     private void Publish()
     {
         var agents = new List<AgentView> { _main };

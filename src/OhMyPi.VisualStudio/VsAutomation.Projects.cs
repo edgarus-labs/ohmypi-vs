@@ -25,8 +25,18 @@ internal sealed partial class VsAutomation
         ["{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}"] = "C++",
     };
 
+    /// <summary>
+    /// Resolves a project kind identifier to its corresponding display name using the ProjectKinds lookup table, returning the original identifier if no mapping is found.
+    /// </summary>
+    /// <param name="kind">The kind.</param>
+    /// <returns>The string? result.</returns>
     private static string? KindName(string? kind) => kind is not null && ProjectKinds.TryGetValue(kind, out var name) ? name : kind;
 
+    /// <summary>
+    /// Retrieves the name of the specified project, returning a fallback string if a COM exception occurs during access.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <returns>The string result.</returns>
     private static string SafeName(Project project)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -34,6 +44,11 @@ internal sealed partial class VsAutomation
         catch (COMException) { return "(unavailable project)"; }
     }
 
+    /// <summary>
+    /// Retrieves the unique name of the specified project, returning null if a COM exception occurs during access.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <returns>The string? result.</returns>
     private static string? SafeUniqueName(Project project)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -41,6 +56,11 @@ internal sealed partial class VsAutomation
         catch (COMException) { return null; }
     }
 
+    /// <summary>
+    /// Retrieves the project kind while suppressing COM exceptions that may occur during access.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <returns>The string? result.</returns>
     private static string? SafeKind(Project project)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -48,6 +68,11 @@ internal sealed partial class VsAutomation
         catch (COMException) { return null; }
     }
 
+    /// <summary>
+    /// Retrieves the full file path of the specified project, returning null if the path is empty or if a COM or implementation error occurs.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <returns>The string? result.</returns>
     private static string? SafeProjectPath(Project project)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -56,6 +81,11 @@ internal sealed partial class VsAutomation
         catch (NotImplementedException) { return null; }
     }
 
+    /// <summary>
+    /// Retrieves the full file system path of the currently active document from the specified DTE2 instance, returning null if no document is active or a COM exception occurs.
+    /// </summary>
+    /// <param name="dte">The dte.</param>
+    /// <returns>The string? result.</returns>
     private static string? ActiveDocumentPath(DTE2 dte)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -76,6 +106,11 @@ internal sealed partial class VsAutomation
         return result;
     }
 
+    /// <summary>
+    /// Recursively traverses a project hierarchy to collect all non-folder projects into the specified result list.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <param name="result">The collection of result.</param>
     private static void Collect(Project? project, List<Project> result)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -107,6 +142,13 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Searches for a project within the open Visual Studio solution by matching the provided name against the project&apos;s display name, unique name, or file path.
+    /// </summary>
+    /// <param name="dte">The dte.</param>
+    /// <param name="name">The name.</param>
+    /// <returns>The project result.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static Project FindProject(DTE2 dte, string name)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -132,6 +174,11 @@ internal sealed partial class VsAutomation
         throw new InvalidOperationException($"No project named '{name}'. Projects: {string.Join(", ", projects.Select(SafeName))}.");
     }
 
+    /// <summary>
+    /// Retrieves the file system path of the specified project item if it exists, returning null if the item is not a file or if a COM error occurs.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The string? result.</returns>
     private static string? ItemPath(ProjectItem item)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -140,6 +187,12 @@ internal sealed partial class VsAutomation
         catch (ArgumentException) { return null; }
     }
 
+    /// <summary>
+    /// Recursively searches the project item hierarchy to find and return the project item that matches the specified path.
+    /// </summary>
+    /// <param name="items">The items.</param>
+    /// <param name="path">The path.</param>
+    /// <returns>The project item? result.</returns>
     private static ProjectItem? FindItem(ProjectItems? items, string path)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -168,6 +221,14 @@ internal sealed partial class VsAutomation
         return null;
     }
 
+    /// <summary>
+    /// Asynchronously adds a specified file to the designated project within the Visual Studio environment after validating the file&apos;s existence and ensuring it is not already included.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task AddFileToProjectAsync(string project, string path, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -194,6 +255,14 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously removes a specified file from the designated project and saves the project changes.
+    /// </summary>
+    /// <param name="project">The project.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task RemoveFileFromProjectAsync(string project, string path, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);

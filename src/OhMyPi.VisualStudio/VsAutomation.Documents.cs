@@ -17,8 +17,16 @@ using Task = System.Threading.Tasks.Task;
 
 namespace OhMyPi.VisualStudio;
 
+/// <summary>
+/// Provides a set of automation utilities for managing Visual Studio documents, including operations for reading, modifying, and saving text buffers.
+/// </summary>
 internal sealed partial class VsAutomation
 {
+    /// <summary>
+    /// Asynchronously retrieves a list of information for all currently open documents, including their file paths, modification status, and activity state.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public async Task<IReadOnlyList<DocumentInfo>> ListDocumentsAsync(CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -50,6 +58,15 @@ internal sealed partial class VsAutomation
         return documents;
     }
 
+    /// <summary>
+    /// Asynchronously opens a document at the specified path and optionally positions the editor caret at the provided line and column.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="line">The line.</param>
+    /// <param name="column">The column.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task OpenDocumentAsync(string path, int? line, int? column, CancellationToken cancellationToken)
     {
         await SwitchToUiAsync(cancellationToken);
@@ -91,6 +108,15 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously reads a specified range of text from a document file, utilizing an existing text buffer if available or loading the file directly from disk.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="startLine">The start line.</param>
+    /// <param name="endLine">The end line.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the document text.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task<DocumentText> ReadDocumentAsync(string path, int? startLine, int? endLine, CancellationToken cancellationToken)
     {
         await SwitchToUiAsync(cancellationToken);
@@ -122,6 +148,14 @@ internal sealed partial class VsAutomation
         };
     }
 
+    /// <summary>
+    /// Extracts a specified range of text from a Visual Studio text buffer and returns it as a DocumentText object.
+    /// </summary>
+    /// <param name="file">The file.</param>
+    /// <param name="buffer">The buffer.</param>
+    /// <param name="startLine">The start line.</param>
+    /// <param name="endLine">The end line.</param>
+    /// <returns>The document text result.</returns>
     private static DocumentText ReadFromBuffer(string file, IVsTextLines buffer, int? startLine, int? endLine)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -141,6 +175,16 @@ internal sealed partial class VsAutomation
         };
     }
 
+    /// <summary>
+    /// Asynchronously replaces a specified range of lines in a text document at the given path with the provided text.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="startLine">The start line.</param>
+    /// <param name="endLine">The end line.</param>
+    /// <param name="text">The text.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task ReplaceLinesAsync(string path, int startLine, int endLine, string text, CancellationToken cancellationToken)
     {
         await SwitchToUiAsync(cancellationToken);
@@ -191,6 +235,13 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously saves a specific document at the provided path or all modified rooted documents in the editor, returning a list of the paths that were successfully saved.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task<IReadOnlyList<string>> SaveDocumentsAsync(string? path, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -233,6 +284,13 @@ internal sealed partial class VsAutomation
         return saved;
     }
 
+    /// <summary>
+    /// Saves the specified document if it has unsaved changes and outputs the file path.
+    /// </summary>
+    /// <param name="document">The document.</param>
+    /// <param name="path">The path.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static bool SaveIfDirty(Document document, out string path)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -254,6 +312,14 @@ internal sealed partial class VsAutomation
         return true;
     }
 
+    /// <summary>
+    /// Asynchronously closes the specified document in the Visual Studio editor, optionally saving changes before closure.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="save">The save.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task CloseDocumentAsync(string path, bool save, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -268,6 +334,11 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously retrieves the current text selection information, including coordinates and content, from the active document in the IDE.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the selection info?.</returns>
     public async Task<SelectionInfo?> GetSelectionAsync(CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -290,6 +361,12 @@ internal sealed partial class VsAutomation
         };
     }
 
+    /// <summary>
+    /// Searches the collection of open documents in the DTE2 instance to find and return the document that matches the specified file path.
+    /// </summary>
+    /// <param name="dte">The dte.</param>
+    /// <param name="path">The path.</param>
+    /// <returns>The document? result.</returns>
     private static Document? FindDocument(DTE2 dte, string path)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -310,6 +387,12 @@ internal sealed partial class VsAutomation
         return null;
     }
 
+    /// <summary>
+    /// Validates the existence of a file at the specified path and returns its full path, throwing an &lt;see cref=&quot;InvalidOperationException&quot;/&gt; if the file is not found.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <returns>The string result.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static string ExistingFile(string path)
     {
         var file = FullPath(path);

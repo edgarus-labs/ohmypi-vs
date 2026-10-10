@@ -9,6 +9,11 @@ namespace OhMyPi.VisualStudio.UI.Model;
 /// </summary>
 internal static class Effort
 {
+    /// <summary>
+    /// Generates a collection of effort options and the currently selected thinking level based on the provided session view.
+    /// </summary>
+    /// <param name="session">The session.</param>
+    /// <returns>The effort choices result.</returns>
     public static EffortChoices Choices(SessionView session)
     {
         var value = session.ThinkingSelector ?? session.ThinkingLevel;
@@ -31,6 +36,11 @@ internal static class Effort
         return choices.Options.FirstOrDefault(option => option.Value == choices.Value)?.Label ?? choices.Value ?? "";
     }
 
+    /// <summary>
+    /// Generates a descriptive tooltip string indicating the reasoning effort configuration and current thinking level for the specified session view.
+    /// </summary>
+    /// <param name="session">The session.</param>
+    /// <returns>The string result.</returns>
     public static string Tooltip(SessionView session)
     {
         var value = Choices(session).Value;

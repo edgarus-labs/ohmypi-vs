@@ -16,6 +16,10 @@ internal sealed class ActiveDocumentMonitor : IVsSelectionEvents, IDisposable
     private readonly IVsMonitorSelection? _selection;
     private uint _cookie;
 
+    /// <summary>
+    /// Initializes a new instance of the ActiveDocumentMonitor class and subscribes to selection events using the provided service provider.
+    /// </summary>
+    /// <param name="services">The services.</param>
     public ActiveDocumentMonitor(IServiceProvider services)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -59,6 +63,13 @@ internal sealed class ActiveDocumentMonitor : IVsSelectionEvents, IDisposable
         }
     }
 
+    /// <summary>
+    /// Handles the element value change event and triggers the Changed event if the modified element is the document frame.
+    /// </summary>
+    /// <param name="elementid">The unique identifier of the element.</param>
+    /// <param name="varValueOld">The var value old.</param>
+    /// <param name="varValueNew">The var value new.</param>
+    /// <returns>The int result.</returns>
     public int OnElementValueChanged(uint elementid, object varValueOld, object varValueNew)
     {
         if (elementid == (uint)VSConstants.VSSELELEMID.SEID_DocumentFrame)
@@ -69,9 +80,27 @@ internal sealed class ActiveDocumentMonitor : IVsSelectionEvents, IDisposable
         return VSConstants.S_OK;
     }
 
+    /// <summary>
+    /// Handles the event when the current selection changes within the Visual Studio environment, providing the previous and new selection states.
+    /// </summary>
+    /// <param name="pHierOld">The p hier old.</param>
+    /// <param name="itemidOld">The itemid old.</param>
+    /// <param name="pMISOld">The p misold.</param>
+    /// <param name="pSCOld">The p scold.</param>
+    /// <param name="pHierNew">The p hier new.</param>
+    /// <param name="itemidNew">The itemid new.</param>
+    /// <param name="pMISNew">The p misnew.</param>
+    /// <param name="pSCNew">The p scnew.</param>
+    /// <returns>The int result.</returns>
     public int OnSelectionChanged(IVsHierarchy pHierOld, uint itemidOld, IVsMultiItemSelect pMISOld, ISelectionContainer pSCOld,
         IVsHierarchy pHierNew, uint itemidNew, IVsMultiItemSelect pMISNew, ISelectionContainer pSCNew) => VSConstants.S_OK;
 
+    /// <summary>
+    /// Handles the notification that the command UI context has changed for the specified cookie and updates the active state.
+    /// </summary>
+    /// <param name="dwCmdUICookie">The dw cmd uicookie.</param>
+    /// <param name="fActive">The f active.</param>
+    /// <returns>The int result.</returns>
     public int OnCmdUIContextChanged(uint dwCmdUICookie, int fActive) => VSConstants.S_OK;
 
     public void Dispose()

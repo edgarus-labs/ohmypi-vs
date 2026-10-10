@@ -20,11 +20,19 @@ internal sealed class AgentsSection : Section
     private readonly UIElement _empty = EmptyRow("No agents yet.");
     private IReadOnlyList<AgentView> _agents = Array.Empty<AgentView>();
 
+    /// <summary>
+    /// Initializes a new instance of the AgentsSection class with the specified agent actions.
+    /// </summary>
+    /// <param name="actions">The actions.</param>
     public AgentsSection(IAgentActions actions) : base("Agents")
     {
         _actions = actions;
     }
 
+    /// <summary>
+    /// Renders the agent view hierarchy by synchronizing the UI rows and details with the provided list of agents and reconciling the visual elements.
+    /// </summary>
+    /// <param name="agents">The collection of agents.</param>
     public void Render(IReadOnlyList<AgentView> agents)
     {
         _agents = agents;
@@ -89,6 +97,11 @@ internal sealed class AgentsSection : Section
         }
     }
 
+    /// <summary>
+    /// Updates the visual content, layout, and accessibility properties of a button to reflect the current state and details of the specified agent row.
+    /// </summary>
+    /// <param name="button">The button.</param>
+    /// <param name="row">The row.</param>
     private static void UpdateRow(Button button, AgentRow row)
     {
         var agent = row.Agent;
@@ -110,6 +123,10 @@ internal sealed class AgentsSection : Section
         Ui.AutomationName(button, $"{AgentRows.Label(agent)} {AgentRows.Description(agent)}");
     }
 
+    /// <summary>
+    /// Toggles the visibility of the agent details associated with the specified identifier and refreshes the rendered agent list.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
     private void Toggle(string id)
     {
         if (_details.TryGetValue(id, out var existing) && existing.Visibility == Visibility.Visible)
@@ -134,6 +151,11 @@ internal sealed class AgentsSection : Section
         Render(_agents);
     }
 
+    /// <summary>
+    /// Maps an agent status to its corresponding visual representation, returning a tuple containing the associated glyph and theme brush.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The (string glyph, object brush) result.</returns>
     internal static (string Glyph, object Brush) StatusIcon(AgentStatus status)
     {
         switch (status)
@@ -146,6 +168,11 @@ internal sealed class AgentsSection : Section
         }
     }
 
+    /// <summary>
+    /// Creates a muted UI element with predefined margins to represent an empty row containing the specified text.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>The uielement result.</returns>
     internal static UIElement EmptyRow(string text)
     {
         var block = Ui.Muted(text);

@@ -9,6 +9,13 @@ namespace Omp.Core;
 /// </summary>
 public sealed class OmpRequestException : Exception
 {
+    /// <summary>
+    /// Initializes a new instance of the OmpRequestException class with the specified error message, command identifier, optional error code, and inner exception.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="command">The command containing the operation data.</param>
+    /// <param name="code">The code.</param>
+    /// <param name="inner">The inner.</param>
     public OmpRequestException(string message, string command, string? code = null, Exception? inner = null)
         : base(message, inner)
     {
@@ -16,7 +23,13 @@ public sealed class OmpRequestException : Exception
         Code = code;
     }
 
+    /// <summary>
+    /// Gets the command.
+    /// </summary>
     public string Command { get; }
 
+    /// <summary>
+    /// Gets the code.
+    /// </summary>
     public string? Code { get; }
 }

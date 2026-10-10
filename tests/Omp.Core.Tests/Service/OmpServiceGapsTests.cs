@@ -5,10 +5,23 @@ namespace Omp.Core.Tests.Service;
 
 public sealed class OmpServiceGapsTests : IAsyncLifetime
 {
+    /// <summary>
+    /// Provides a concrete implementation of the host tools contract for managing tool definitions and executing asynchronous tool invocations.
+    /// </summary>
     private sealed class Tools : IHostTools
     {
+        /// <summary>
+        /// Gets the collection of definitions.
+        /// </summary>
         public IReadOnlyList<HostToolDefinition> Definitions { get; } = new[] { new HostToolDefinition("vs_ping", "Pings", new JObject()) };
 
+        /// <summary>
+        /// Asynchronously invokes a specified host tool by name with the provided arguments and returns the resulting execution output.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="arguments">The arguments.</param>
+        /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the host tool result.</returns>
         public Task<HostToolResult> InvokeAsync(string name, JObject arguments, CancellationToken cancellationToken) => Task.FromResult(HostToolResult.Text("pong"));
     }
 
@@ -70,6 +83,9 @@ public sealed class OmpServiceGapsTests : IAsyncLifetime
         Assert.Throws<ArgumentException>(() => service.RespondInteraction("ui-2", new UnknownResponse()));
     }
 
+    /// <summary>
+    /// Represents an interaction response indicating that the received interaction could not be recognized or processed.
+    /// </summary>
     private sealed class UnknownResponse : InteractionResponse
     {
     }

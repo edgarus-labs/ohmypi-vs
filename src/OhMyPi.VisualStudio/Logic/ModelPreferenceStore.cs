@@ -24,6 +24,9 @@ internal sealed class ModelPreferenceStore : IModelPreferences, IModelPickerFilt
 
     public ModelPreferenceStore(IPreferenceStore store) => _store = store;
 
+    /// <summary>
+    /// Gets the collection of favorites.
+    /// </summary>
     public IReadOnlyList<ModelKey> Favorites
     {
         get
@@ -35,6 +38,9 @@ internal sealed class ModelPreferenceStore : IModelPreferences, IModelPickerFilt
         }
     }
 
+    /// <summary>
+    /// Gets the collection of recents.
+    /// </summary>
     public IReadOnlyList<ModelKey> Recents
     {
         get
@@ -46,6 +52,11 @@ internal sealed class ModelPreferenceStore : IModelPreferences, IModelPickerFilt
         }
     }
 
+    /// <summary>
+    /// Updates the favorite status of the specified model and persists the change to the underlying store.
+    /// </summary>
+    /// <param name="model">The model.</param>
+    /// <param name="favorite">The favorite.</param>
     public void SetFavorite(ModelKey model, bool favorite)
     {
         lock (_gate)
@@ -65,6 +76,10 @@ internal sealed class ModelPreferenceStore : IModelPreferences, IModelPickerFilt
         }
     }
 
+    /// <summary>
+    /// Records the specified model as the most recently picked item and persists the updated list to the store while maintaining the defined limit.
+    /// </summary>
+    /// <param name="model">The model.</param>
     public void RecordPicked(ModelKey model)
     {
         lock (_gate)
@@ -81,12 +96,18 @@ internal sealed class ModelPreferenceStore : IModelPreferences, IModelPickerFilt
         }
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether favorites only.
+    /// </summary>
     public bool FavoritesOnly
     {
         get => _store.Read(FavoritesOnlyKey) == "1";
         set => _store.Write(FavoritesOnlyKey, value ? "1" : "0");
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether recent only.
+    /// </summary>
     public bool RecentOnly
     {
         get => _store.Read(RecentOnlyKey) == "1";
@@ -95,12 +116,21 @@ internal sealed class ModelPreferenceStore : IModelPreferences, IModelPickerFilt
 
     private List<ModelKey> Favorited() => _favorites ??= Decode(_store.Read(FavoritesKey));
 
+    /// <summary>
+    /// Retrieves the list of recently accessed model keys, lazily loading and decoding them from the persistent store if they are not already cached.
+    /// </summary>
+    /// <returns>A collection of list items.</returns>
     private List<ModelKey> Recent() => _recents ??= Decode(_store.Read(RecentsKey));
 
     /// <summary>Entries are <c>provider/id</c> with both parts percent-escaped, separated by semicolons.</summary>
     private static string Encode(IEnumerable<ModelKey> keys) =>
         string.Join(";", keys.Select(k => Uri.EscapeDataString(k.Provider) + "/" + Uri.EscapeDataString(k.Id)));
 
+    /// <summary>
+    /// Parses a semicolon-delimited string of escaped key-value pairs into a list of unique ModelKey instances.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>A collection of list items.</returns>
     private static List<ModelKey> Decode(string? text)
     {
         var keys = new List<ModelKey>();

@@ -289,6 +289,10 @@ internal sealed class OmpRpcClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// Processes an incoming JSON token by reassembling it into an OMP frame and dispatching it based on its specified type.
+    /// </summary>
+    /// <param name="value">The value.</param>
     private void Receive(JToken value)
     {
         var result = _reassembler.Push(value);
@@ -325,6 +329,11 @@ internal sealed class OmpRpcClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// Routes incoming frames to their corresponding handler methods or event listeners based on the specified frame type.
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <param name="frame">The frame.</param>
     private void Dispatch(string type, JObject frame)
     {
         switch (type)
@@ -428,6 +437,10 @@ internal sealed class OmpRpcClient : IDisposable
         _logger.Debug($"Unknown OMP frame type {type} ignored");
     }
 
+    /// <summary>
+    /// Processes the OMP ready frame to configure frame size limits, initialize the chunk reassembler, and signal the completion of the ready state.
+    /// </summary>
+    /// <param name="frame">The frame.</param>
     private void HandleReady(JObject frame)
     {
         if (_readyReceived)
@@ -450,6 +463,10 @@ internal sealed class OmpRpcClient : IDisposable
         _ready.TrySetResult(frame);
     }
 
+    /// <summary>
+    /// Processes an incoming OMP response frame by matching its identifier to a pending request and completing the associated task with either the returned data or a request exception.
+    /// </summary>
+    /// <param name="frame">The frame.</param>
     private void HandleResponse(JObject frame)
     {
         var command = Json.Str(frame, "command") ?? "unknown";
@@ -482,6 +499,10 @@ internal sealed class OmpRpcClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// Handles the transport closure by finalizing the decoder, rejecting pending requests, and notifying registered listeners of the closed state.
+    /// </summary>
+    /// <param name="close">The close.</param>
     private void OnClosed(TransportClose close)
     {
         lock (_pendingLock)
@@ -504,6 +525,11 @@ internal sealed class OmpRpcClient : IDisposable
         Listeners.Raise(Closed, nameof(Closed), close, _logger);
     }
 
+    /// <summary>
+    /// Rejects all pending requests by clearing the internal queue, disposing associated timers, and completing each request with an OmpRequestException containing the specified reason and error code.
+    /// </summary>
+    /// <param name="reason">The reason.</param>
+    /// <param name="code">The code.</param>
     private void RejectAll(string reason, string code)
     {
         List<KeyValuePair<string, PendingRequest>> all;
@@ -519,9 +545,19 @@ internal sealed class OmpRpcClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// Validates whether the provided JSON token is a safe integer greater than zero and returns it as a nullable long, or null if the criteria are not met.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The long? result.</returns>
     private static long? PositiveInteger(JToken? value) =>
         Json.IsSafeInteger(value) && Json.Num(value) > 0 ? (long)Json.Num(value)!.Value : (long?)null;
 
+    /// <summary>
+    /// Serializes a JSON token after abbreviating its strings and truncates the resulting string to a predefined trace frame limit if it exceeds the maximum length.
+    /// </summary>
+    /// <param name="frame">The frame.</param>
+    /// <returns>The string result.</returns>
     private static string Abbreviate(JToken frame)
     {
         var json = Json.Serialize(AbbreviateStrings(frame));
@@ -529,6 +565,11 @@ internal sealed class OmpRpcClient : IDisposable
         return json.Length > TraceFrameLimit ? json.Substring(0, TraceFrameLimit) + "…" : json;
     }
 
+    /// <summary>
+    /// Recursively traverses a JSON token and truncates any string values that exceed the defined trace length limit, appending the original character count to the abbreviated text.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <returns>The jtoken result.</returns>
     private static JToken AbbreviateStrings(JToken token)
     {
         switch (token)
@@ -554,17 +595,33 @@ internal sealed class OmpRpcClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// Represents a pending request containing the command string, a task completion source for the JSON response, and an associated timeout timer.
+    /// </summary>
     private sealed class PendingRequest
     {
+        /// <summary>
+        /// Initializes a new instance of the PendingRequest class with the specified command.
+        /// </summary>
+        /// <param name="command">The command containing the operation data.</param>
         public PendingRequest(string command)
         {
             Command = command;
         }
 
+        /// <summary>
+        /// Gets the command.
+        /// </summary>
         public string Command { get; }
 
+        /// <summary>
+        /// Gets the completion.
+        /// </summary>
         public TaskCompletionSource<JToken?> Completion { get; } = new TaskCompletionSource<JToken?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        /// <summary>
+        /// Gets or sets the timer.
+        /// </summary>
         public Timer? Timer { get; set; }
     }
 }
