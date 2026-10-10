@@ -42,6 +42,8 @@ internal sealed class FakeOmpService : IOmpService
 
     public IReadOnlyList<SlashCommandView> Commands => Array.Empty<SlashCommandView>();
 
+    public IReadOnlyDictionary<string, string> Statuses => new Dictionary<string, string>();
+
     public IReadOnlyList<InteractionRequest> PendingInteractions => Array.Empty<InteractionRequest>();
 
     public event EventHandler<ConnectionStatus>? ConnectionChanged;

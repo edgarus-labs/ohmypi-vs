@@ -95,4 +95,26 @@ public sealed class ChromeTests
         Assert.Equal(PromptMode.Auto, Chrome.SendMode(busy: true, followUp: false));
         Assert.Equal(PromptMode.FollowUp, Chrome.SendMode(busy: true, followUp: true));
     }
+
+    [Fact]
+    public void RouterStatus_shows_router_auto_while_the_tier_router_is_routing()
+    {
+        Assert.Equal("router auto", Chrome.RouterStatusText("tier-router: on (main on)"));
+        Assert.Equal("router auto", Chrome.RouterStatusText("tier-router: on (main off)"));
+        Assert.Equal("router auto · standard", Chrome.RouterStatusText("tier: standard (0.91/0.07/0.02)"));
+        Assert.Equal("router auto · premium", Chrome.RouterStatusText("tier: premium (0.01/0.09/0.90)"));
+    }
+
+    [Fact]
+    public void RouterStatus_flags_manual_model_and_unreachable_service()
+    {
+        Assert.Equal("router paused · manual model, /tier-auto resumes", Chrome.RouterStatusText("tier-router: paused (model set manually: anthropic/claude-opus-5-5)"));
+        Assert.Equal("router auto · classifier down", Chrome.RouterStatusText("tier-router: service DOWN"));
+    }
+
+    [Fact]
+    public void RouterStatus_keeps_unrecognised_text()
+    {
+        Assert.Equal("something else", Chrome.RouterStatusText("something else"));
+    }
 }

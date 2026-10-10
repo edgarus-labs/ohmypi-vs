@@ -194,6 +194,12 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         Subscribe(service, host);
 
         _composer!.Commands = service.Commands;
+        foreach (var status in service.Statuses)
+        {
+            ApplyStatus(status.Key, status.Value);
+        }
+
+        _header!.SetStatusTexts(_statusTexts.Values.ToList());
         _connection = service.Connection;
         _session = service.Session;
         _transcript.Reset(service.Transcript);
@@ -554,6 +560,18 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         }
     }
 
+    private void ApplyStatus(string key, string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            _statusTexts.Remove(key);
+        }
+        else
+        {
+            _statusTexts[key] = key == "tier" ? Chrome.RouterStatusText(text!) : text!;
+        }
+    }
+
     private void Present(PresentationRequest request)
     {
         switch (request)
@@ -563,15 +581,7 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
                 break;
 
             case StatusPresentation status:
-                if (string.IsNullOrEmpty(status.Text))
-                {
-                    _statusTexts.Remove(status.Key);
-                }
-                else
-                {
-                    _statusTexts[status.Key] = status.Text!;
-                }
-
+                ApplyStatus(status.Key, status.Text);
                 _header!.SetStatusTexts(_statusTexts.Values.ToList());
                 break;
 

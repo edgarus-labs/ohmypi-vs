@@ -433,6 +433,18 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         }));
     }
 
+    [Fact]
+    public async Task KeepsExtensionStatusesForAUiAttachedAfterTheyWereSet()
+    {
+        var omp = new MemoryOmp();
+        var (service, _, _) = Create(omp);
+        await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
+        omp.Emit(new JObject { ["type"] = "extension_ui_request", ["id"] = "1", ["method"] = "setStatus", ["statusKey"] = "tier", ["statusText"] = "tier-router: on (main on)" });
+        omp.Emit(new JObject { ["type"] = "extension_ui_request", ["id"] = "2", ["method"] = "setStatus", ["statusKey"] = "other", ["statusText"] = "x" });
+        omp.Emit(new JObject { ["type"] = "extension_ui_request", ["id"] = "3", ["method"] = "setStatus", ["statusKey"] = "other" });
+        Assert.Equal(new[] { "tier=tier-router: on (main on)" }, service.Statuses.Select(s => $"{s.Key}={s.Value}"));
+    }
+
     private (OmpService Service, MemoryLogger Logger, List<MemoryOmp> Spawned) CreateRestarting(int[] delays)
     {
         var logger = new MemoryLogger();

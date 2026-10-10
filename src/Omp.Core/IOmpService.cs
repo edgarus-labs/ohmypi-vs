@@ -29,6 +29,9 @@ public interface IOmpService : IDisposable
     /// <summary>Slash commands OMP currently accepts, in OMP's order.</summary>
     IReadOnlyList<SlashCommandView> Commands { get; }
 
+    /// <summary>Texts OMP extensions currently show via <c>setStatus</c>, by key; a UI attached late shows these.</summary>
+    IReadOnlyDictionary<string, string> Statuses { get; }
+
     /// <summary>Interactions OMP is still waiting for, in arrival order; a UI attached late shows these.</summary>
     IReadOnlyList<InteractionRequest> PendingInteractions { get; }
 

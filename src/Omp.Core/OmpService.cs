@@ -50,6 +50,7 @@ public sealed class OmpService : IOmpService
     /// <summary>Host tool calls in flight, by OMP's request id, so OMP can cancel them.</summary>
     private readonly Dictionary<string, CancellationTokenSource> _hostCalls = new Dictionary<string, CancellationTokenSource>(StringComparer.Ordinal);
     private IReadOnlyList<SlashCommandView> _commands = Array.Empty<SlashCommandView>();
+    private readonly Dictionary<string, string> _statuses = new Dictionary<string, string>(StringComparer.Ordinal);
     private readonly PromptTracker _tracker;
     /// <summary>Pending interaction ids and whether each answer is redacted from RPC traces.</summary>
     private readonly Dictionary<string, bool> _pendingInteractions = new Dictionary<string, bool>(StringComparer.Ordinal);
@@ -173,6 +174,17 @@ public sealed class OmpService : IOmpService
             lock (_sync)
             {
                 return _commands;
+            }
+        }
+    }
+
+    public IReadOnlyDictionary<string, string> Statuses
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return new Dictionary<string, string>(_statuses, StringComparer.Ordinal);
             }
         }
     }
@@ -842,6 +854,11 @@ public sealed class OmpService : IOmpService
                 throw new OmpSupersededException();
             }
 
+            lock (_sync)
+            {
+                _statuses.Clear();
+            }
+
             _logger.Info($"Starting OMP: {_options.Executable} --mode rpc-ui {string.Join(" ", _options.ExtraArgs)} (cwd {_options.Cwd})".TrimEnd());
             process = _tuning.Spawn(new OmpProcessOptions
             {
@@ -1374,7 +1391,21 @@ public sealed class OmpService : IOmpService
                 return;
 
             case "setStatus":
-                Raise(Presentation, nameof(Presentation), new StatusPresentation { Key = Json.Str(request, "statusKey") ?? "", Text = Json.Str(request, "statusText") });
+                var statusKey = Json.Str(request, "statusKey") ?? "";
+                var statusText = Json.Str(request, "statusText");
+                lock (_sync)
+                {
+                    if (string.IsNullOrEmpty(statusText))
+                    {
+                        _statuses.Remove(statusKey);
+                    }
+                    else
+                    {
+                        _statuses[statusKey] = statusText!;
+                    }
+                }
+
+                Raise(Presentation, nameof(Presentation), new StatusPresentation { Key = statusKey, Text = statusText });
                 return;
 
             case "open_url":

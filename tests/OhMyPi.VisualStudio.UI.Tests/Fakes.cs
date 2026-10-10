@@ -38,6 +38,8 @@ internal sealed class FakeService : IOmpService
     /// <summary>Runs once, on the next read of <see cref="Commands"/>, after the returned value was taken (an update racing the read).</summary>
     public Action? CommandsRead { get; set; }
 
+    public IReadOnlyDictionary<string, string> Statuses { get; set; } = new Dictionary<string, string>();
+
     public IReadOnlyList<InteractionRequest> PendingInteractions { get; set; } = Array.Empty<InteractionRequest>();
 
     public List<(string Text, PromptMode Mode, IReadOnlyList<PromptImage>? Images)> Prompts { get; } = new List<(string, PromptMode, IReadOnlyList<PromptImage>?)>();

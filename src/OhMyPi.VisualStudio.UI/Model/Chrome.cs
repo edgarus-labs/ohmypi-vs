@@ -69,6 +69,35 @@ internal static class Chrome
         return string.Join(" · ", parts);
     }
 
+    /// <summary>Header text for the tier router's <c>setStatus</c> value: <c>router auto</c>, <c>router auto · standard</c>, or a paused hint; other text is returned unchanged.</summary>
+    public static string RouterStatusText(string text)
+    {
+        const string TierPrefix = "tier: ";
+        if (text.StartsWith("tier-router: on", StringComparison.Ordinal))
+        {
+            return "router auto";
+        }
+
+        if (text.StartsWith("tier-router: paused", StringComparison.Ordinal))
+        {
+            return "router paused · manual model, /tier-auto resumes";
+        }
+
+        if (text.StartsWith("tier-router: service DOWN", StringComparison.Ordinal))
+        {
+            return "router auto · classifier down";
+        }
+
+        if (text.StartsWith(TierPrefix, StringComparison.Ordinal))
+        {
+            var tier = text.Substring(TierPrefix.Length).Split(' ')[0];
+
+            return tier.Length == 0 ? text : $"router auto · {tier}";
+        }
+
+        return text;
+    }
+
     /// <summary>Elapsed time of a running turn in the shared <see cref="Format.FormatDuration"/> form; empty for the first second.</summary>
     public static string ElapsedText(long ms) => ms < 1000 ? "" : Format.FormatDuration(ms);
 
