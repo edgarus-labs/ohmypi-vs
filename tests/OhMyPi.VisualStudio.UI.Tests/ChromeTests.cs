@@ -105,10 +105,7 @@ public sealed class ChromeTests
     }
 
     [Fact]
-    public void RouterStatus_says_off_when_the_router_only_serves_subagents()
-    {
-        Assert.Equal("router off · subagents only", Chrome.RouterStatusText("tier-router: on (main off)"));
-    }
+    public void RouterStatus_says_off_when_the_router_only_serves_subagents() => Assert.Equal("router off · subagents only", Chrome.RouterStatusText("tier-router: on (main off)"));
 
     [Fact]
     public void RouterStatus_flags_manual_model_and_unreachable_service()
