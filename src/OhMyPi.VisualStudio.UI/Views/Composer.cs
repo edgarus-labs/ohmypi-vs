@@ -40,6 +40,8 @@ internal sealed class Composer : Border
     private readonly WrapPanel _chips = new WrapPanel { Margin = new Thickness(TextInset, 6, TextInset, 0), Visibility = Visibility.Collapsed };
     private readonly TextBlock _placeholder;
     private readonly TextBlock _modelText;
+    private ModelView? _model;
+    private bool _routerAuto;
     private readonly TextBlock _effortText;
     private readonly Button _action;
     private string? _activeDocument;
@@ -213,9 +215,17 @@ internal sealed class Composer : Border
         RenderActions();
     }
 
+    /// <summary>Marks the model button <c>tier auto</c> while the tier router chooses the model.</summary>
+    public void SetRouterAuto(bool auto)
+    {
+        _routerAuto = auto;
+        RenderModel();
+    }
+
     public void RenderSession(SessionView session)
     {
-        _modelText.Text = session.Model?.Name is string name && name.Length > 0 ? name : "Select model";
+        _model = session.Model;
+        RenderModel();
         ModelButton.ToolTip = session.Model is not null ? $"{session.Model.Provider}/{session.Model.Id}\nClick to change the model" : "Select model";
         var effort = Effort.Label(session);
         EffortButton.Visibility = effort.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -226,6 +236,8 @@ internal sealed class Composer : Border
         FastButton.IsChecked = fast;
         FastButton.ToolTip = fast ? $"Fast mode on{(session.FastModeActive == true ? " (active)" : "")}; click to turn off" : "Fast mode off; click to turn on";
     }
+
+    private void RenderModel() => _modelText.Text = Chrome.ComposerModelText(_model, _routerAuto);
 
     /// <summary>Replaces the draft (OMP <c>set_editor_text</c>).</summary>
     public void SetText(string text)

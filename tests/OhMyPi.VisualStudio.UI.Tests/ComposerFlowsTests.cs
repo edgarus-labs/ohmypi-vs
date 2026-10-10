@@ -217,8 +217,13 @@ public sealed class ComposerFlowsTests
                                                                                                  Assert.Single(AllNamed<Button>(h.Composer, "Remove Pasted text 1"));
                                                                                                  Assert.Equal("", h.Composer.Input.Text);
 
-                                                                                                 Clipboard.SetText("short");
-                                                                                                 PasteClipboard(h.Composer.Input);
+                                                                                                 for (var attempt = 0; attempt < 5 && h.Composer.Input.Text != "short"; attempt++)
+                                                                                                 {
+                                                                                                     Clipboard.SetText("short");
+                                                                                                     PasteClipboard(h.Composer.Input);
+                                                                                                     Pump(100);
+                                                                                                 }
+
                                                                                                  Assert.Equal("short", h.Composer.Input.Text);
                                                                                              });
 

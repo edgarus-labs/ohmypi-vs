@@ -127,9 +127,7 @@ public sealed class ToolRowTests
 
             box.Focus();
             box.SelectAll();
-            System.Windows.Clipboard.SetText("sentinel");
-            System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
-            Assert.Equal("{\n  \"query\": \"x\",\n  \"limit\": 5,\n  \"scope\": {\n    \"a\": 1\n  }\n}", System.Windows.Clipboard.GetText());
+            Assert.Equal("{\n  \"query\": \"x\",\n  \"limit\": 5,\n  \"scope\": {\n    \"a\": 1\n  }\n}", CopiedBy(box));
         }, service, new FakeHost());
     }
 
@@ -168,14 +166,12 @@ public sealed class ToolRowTests
 
             box.Focus();
             box.SelectAll();
-            System.Windows.Clipboard.SetText("sentinel");
-            System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
-            Assert.Equal(raw, System.Windows.Clipboard.GetText());
+            Assert.Equal(raw, CopiedBy(box));
 
             box.Selection.Select(box.Document.ContentStart, box.Document.ContentStart.GetPositionAtOffset(3)!);
-            System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
-            Assert.StartsWith("{", System.Windows.Clipboard.GetText());
-            Assert.NotEqual(raw, System.Windows.Clipboard.GetText());
+            var partial = CopiedBy(box);
+            Assert.StartsWith("{", partial);
+            Assert.NotEqual(raw, partial);
         }, service, new FakeHost());
     }
 
@@ -206,9 +202,10 @@ public sealed class ToolRowTests
         {
             Click(Named<Button>(window, "show more (3002 lines)"));
             Pump();
-            System.Windows.Clipboard.SetText("sentinel");
+            var copied = "";
+            control.SetClipboard = text => copied = text;
             Click(Named<Button>(window, "Copy all 3002 lines"));
-            Assert.Equal(raw, System.Windows.Clipboard.GetText());
+            Assert.Equal(raw, copied);
         }, service, new FakeHost());
     }
 
@@ -436,10 +433,30 @@ public sealed class ToolRowTests
             var box = Named<RichTextBox>(window, "Result");
             box.Focus();
             box.SelectAll();
-            System.Windows.Clipboard.SetText("sentinel");
-            System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
-            Assert.Equal("alpha\nbeta", System.Windows.Clipboard.GetText().Replace("\r\n", "\n").TrimEnd('\n'));
+            Assert.Equal("alpha\nbeta", CopiedBy(box).Replace("\r\n", "\n").TrimEnd('\n'));
         }, service, new FakeHost());
+    }
+
+    /// <summary>What Copy takes from <paramref name="box"/>, read from the command's data object so the test never touches the system clipboard another process may hold open.</summary>
+    private static string CopiedBy(RichTextBox box)
+    {
+        string? copied = null;
+        System.Windows.DataObjectCopyingEventHandler capture = (_, e) =>
+        {
+            copied = (string?)e.DataObject.GetData(System.Windows.DataFormats.UnicodeText);
+            e.CancelCommand();
+        };
+        System.Windows.DataObject.AddCopyingHandler(box, capture);
+        try
+        {
+            System.Windows.Input.ApplicationCommands.Copy.Execute(null, box);
+        }
+        finally
+        {
+            System.Windows.DataObject.RemoveCopyingHandler(box, capture);
+        }
+
+        return copied ?? throw new InvalidOperationException("Copy put nothing on the clipboard.");
     }
 
     [Fact]

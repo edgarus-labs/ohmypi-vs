@@ -30,6 +30,8 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
     private readonly FollowBottom _follow = new FollowBottom();
     private ActivityItem? _activity;
     private readonly Dictionary<string, string> _statusTexts = new Dictionary<string, string>(StringComparer.Ordinal);
+    private bool _routerPaused;
+    private bool _routerRouting;
     private readonly DispatcherTimer _flushTimer;
     private readonly DispatcherTimer _recentTimer;
     private readonly List<Action> _detach = new List<Action>();
@@ -199,7 +201,7 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
             ApplyStatus(status.Key, status.Value);
         }
 
-        _header!.SetStatusTexts(_statusTexts.Values.ToList());
+        RenderStatuses();
         _connection = service.Connection;
         _session = service.Session;
         _transcript.Reset(service.Transcript);
@@ -276,6 +278,7 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
 
         _header = new HeaderBar();
         _header.Renamed += name => _ = RunAsync("Rename session", WithService(() => service.SetSessionNameAsync(name)));
+        _header.ResumeRouterRequested += () => _ = RunAsync("Resume tier router", WithService(async () => await service.PromptAsync("/tier-auto")));
         HeaderHost.Content = _header;
 
         _banner = new Banner(host.OpenSettings, host.ShowLog, () => _ = RunAsync("Restart", host.RestartAsync));
@@ -562,6 +565,12 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
 
     private void ApplyStatus(string key, string? text)
     {
+        if (key == "tier")
+        {
+            _routerPaused = !string.IsNullOrEmpty(text) && Chrome.IsRouterPaused(text!);
+            _routerRouting = !string.IsNullOrEmpty(text) && Chrome.IsRouterRouting(text!);
+        }
+
         if (string.IsNullOrEmpty(text))
         {
             _statusTexts.Remove(key);
@@ -570,6 +579,13 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         {
             _statusTexts[key] = key == "tier" ? Chrome.RouterStatusText(text!) : text!;
         }
+    }
+
+    private void RenderStatuses()
+    {
+        _header!.SetStatusTexts(_statusTexts.Values.ToList());
+        _header.SetRouterPaused(_routerPaused);
+        _composer!.SetRouterAuto(_routerRouting);
     }
 
     private void Present(PresentationRequest request)
@@ -582,7 +598,7 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
 
             case StatusPresentation status:
                 ApplyStatus(status.Key, status.Text);
-                _header!.SetStatusTexts(_statusTexts.Values.ToList());
+                RenderStatuses();
                 break;
 
             case OpenUrlPresentation openUrl:

@@ -827,6 +827,12 @@ public sealed class OmpService : IOmpService
 
         _pendingInteractions.Clear();
         _pendingRequests.Clear();
+        foreach (var key in _statuses.Keys.ToList())
+        {
+            Raise(Presentation, nameof(Presentation), new StatusPresentation { Key = key, Text = null });
+        }
+
+        _statuses.Clear();
     }
 
     /// <param name="restartTimer">The restart timer that fired, for an automatic restart; it must still be the current one.</param>
@@ -852,11 +858,6 @@ public sealed class OmpService : IOmpService
             if (epoch != _epoch)
             {
                 throw new OmpSupersededException();
-            }
-
-            lock (_sync)
-            {
-                _statuses.Clear();
             }
 
             _logger.Info($"Starting OMP: {_options.Executable} --mode rpc-ui {string.Join(" ", _options.ExtraArgs)} (cwd {_options.Cwd})".TrimEnd());
@@ -1393,16 +1394,13 @@ public sealed class OmpService : IOmpService
             case "setStatus":
                 var statusKey = Json.Str(request, "statusKey") ?? "";
                 var statusText = Json.Str(request, "statusText");
-                lock (_sync)
+                if (string.IsNullOrEmpty(statusText))
                 {
-                    if (string.IsNullOrEmpty(statusText))
-                    {
-                        _statuses.Remove(statusKey);
-                    }
-                    else
-                    {
-                        _statuses[statusKey] = statusText!;
-                    }
+                    _statuses.Remove(statusKey);
+                }
+                else
+                {
+                    _statuses[statusKey] = statusText!;
                 }
 
                 Raise(Presentation, nameof(Presentation), new StatusPresentation { Key = statusKey, Text = statusText });

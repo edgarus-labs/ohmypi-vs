@@ -41,13 +41,15 @@ public sealed class MessageCopyTests
         RunSta((window, control) =>
         {
             var answer = Descendants(window).OfType<RichTextBox>().Single(r => r.IsVisible && new System.Windows.Documents.TextRange(r.Document.ContentStart, r.Document.ContentEnd).Text.Contains("All good."));
+            var copied = "";
+            control.SetClipboard = text => copied = text;
             Click(Descendants(Message(answer)).OfType<Button>().Single(IsCopy));
             Pump();
-            Assert.Equal("Done.\n\nAll good.", Clipboard.GetText());
+            Assert.Equal("Done.\n\nAll good.", copied);
 
             Click(Descendants(Message(Named<Border>(window, "You"))).OfType<Button>().Single(IsCopy));
             Pump();
-            Assert.Equal("Fix the bug", Clipboard.GetText());
+            Assert.Equal("Fix the bug", copied);
         }, service, new FakeHost());
     }
 }

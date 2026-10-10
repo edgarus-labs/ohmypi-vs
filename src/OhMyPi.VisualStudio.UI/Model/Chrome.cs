@@ -69,23 +69,23 @@ internal static class Chrome
         return string.Join(" · ", parts);
     }
 
-    /// <summary>Header text for the tier router's <c>setStatus</c> value: <c>router auto</c>, <c>router auto · standard</c>, or a paused hint; other text is returned unchanged.</summary>
+    /// <summary>Header text for the tier router's <c>setStatus</c> value: <c>router auto</c>, <c>router auto · standard</c>, <c>router off · subagents only</c>, <c>router · classifier down</c>, or a paused hint; other text is returned unchanged.</summary>
     public static string RouterStatusText(string text)
     {
         const string TierPrefix = "tier: ";
-        if (text.StartsWith("tier-router: on", StringComparison.Ordinal))
+        if (StartsWithWord(text, "tier-router: on"))
         {
-            return "router auto";
+            return text.EndsWith("(main off)", StringComparison.Ordinal) ? "router off · subagents only" : "router auto";
         }
 
-        if (text.StartsWith("tier-router: paused", StringComparison.Ordinal))
+        if (IsRouterPaused(text))
         {
             return "router paused · manual model, /tier-auto resumes";
         }
 
-        if (text.StartsWith("tier-router: service DOWN", StringComparison.Ordinal))
+        if (StartsWithWord(text, "tier-router: service DOWN"))
         {
-            return "router auto · classifier down";
+            return "router · classifier down";
         }
 
         if (text.StartsWith(TierPrefix, StringComparison.Ordinal))
@@ -97,6 +97,30 @@ internal static class Chrome
 
         return text;
     }
+
+    private static bool StartsWithWord(string text, string prefix) =>
+        text.StartsWith(prefix, StringComparison.Ordinal) && (text.Length == prefix.Length || text[prefix.Length] == ' ');
+
+    /// <summary>Whether the tier router's <c>setStatus</c> value says a manual model change paused it, so <c>/tier-auto</c> resumes it.</summary>
+    public static bool IsRouterPaused(string text) => StartsWithWord(text, "tier-router: paused");
+
+    /// <summary>Whether the tier router's <c>setStatus</c> value says it is choosing the main model: on with main routing, or a tier verdict.</summary>
+    public static bool IsRouterRouting(string text) =>
+        text.StartsWith("tier: ", StringComparison.Ordinal) || (StartsWithWord(text, "tier-router: on") && !text.EndsWith("(main off)", StringComparison.Ordinal));
+
+    /// <summary>The composer's model label, marked <c>tier auto</c> while the tier router chooses the model.</summary>
+    public static string ComposerModelText(ModelView? model, bool routerAuto)
+    {
+        if (model is null || model.Name.Length == 0)
+        {
+            return "Select model";
+        }
+
+        return routerAuto ? $"{model.Name} · tier auto" : model.Name;
+    }
+
+    /// <summary>The model's name for the header, its id when OMP reports no name, empty without a model.</summary>
+    public static string HeaderModelText(ModelView? model) => model is null ? "" : model.Name.Length > 0 ? model.Name : model.Id;
 
     /// <summary>Elapsed time of a running turn in the shared <see cref="Format.FormatDuration"/> form; empty for the first second.</summary>
     public static string ElapsedText(long ms) => ms < 1000 ? "" : Format.FormatDuration(ms);
