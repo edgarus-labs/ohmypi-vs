@@ -7,6 +7,14 @@ namespace Omp.Core.Internal;
 /// </summary>
 internal static class Listeners
 {
+    /// <summary>
+    /// Invokes each handler in the provided event invocation list individually, ensuring that exceptions thrown by any single listener are caught and logged without interrupting the execution of remaining handlers.
+    /// </summary>
+    /// <param name="handler">The handler.</param>
+    /// <param name="name">The name.</param>
+    /// <param name="sender">The sender.</param>
+    /// <param name="value">The value.</param>
+    /// <param name="logger">The logger.</param>
     public static void Raise<T>(EventHandler<T>? handler, string name, object sender, T value, IOmpLogger logger)
     {
         if (handler is null)
@@ -27,6 +35,13 @@ internal static class Listeners
         }
     }
 
+    /// <summary>
+    /// Invokes all registered event handlers for a specified event name, ensuring that exceptions thrown by individual listeners are caught and logged.
+    /// </summary>
+    /// <param name="handler">The handler.</param>
+    /// <param name="name">The name.</param>
+    /// <param name="value">The value.</param>
+    /// <param name="logger">The logger.</param>
     public static void Raise<T>(Action<T>? handler, string name, T value, IOmpLogger logger)
     {
         if (handler is null)
@@ -67,5 +82,9 @@ internal static class Listeners
         }
     }
 
+    /// <summary>
+    /// Returns the current UTC date and time as a Unix timestamp in milliseconds.
+    /// </summary>
+    /// <returns>The long result.</returns>
     public static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 }

@@ -4,6 +4,9 @@ namespace OhMyPi.VisualStudio.Tests;
 
 public sealed class WorkingDirectoryTests
 {
+    /// <summary>
+    /// The profile.
+    /// </summary>
     private const string Profile = @"C:\Users\me";
 
     [Fact]

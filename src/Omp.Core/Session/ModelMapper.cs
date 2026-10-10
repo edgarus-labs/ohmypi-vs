@@ -3,6 +3,9 @@ using Omp.Core.Internal;
 
 namespace Omp.Core.Session;
 
+/// <summary>
+/// Provides utility methods for mapping domain models to their corresponding view representations.
+/// </summary>
 internal static class ModelMapper
 {
     /// <summary>Map OMP's wire model descriptor to the host view model.</summary>

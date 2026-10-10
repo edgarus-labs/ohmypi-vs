@@ -33,6 +33,12 @@ internal static class ProcessTree
     {
         public static readonly Windows Instance = new Windows();
 
+        /// <summary>
+        /// Opens a process handle for the specified process identifier with terminate and limited information query access, outputting the Win32 error code if the operation fails.
+        /// </summary>
+        /// <param name="pid">The unique identifier of the p.</param>
+        /// <param name="error">The error.</param>
+        /// <returns>The safe process handle result.</returns>
         public SafeProcessHandle Open(int pid, out int error)
         {
             var handle = NativeMethods.OpenProcess(NativeMethods.ProcessTerminate | NativeMethods.ProcessQueryLimitedInformation, false, pid);
@@ -41,12 +47,33 @@ internal static class ProcessTree
             return handle;
         }
 
+        /// <summary>
+        /// Retrieves the creation time of the specified process via its safe handle.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="created">The created.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool GetCreated(SafeProcessHandle process, out long created) => NativeMethods.GetProcessTimes(process, out created, out _, out _, out _);
 
+        /// <summary>
+        /// Terminates the specified process using its safe handle.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool Terminate(SafeProcessHandle process) => NativeMethods.TerminateProcess(process, 1);
 
+        /// <summary>
+        /// Attempts to retrieve the exit code of the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="code">The code.</param>
+        /// <returns>true if the condition is met; otherwise, false.</returns>
         public bool TryGetExitCode(SafeProcessHandle process, out uint code) => NativeMethods.GetExitCodeProcess(process, out code);
 
+        /// <summary>
+        /// Retrieves a list of process identifiers and their corresponding parent process identifiers.
+        /// </summary>
+        /// <returns>A collection of list items.</returns>
         public List<(int Pid, int ParentPid)> Parents() => NativeMethods.ProcessParents();
     }
 
@@ -126,6 +153,13 @@ internal static class ProcessTree
         return added;
     }
 
+    /// <summary>
+    /// Attempts to open a process by its identifier and retrieve its creation time to initialize a new Member instance.
+    /// </summary>
+    /// <param name="pid">The unique identifier of the p.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="native">The native.</param>
+    /// <returns>The member? result.</returns>
     private static Member? Open(int pid, IOmpLogger logger, INative native)
     {
         var handle = native.Open(pid, out var error);
@@ -150,6 +184,13 @@ internal static class ProcessTree
         return new Member(handle, created);
     }
 
+    /// <summary>
+    /// Attempts to terminate the specified process using the provided handle and logs a warning if the process cannot be ended and remains active.
+    /// </summary>
+    /// <param name="pid">The unique identifier of the p.</param>
+    /// <param name="handle">The handle.</param>
+    /// <param name="logger">The logger.</param>
+    /// <param name="native">The native.</param>
     private static void Terminate(int pid, SafeProcessHandle handle, IOmpLogger logger, INative native)
     {
         if (native.Terminate(handle))
@@ -166,16 +207,30 @@ internal static class ProcessTree
         logger.Warn($"Cannot end process {pid}", error);
     }
 
+    /// <summary>
+    /// Represents a member entity containing a process handle and its associated creation timestamp.
+    /// </summary>
     private sealed class Member
     {
+        /// <summary>
+        /// Initializes a new instance of the Member class with the specified process handle and creation timestamp.
+        /// </summary>
+        /// <param name="handle">The handle.</param>
+        /// <param name="created">The created.</param>
         public Member(SafeProcessHandle handle, long created)
         {
             Handle = handle;
             Created = created;
         }
 
+        /// <summary>
+        /// Gets the handle.
+        /// </summary>
         public SafeProcessHandle Handle { get; }
 
+        /// <summary>
+        /// Gets the created.
+        /// </summary>
         public long Created { get; }
     }
 }

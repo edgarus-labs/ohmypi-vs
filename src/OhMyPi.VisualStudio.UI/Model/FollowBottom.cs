@@ -7,15 +7,31 @@ namespace OhMyPi.VisualStudio.UI.Model;
 /// </summary>
 internal sealed class FollowBottom
 {
+    /// <summary>
+    /// The threshold.
+    /// </summary>
     private const double Threshold = 24;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether stick.
+    /// </summary>
     public bool Stick { get; private set; } = true;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether jump visible.
+    /// </summary>
     public bool JumpVisible { get; private set; }
 
     /// <summary>True while the reader drives the scroll (wheel, keys, scroll bar); other offset changes come from layout.</summary>
     public bool ReaderScrolling { get; set; }
 
+    /// <summary>
+    /// Determines whether the current scroll position has reached the bottom of the content area based on the provided extent, offset, and viewport dimensions.
+    /// </summary>
+    /// <param name="extentHeight">The extent height.</param>
+    /// <param name="offset">The offset.</param>
+    /// <param name="viewportHeight">The viewport height.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     public static bool IsAtBottom(double extentHeight, double offset, double viewportHeight) =>
         extentHeight - offset - viewportHeight <= Threshold;
 

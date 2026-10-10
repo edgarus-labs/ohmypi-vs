@@ -23,6 +23,11 @@ internal static class UsageReport
     /// <summary>Whether <paramref name="text"/> is a usage report, even one that lists no providers.</summary>
     public static bool IsReport(string text) => !string.IsNullOrEmpty(text) && text.Contains("Usage (");
 
+    /// <summary>
+    /// Parses a raw report string into a collection of provider usage details and their associated usage limits.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>A collection of iread only list items.</returns>
     public static IReadOnlyList<ProviderUsage> Parse(string text)
     {
         var providers = new List<ProviderUsage>();

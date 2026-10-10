@@ -17,6 +17,12 @@ internal sealed class WelcomeView : StackPanel
     private readonly Action<SessionSummary> _open;
     private RecentSessions _recent = new RecentSessions(Array.Empty<SessionSummary>(), 0);
 
+    /// <summary>
+    /// Initializes a new instance of the WelcomeView class with the specified actions for opening session summaries, viewing all records, and starting the application.
+    /// </summary>
+    /// <param name="open">The open.</param>
+    /// <param name="viewAll">The view all.</param>
+    /// <param name="start">The start.</param>
     public WelcomeView(Action<SessionSummary> open, Action viewAll, Action start)
     {
         _open = open;
@@ -48,14 +54,26 @@ internal sealed class WelcomeView : StackPanel
         Children.Add(_recentBox);
     }
 
+    /// <summary>
+    /// Gets a value indicating whether has recent.
+    /// </summary>
     public bool HasRecent => _recent.Sessions.Count > 0;
 
+    /// <summary>
+    /// Updates the recent sessions collection and triggers a re-render of the recent sessions display.
+    /// </summary>
+    /// <param name="recent">The recent.</param>
     public void SetRecent(RecentSessions recent)
     {
         _recent = recent;
         RenderRecent();
     }
 
+    /// <summary>
+    /// Updates the user interface elements to reflect the current OMP availability and connection status.
+    /// </summary>
+    /// <param name="unavailable">The unavailable.</param>
+    /// <param name="connection">The connection.</param>
     public void Update(OmpUnavailable? unavailable, ConnectionStatus connection)
     {
         string line;

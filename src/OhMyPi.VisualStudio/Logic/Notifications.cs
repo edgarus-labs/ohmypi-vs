@@ -7,9 +7,20 @@ namespace OhMyPi.VisualStudio.Logic;
 /// <summary>Notification text kept to one line, so a long failure (for example every PATH directory tried) does not fill the window.</summary>
 internal static class NotificationText
 {
+    /// <summary>
+    /// The max length.
+    /// </summary>
     public const int MaxLength = 200;
+    /// <summary>
+    /// The elided.
+    /// </summary>
     private const string Elided = " … (details in the oh-my-pi log)";
 
+    /// <summary>
+    /// Truncates the specified message to a maximum length and removes trailing newlines, appending an ellipsis if the text is shortened.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <returns>The string result.</returns>
     public static string Summary(string message)
     {
         var text = message.Trim();
@@ -54,6 +65,13 @@ internal sealed class OpenNotifications
         return choice.Task;
     }
 
+    /// <summary>
+    /// Asynchronously executes a message display function and completes the provided task completion source with the resulting choice or any encountered exception.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="show">The show.</param>
+    /// <param name="choice">The choice.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task ShowCoreAsync(string message, Func<Task<string?>> show, TaskCompletionSource<string?> choice)
     {
         string? result = null;

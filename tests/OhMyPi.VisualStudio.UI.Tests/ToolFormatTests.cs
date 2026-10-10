@@ -416,6 +416,9 @@ public sealed class ToolFormatTests
     public void Tool_output_reads_as_markdown_when_it_has_a_heading_and_prose(string text, bool markdown) =>
         Assert.Equal(markdown, ToolFormat.LooksLikeMarkdown(text));
 
+    /// <summary>
+    /// The grep style result.
+    /// </summary>
     private const string GrepStyleResult = "# src/Web/Features/\n\n## Status.cs#D5E9\n\n9:// happens here\n*10:// quality is never populated\n";
 
     [Theory]

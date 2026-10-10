@@ -167,6 +167,11 @@ internal sealed partial class VsAutomation
         return ReadDebugState(dte);
     }
 
+    /// <summary>
+    /// Resumes debugger execution by performing the specified stepping action or continuing execution.
+    /// </summary>
+    /// <param name="debugger">The debugger.</param>
+    /// <param name="step">The step.</param>
     private static void Resume(EnvDTE.Debugger debugger, DebugAction step)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -179,6 +184,14 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously waits for the debugger to transition to the specified debug mode within the given timeout period.
+    /// </summary>
+    /// <param name="debugger">The debugger.</param>
+    /// <param name="mode">The mode.</param>
+    /// <param name="timeout">The timeout.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task WaitForModeAsync(EnvDTE.Debugger debugger, dbgDebugMode mode, TimeSpan timeout, CancellationToken cancellationToken)
     {
         await SwitchToUiAsync(cancellationToken);
@@ -192,6 +205,12 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Validates that the debugger is currently in the specified debug mode and throws an &lt;see cref=&quot;InvalidOperationException&quot;/&gt; if the requirement is not met.
+    /// </summary>
+    /// <param name="debugger">The debugger.</param>
+    /// <param name="required">The required.</param>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static void RequireMode(EnvDTE.Debugger debugger, dbgDebugMode required)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -211,6 +230,11 @@ internal sealed partial class VsAutomation
         throw new InvalidOperationException($"The debugger is {ModeName(mode)}, expected {ModeName(required)}.");
     }
 
+    /// <summary>
+    /// Converts a specified debug mode enumeration value into its corresponding string representation.
+    /// </summary>
+    /// <param name="mode">The mode.</param>
+    /// <returns>The string result.</returns>
     private static string ModeName(dbgDebugMode mode)
     {
         switch (mode)
@@ -221,6 +245,11 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Retrieves the current debugger state, including the execution mode, stack frame location, and exception details if the debugger is currently in break mode.
+    /// </summary>
+    /// <param name="dte">The dte.</param>
+    /// <returns>The debug state result.</returns>
     private static DebugState ReadDebugState(DTE2 dte)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -241,6 +270,11 @@ internal sealed partial class VsAutomation
         return state;
     }
 
+    /// <summary>
+    /// Generates a human-readable description of a stack frame, including the function name, module, and source file location if available.
+    /// </summary>
+    /// <param name="frame">The frame.</param>
+    /// <returns>The string? result.</returns>
     private static string? DescribeFrame(StackFrame? frame)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -267,6 +301,11 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Retrieves a formatted description of the current exception from the debugger, combining the exception type and message if available.
+    /// </summary>
+    /// <param name="debugger">The debugger.</param>
+    /// <returns>The string? result.</returns>
     private static string? DescribeException(EnvDTE.Debugger debugger)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -288,6 +327,11 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously retrieves a list of all active debugger breakpoints, including their file paths, line numbers, conditions, and enabled states.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public async Task<IReadOnlyList<BreakpointInfo>> ListBreakpointsAsync(CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -312,6 +356,15 @@ internal sealed partial class VsAutomation
         return breakpoints;
     }
 
+    /// <summary>
+    /// Asynchronously adds a debugger breakpoint at the specified file path and line number with an optional execution condition.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="line">The line.</param>
+    /// <param name="condition">The condition.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task AddBreakpointAsync(string path, int line, string? condition, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -326,6 +379,13 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously removes breakpoints from a specified file path, optionally filtering by line number, and returns the total number of breakpoints deleted.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="line">The line.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the int.</returns>
     public async Task<int> RemoveBreakpointsAsync(string path, int? line, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -346,6 +406,13 @@ internal sealed partial class VsAutomation
         return matching.Count;
     }
 
+    /// <summary>
+    /// Asynchronously evaluates a debugger expression and returns its value and type as a formatted string.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task<string> EvaluateAsync(string expression, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -367,6 +434,12 @@ internal sealed partial class VsAutomation
         return string.IsNullOrEmpty(result.Type) ? result.Value : $"{result.Value} ({result.Type})";
     }
 
+    /// <summary>
+    /// Asynchronously retrieves a formatted list of call stack frames from the current debugger thread while the debugger is in break mode.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task<IReadOnlyList<string>> GetCallStackAsync(CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -386,6 +459,12 @@ internal sealed partial class VsAutomation
         return frames;
     }
 
+    /// <summary>
+    /// Asynchronously retrieves a list of local variables from the current debugger stack frame.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task<IReadOnlyList<LocalVariable>> GetLocalsAsync(CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);

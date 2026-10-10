@@ -446,6 +446,12 @@ internal static class ToolFormat
     /// <summary>A file listing OMP numbered: the optional <c>[path#id]</c> header, one number (or range) per line, and the code without them.</summary>
     public sealed class Listing
     {
+        /// <summary>
+        /// Initializes a new instance of the Listing class with the specified header, numeric values, and identification code.
+        /// </summary>
+        /// <param name="header">The header.</param>
+        /// <param name="numbers">The collection of numbers.</param>
+        /// <param name="code">The code.</param>
         public Listing(string? header, IReadOnlyList<string> numbers, string code)
         {
             Header = header;
@@ -453,10 +459,19 @@ internal static class ToolFormat
             Code = code;
         }
 
+        /// <summary>
+        /// Gets the header.
+        /// </summary>
         public string? Header { get; }
 
+        /// <summary>
+        /// Gets the collection of numbers.
+        /// </summary>
         public IReadOnlyList<string> Numbers { get; }
 
+        /// <summary>
+        /// Gets the code.
+        /// </summary>
         public string Code { get; }
     }
 
@@ -521,6 +536,11 @@ internal static class ToolFormat
         return new Listing(header, numbers, string.Join("\n", code));
     }
 
+    /// <summary>
+    /// Determines whether the specified string starts with an opening square bracket and ends with a closing square bracket.
+    /// </summary>
+    /// <param name="line">The line.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     private static bool IsBracketed(string line) => line.StartsWith("[", StringComparison.Ordinal) && line.EndsWith("]", StringComparison.Ordinal);
 
     private static readonly Regex NumberedLine = new Regex(@"^(?<n>\*?(?<from>\d+)(?:-(?<to>\d+))?):(?<rest>.*)$", RegexOptions.Compiled);
@@ -605,14 +625,29 @@ internal static class ToolFormat
     /// <summary>Indented JSON with <c>\n</c> line ends, as copying a tool's arguments yields them.</summary>
     public static string IndentedJson(JToken token) => token.ToString(Newtonsoft.Json.Formatting.Indented).Replace("\r\n", "\n");
 
+    /// <summary>
+    /// Concatenates a collection of JSON properties into a single newline-delimited string of key-value pairs.
+    /// </summary>
+    /// <param name="properties">The collection of properties.</param>
+    /// <returns>The string result.</returns>
     private static string FlatLines(IEnumerable<JProperty> properties) =>
         string.Join("\n", properties.Select(p => $"{p.Name}: {FlatValue(p.Value)}"));
 
+    /// <summary>
+    /// Converts a JSON token to a flattened string representation, normalizing line breaks for string values or returning a compact JSON string for other token types.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <returns>The string result.</returns>
     private static string FlatValue(JToken value) =>
         value.Type == JTokenType.String
             ? (value.Value<string>() ?? "").Replace("\r\n", "\n").Replace("\n", "\n  ")
             : value.ToString(Newtonsoft.Json.Formatting.None);
 
+    /// <summary>
+    /// Extracts the search scope path from the provided arguments object, returning either a single path or a comma-separated list of multiple paths.
+    /// </summary>
+    /// <param name="args">The args.</param>
+    /// <returns>The string? result.</returns>
     private static string? SearchScope(JObject args)
     {
         var path = Str(args["path"]);
@@ -631,6 +666,12 @@ internal static class ToolFormat
         return joined.Length > 0 ? joined : null;
     }
 
+    /// <summary>
+    /// Extracts and formats the primary identifying argument or summary string from a tool item based on the specified renderer kind.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="kind">The kind.</param>
+    /// <returns>The string result.</returns>
     private static string PrimaryArg(ToolItem item, RendererKind kind)
     {
         var args = item.Args as JObject ?? new JObject();
@@ -663,6 +704,11 @@ internal static class ToolFormat
         }
     }
 
+    /// <summary>
+    /// Extracts and truncates the first non-empty line of text from a tool result if it indicates an error.
+    /// </summary>
+    /// <param name="result">The result.</param>
+    /// <returns>The string? result.</returns>
     private static string? ErrorLine(ToolResultView? result)
     {
         if (result is null || !result.IsError)
@@ -709,6 +755,12 @@ internal static class ToolFormat
     /// <summary><c>1 line</c> / <c>3 lines</c>.</summary>
     public static string Plural(long count, string noun) => $"{count} {noun}{(count == 1 ? "" : "s")}";
 
+    /// <summary>
+    /// Generates a formatted tool headline by analyzing the tool item&apos;s state, execution results, and renderer type to produce a summarized visual representation.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="cwd">The cwd.</param>
+    /// <returns>The tool headline result.</returns>
     public static ToolHeadline Headline(ToolItem item, string? cwd)
     {
         var state = StateOf(item);

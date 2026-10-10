@@ -82,6 +82,11 @@ internal static class Wpf
         while (DateTime.UtcNow < until);
     }
 
+    /// <summary>
+    /// Returns a breadth-first traversal of all descendant elements in the visual tree starting from the specified root object, including children within popups.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     public static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {
         var queue = new Queue<DependencyObject>();
@@ -109,6 +114,12 @@ internal static class Wpf
             .Concat(Descendants(root).OfType<TextBox>().Where(t => t.IsVisible).Select(t => t.Text))
             .Concat(Descendants(root).OfType<RichTextBox>().Where(t => t.IsVisible).Select(t => new TextRange(t.Document.ContentStart, t.Document.ContentEnd).Text));
 
+    /// <summary>
+    /// Determines whether any text elements within the specified dependency object hierarchy contain the given text fragment.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <param name="fragment">The fragment.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     public static bool HasText(DependencyObject root, string fragment) => Texts(root).Any(t => t.Contains(fragment));
 
     /// <summary>Hyperlinks inside visible text blocks and rich text boxes under <paramref name="root"/>.</summary>
@@ -117,15 +128,36 @@ internal static class Wpf
             .Concat(Descendants(root).OfType<RichTextBox>().Where(r => r.IsVisible).SelectMany(r => r.Document.Blocks.OfType<Paragraph>().SelectMany(p => Inlines(p.Inlines))))
             .OfType<Hyperlink>();
 
+    /// <summary>
+    /// Flattens a hierarchical collection of inlines into a linear sequence by recursively extracting nested inlines from span elements.
+    /// </summary>
+    /// <param name="inlines">The inlines.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<Inline> Inlines(InlineCollection inlines) =>
         inlines.SelectMany(inline => inline is Span span ? new[] { inline }.Concat(Inlines(span.Inlines)) : new[] { inline });
 
+    /// <summary>
+    /// Retrieves the first visible descendant of the specified root element that matches the given type and automation name.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <param name="automationName">The automation name.</param>
+    /// <returns>The t result.</returns>
     public static T Named<T>(DependencyObject root, string automationName) where T : FrameworkElement =>
         Descendants(root).OfType<T>().First(e => e.IsVisible && System.Windows.Automation.AutomationProperties.GetName(e) == automationName);
 
+    /// <summary>
+    /// Retrieves all visible descendants of the specified root element that match the given type and automation name.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <param name="automationName">The automation name.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     public static IEnumerable<T> AllNamed<T>(DependencyObject root, string automationName) where T : FrameworkElement =>
         Descendants(root).OfType<T>().Where(e => e.IsVisible && System.Windows.Automation.AutomationProperties.GetName(e) == automationName);
 
+    /// <summary>
+    /// Programmatically triggers the click event on the specified button base element.
+    /// </summary>
+    /// <param name="button">The button.</param>
     public static void Click(ButtonBase button) => button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent, button));
 
     /// <summary>Raises the preview and bubbling key-down events like a real key press.</summary>
@@ -140,6 +172,15 @@ internal static class Wpf
         }
     }
 
+    /// <summary>
+    /// Creates a new ToolItem instance with the specified identity, configuration, status, and optional result view.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="name">The name.</param>
+    /// <param name="args">The args.</param>
+    /// <param name="status">The status.</param>
+    /// <param name="result">The result.</param>
+    /// <returns>The tool item result.</returns>
     public static ToolItem Tool(string id, string name, string args, ToolStatus status, ToolResultView? result = null) =>
         new ToolItem { Id = id, Name = name, Args = JToken.Parse(args), Status = status, StartedAt = 1000, EndedAt = status == ToolStatus.Running ? (long?)null : 1012, Result = result };
 }

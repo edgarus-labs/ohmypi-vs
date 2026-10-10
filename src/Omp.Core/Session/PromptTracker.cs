@@ -27,6 +27,11 @@ internal sealed class PromptTracker
 
     public SessionPhase Phase { get; private set; } = SessionPhase.Idle;
 
+    /// <summary>
+    /// Asynchronously submits a ticket associated with the specified identifier and returns the resulting prompt outcome.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the prompt outcome.</returns>
     public Task<PromptOutcome> SubmitAsync(string id)
     {
         var ticket = new Ticket();
@@ -63,6 +68,9 @@ internal sealed class PromptTracker
         Update();
     }
 
+    /// <summary>
+    /// Initializes the agent by activating its run state, enabling pending settlement, and triggering an initial update cycle.
+    /// </summary>
     public void AgentStart()
     {
         _runActive = true;
@@ -70,6 +78,10 @@ internal sealed class PromptTracker
         Update();
     }
 
+    /// <summary>
+    /// Signals the termination of the agent&apos;s execution and updates its internal state based on whether the agent yielded control.
+    /// </summary>
+    /// <param name="yielded">The yielded.</param>
     public void AgentEnd(bool yielded)
     {
         if (yielded)
@@ -83,6 +95,10 @@ internal sealed class PromptTracker
         Update();
     }
 
+    /// <summary>
+    /// Processes the prompt result frame to complete the associated prompt outcome and update the internal session state based on the settlement and agent invocation status.
+    /// </summary>
+    /// <param name="frame">The frame.</param>
     public void PromptResult(JObject frame)
     {
         var settled = Json.Bool(frame, "sessionSettled") == true;
@@ -114,6 +130,9 @@ internal sealed class PromptTracker
         Update();
     }
 
+    /// <summary>
+    /// Resets the session state by clearing pending settlement and active execution flags and updates the current state.
+    /// </summary>
     public void SessionSettled()
     {
         _settlePending = false;
@@ -152,6 +171,11 @@ internal sealed class PromptTracker
         Update();
     }
 
+    /// <summary>
+    /// Parses a status string into the corresponding PromptStatus enumeration value, defaulting to PromptStatus.Error for unrecognized or null inputs.
+    /// </summary>
+    /// <param name="status">The status.</param>
+    /// <returns>The prompt status result.</returns>
     private static PromptStatus ParseStatus(string? status)
     {
         switch (status)
@@ -162,6 +186,11 @@ internal sealed class PromptTracker
         }
     }
 
+    /// <summary>
+    /// Completes a pending prompt ticket by removing it from the tracking collection and setting its completion result to the specified outcome.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="outcome">The outcome.</param>
     private void Complete(string id, PromptOutcome outcome)
     {
         if (!_tickets.TryGetValue(id, out var ticket))
@@ -173,6 +202,9 @@ internal sealed class PromptTracker
         ticket.Completion.TrySetResult(outcome);
     }
 
+    /// <summary>
+    /// Updates the current phase based on the derived state and triggers the associated phase-change notification if a transition occurs.
+    /// </summary>
     private void Update()
     {
         var phase = Derive();
@@ -185,6 +217,10 @@ internal sealed class PromptTracker
         _onPhase(phase);
     }
 
+    /// <summary>
+    /// Determines the current session phase based on the state of active runs, pending tickets, and abort or settlement flags.
+    /// </summary>
+    /// <returns>The session phase result.</returns>
     private SessionPhase Derive()
     {
         var busy = _tickets.Count > 0 || _runActive;
@@ -206,10 +242,19 @@ internal sealed class PromptTracker
         return _settlePending ? SessionPhase.Yielded : SessionPhase.Idle;
     }
 
+    /// <summary>
+    /// Represents a ticket used to track the admission status and manage the asynchronous completion of a prompt outcome.
+    /// </summary>
     private sealed class Ticket
     {
+        /// <summary>
+        /// Gets or sets a value indicating whether admitted.
+        /// </summary>
         public bool Admitted { get; set; }
 
+        /// <summary>
+        /// Gets the completion.
+        /// </summary>
         public TaskCompletionSource<PromptOutcome> Completion { get; } = new TaskCompletionSource<PromptOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

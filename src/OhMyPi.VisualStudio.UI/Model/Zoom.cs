@@ -5,9 +5,21 @@ namespace OhMyPi.VisualStudio.UI.Model;
 /// <summary>Ctrl+wheel zoom levels of the chat control, in the range of the VS text editor (20%–400%).</summary>
 internal static class Zoom
 {
+    /// <summary>
+    /// The min.
+    /// </summary>
     public const double Min = 0.2;
+    /// <summary>
+    /// The max.
+    /// </summary>
     public const double Max = 4.0;
+    /// <summary>
+    /// The factor.
+    /// </summary>
     private const double Factor = 1.1;
+    /// <summary>
+    /// The notch.
+    /// </summary>
     private const int Notch = 120;
 
     /// <summary>Level after a wheel turn of <paramref name="wheelDelta"/> (positive = zoom in), one 10% step per notch.</summary>

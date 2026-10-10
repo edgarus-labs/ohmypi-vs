@@ -135,6 +135,10 @@ internal sealed class SessionStore
 
     public void AddNotice(NoticeLevel level, string text) => Add(new NoticeItem { Id = NextLocalId("notice"), Level = level, Text = text });
 
+    /// <summary>
+    /// Adds a new command output item containing the specified text to the collection.
+    /// </summary>
+    /// <param name="text">The text.</param>
     public void AddCommandOutput(string text) => Add(new CommandOutputItem { Id = NextLocalId("output"), Text = text });
 
     /// <summary>Shows a submitted prompt right away; returns the row id. OMP's next user message replaces its content.</summary>
@@ -212,6 +216,10 @@ internal sealed class SessionStore
         }
     }
 
+    /// <summary>
+    /// Updates the state of the object by processing a JSON event to handle message updates, tool execution lifecycles, and queue or thinking level changes.
+    /// </summary>
+    /// <param name="e">The e.</param>
     public void ApplyEvent(JObject e)
     {
         Version++;
@@ -329,6 +337,11 @@ internal sealed class SessionStore
         }
     }
 
+    /// <summary>
+    /// Parses a string representation of a notice level into its corresponding NoticeLevel enumeration value, defaulting to NoticeLevel.Info if the input is null or unrecognized.
+    /// </summary>
+    /// <param name="level">The level.</param>
+    /// <returns>The notice level result.</returns>
     internal static NoticeLevel ParseLevel(string? level) =>
         level == "error" ? NoticeLevel.Error : level == "warning" ? NoticeLevel.Warning : NoticeLevel.Info;
 
@@ -349,6 +362,11 @@ internal sealed class SessionStore
         return null;
     }
 
+    /// <summary>
+    /// Increments the internal local identifier and returns a formatted string combining the specified prefix with the new ID.
+    /// </summary>
+    /// <param name="prefix">The prefix.</param>
+    /// <returns>The string result.</returns>
     private string NextLocalId(string prefix)
     {
         _localId++;
@@ -356,6 +374,10 @@ internal sealed class SessionStore
         return $"{prefix}-{_localId}";
     }
 
+    /// <summary>
+    /// Adds a transcript item to the internal collection, updates the lookup index, and notifies listeners of the change.
+    /// </summary>
+    /// <param name="item">The item.</param>
     private void Add(TranscriptItem item)
     {
         _index[item.Id] = _items.Count;
@@ -363,6 +385,10 @@ internal sealed class SessionStore
         Listeners.Raise(ItemChanged, nameof(ItemChanged), item, _logger);
     }
 
+    /// <summary>
+    /// Adds the specified transcript item to the collection or updates the existing item and notifies listeners if the item already exists.
+    /// </summary>
+    /// <param name="item">The item.</param>
     private void Set(TranscriptItem item)
     {
         if (!_index.TryGetValue(item.Id, out var at))
@@ -375,8 +401,19 @@ internal sealed class SessionStore
         Listeners.Raise(ItemChanged, nameof(ItemChanged), item, _logger);
     }
 
+    /// <summary>
+    /// Retrieves the transcript item associated with the specified identifier, returning null if the item is not found.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <returns>The transcript item? result.</returns>
     private TranscriptItem? Get(string id) => _index.TryGetValue(id, out var at) ? _items[at] : null;
 
+    /// <summary>
+    /// Processes a message object to update the conversation history and usage costs based on the sender&apos;s role and identity.
+    /// </summary>
+    /// <param name="messageId">The unique identifier of the message.</param>
+    /// <param name="message">The message.</param>
+    /// <param name="starting">The starting.</param>
     private void ApplyMessage(string? messageId, JObject? message, bool starting)
     {
         if (message is null)
@@ -443,6 +480,10 @@ internal sealed class SessionStore
         }
     }
 
+    /// <summary>
+    /// Processes an incoming JSON event to update or append streaming text and thinking deltas to an assistant message in the conversation history.
+    /// </summary>
+    /// <param name="e">The e.</param>
     private void ApplyMessageUpdate(JObject e)
     {
         var message = e["message"] as JObject;
@@ -497,12 +538,23 @@ internal sealed class SessionStore
         Set(item);
     }
 
+    /// <summary>
+    /// Initializes the tool execution state by recording the start time and raising a tool execution start event.
+    /// </summary>
+    /// <param name="toolCallId">The unique identifier of the tool call.</param>
+    /// <param name="name">The name.</param>
+    /// <param name="args">The args.</param>
     private void ApplyToolStart(string toolCallId, string name, JToken? args)
     {
         Set(new ToolItem { Id = toolCallId, Name = name, Args = args, Status = ToolStatus.Running, StartedAt = Listeners.NowMs() });
         Listeners.Raise(ToolExecution, nameof(ToolExecution), new ToolExecutionEvent { Phase = ToolExecutionPhase.Start, ToolCallId = toolCallId, Name = name, Args = args }, _logger);
     }
 
+    /// <summary>
+    /// Updates a specific tool item identified by the provided identifier by applying the specified patch action to a copy of the item.
+    /// </summary>
+    /// <param name="toolCallId">The unique identifier of the tool call.</param>
+    /// <param name="patch">The patch.</param>
     private void PatchTool(string? toolCallId, Action<ToolItem> patch)
     {
         if (toolCallId is null || !(Get(toolCallId) is ToolItem existing))
@@ -515,6 +567,13 @@ internal sealed class SessionStore
         Set(copy);
     }
 
+    /// <summary>
+    /// Finalizes the execution of a tool call by updating the tool item&apos;s status and result, recording the completion timestamp, and raising a tool execution end event.
+    /// </summary>
+    /// <param name="toolCallId">The unique identifier of the tool call.</param>
+    /// <param name="name">The name.</param>
+    /// <param name="rawResult">The raw result.</param>
+    /// <param name="isError">The is error.</param>
     private void ApplyToolEnd(string toolCallId, string name, JToken? rawResult, bool? isError)
     {
         var result = History.ToolResultView(rawResult, isError);
@@ -529,10 +588,19 @@ internal sealed class SessionStore
         Listeners.Raise(ToolExecution, nameof(ToolExecution), new ToolExecutionEvent { Phase = ToolExecutionPhase.End, ToolCallId = toolCallId, Name = name, Args = item.Args, Result = result }, _logger);
     }
 
+    /// <summary>
+    /// Represents a cursor used to track the current reading positions within the text and thinking streams.
+    /// </summary>
     private sealed class StreamCursor
     {
+        /// <summary>
+        /// Gets or sets the text index.
+        /// </summary>
         public int? TextIndex { get; set; }
 
+        /// <summary>
+        /// Gets or sets the thinking index.
+        /// </summary>
         public int? ThinkingIndex { get; set; }
     }
 }

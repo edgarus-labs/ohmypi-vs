@@ -14,6 +14,9 @@ internal sealed class JsonlDecoder
 {
     /// <summary>Line ceiling until the server advertises its frame limit, and for servers that never do.</summary>
     public const int DefaultMaxLineBytes = 8 * 1024 * 1024;
+    /// <summary>
+    /// The newline.
+    /// </summary>
     private const byte Newline = 0x0a;
     private static readonly UTF8Encoding StrictUtf8 = new UTF8Encoding(false, true);
 
@@ -22,6 +25,12 @@ internal sealed class JsonlDecoder
     private readonly MemoryStream _pending = new MemoryStream();
     private bool _discarding;
 
+    /// <summary>
+    /// Initializes a new instance of the JsonlDecoder class with specified handlers for processed tokens and errors, and an optional limit on the maximum line size in bytes.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="error">The error.</param>
+    /// <param name="maxLineBytes">The max line bytes.</param>
     public JsonlDecoder(Action<JToken> value, Action<Exception> error, int maxLineBytes = DefaultMaxLineBytes)
     {
         _value = value;
@@ -32,6 +41,10 @@ internal sealed class JsonlDecoder
     /// <summary>Longest accepted line in bytes; longer lines are reported and dropped.</summary>
     public int MaxLineBytes { get; set; }
 
+    /// <summary>
+    /// Processes a segment of bytes by appending data to the internal buffer and triggering line completion whenever a newline sequence is encountered.
+    /// </summary>
+    /// <param name="chunk">The chunk.</param>
     public void Push(ArraySegment<byte> chunk)
     {
         var bytes = chunk.Array!;
@@ -67,6 +80,12 @@ internal sealed class JsonlDecoder
         }
     }
 
+    /// <summary>
+    /// Appends a specified segment of a byte array to the pending buffer, validating that the resulting line length does not exceed the maximum allowed limit.
+    /// </summary>
+    /// <param name="bytes">The collection of bytes.</param>
+    /// <param name="offset">The offset.</param>
+    /// <param name="count">The count.</param>
     private void Append(byte[] bytes, int offset, int count)
     {
         if (_discarding || count == 0)
@@ -85,6 +104,9 @@ internal sealed class JsonlDecoder
         _pending.Write(bytes, offset, count);
     }
 
+    /// <summary>
+    /// Processes the current pending buffer by decoding it as UTF-8 and parsing the resulting string as a JSON token.
+    /// </summary>
     private void CompleteLine()
     {
         if (_discarding)
@@ -128,6 +150,9 @@ internal sealed class JsonlDecoder
         _value(value);
     }
 
+    /// <summary>
+    /// Resets the pending buffer by clearing its length and reclaiming memory if the capacity exceeds the defined threshold.
+    /// </summary>
     private void Reset()
     {
         _pending.SetLength(0);

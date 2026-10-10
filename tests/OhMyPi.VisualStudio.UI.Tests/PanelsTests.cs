@@ -119,9 +119,11 @@ public sealed class PanelsTests
             Click(Visible(window, "Transcript"));
             Pump(300);
             Assert.True(HasText(window, "do it"));
+            var copied = "";
+            control.SetClipboard = text => copied = text;
             Click(Named<Button>(window, "Copy as Markdown"));
             Pump();
-            Assert.Contains("do it", Clipboard.GetText());
+            Assert.Contains("do it", copied);
 
             service.AgentTranscript = new TranscriptItem[0];
             Click(Visible(window, "Transcript"));

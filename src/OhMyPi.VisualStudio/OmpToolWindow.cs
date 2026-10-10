@@ -33,6 +33,10 @@ public sealed class OmpToolWindow : ToolWindowPane
     /// <summary>The chat control of the current generation, once one exists.</summary>
     internal OmpChatControl? Control { get; private set; }
 
+    /// <summary>
+    /// Releases the unmanaged resources used by the component and optionally disposes of the managed resources, including the associated control and runtime event subscriptions.
+    /// </summary>
+    /// <param name="disposing">The disposing.</param>
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -45,6 +49,11 @@ public sealed class OmpToolWindow : ToolWindowPane
         base.Dispose(disposing);
     }
 
+    /// <summary>
+    /// Handles the generation change event by asynchronously switching to the main thread to display the current OMP chat.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnGenerationChanged(object sender, EventArgs e) => Background.Run(ThreadHelper.JoinableTaskFactory, _runtime.Logger, "Showing the new OMP chat", async () =>
                                                                          {
                                                                              await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();

@@ -202,6 +202,11 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Initiates the build process for either the entire solution or a specific target project.
+    /// </summary>
+    /// <param name="build">The build.</param>
+    /// <param name="target">The target.</param>
     private void StartBuild(SolutionBuild build, Project? target)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -215,6 +220,12 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Initiates a clean operation for the entire solution or a specific target project using the Visual Studio build manager.
+    /// </summary>
+    /// <param name="dte">The dte.</param>
+    /// <param name="build">The build.</param>
+    /// <param name="target">The target.</param>
     private void StartClean(DTE2 dte, SolutionBuild build, Project? target)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -230,6 +241,13 @@ internal sealed partial class VsAutomation
         ErrorHandler.ThrowOnFailure(manager.StartSimpleUpdateProjectConfiguration(hierarchy, null, null, (uint)VSSOLNBUILDUPDATEFLAGS.SBF_OPERATION_CLEAN, 0, 0));
     }
 
+    /// <summary>
+    /// Retrieves the matching solution configuration based on the provided name and optional platform, prioritizing the active platform if multiple matches exist.
+    /// </summary>
+    /// <param name="build">The build.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <returns>The env dte80.solution configuration2? result.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static EnvDTE80.SolutionConfiguration2? FindConfiguration(SolutionBuild build, string configuration)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -262,6 +280,12 @@ internal sealed partial class VsAutomation
         return match ?? throw new InvalidOperationException($"No solution configuration '{configuration}'. Available: {string.Join(", ", available)}.");
     }
 
+    /// <summary>
+    /// Determines whether two solution configurations are equivalent by comparing their names and platform names using a case-insensitive ordinal comparison.
+    /// </summary>
+    /// <param name="left">The left.</param>
+    /// <param name="right">The right.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private static bool SameConfiguration(SolutionConfiguration left, SolutionConfiguration right)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -271,6 +295,11 @@ internal sealed partial class VsAutomation
             && string.Equals(a.PlatformName, b.PlatformName, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Calculates the total number of projects within the specified solution build that are marked as buildable in the active configuration.
+    /// </summary>
+    /// <param name="build">The build.</param>
+    /// <returns>The int result.</returns>
     private static int CountBuildableProjects(SolutionBuild build)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -293,6 +322,11 @@ internal sealed partial class VsAutomation
         return count;
     }
 
+    /// <summary>
+    /// Cancels the currently active build operation if it is in progress by executing the Build.Cancel command via the Visual Studio automation object.
+    /// </summary>
+    /// <param name="dte">The dte.</param>
+    /// <param name="build">The build.</param>
     private static void CancelRunningBuild(DTE2 dte, SolutionBuild build)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -310,6 +344,11 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Asynchronously retrieves a read-only list of error items by switching to the UI thread.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
     public async Task<IReadOnlyList<ErrorItem>> GetErrorsAsync(CancellationToken cancellationToken)
     {
         await SwitchToUiAsync(cancellationToken);
@@ -334,6 +373,10 @@ internal sealed partial class VsAutomation
         return items;
     }
 
+    /// <summary>
+    /// Retrieves the current list of errors from the shell&apos;s error list service and maps them to a collection of ErrorItem objects.
+    /// </summary>
+    /// <returns>A collection of iread only list items.</returns>
     private IReadOnlyList<ErrorItem> ReadErrorList()
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -362,6 +405,11 @@ internal sealed partial class VsAutomation
         return items;
     }
 
+    /// <summary>
+    /// Resolves the error severity category of the specified table entry into its corresponding string representation.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <returns>The string result.</returns>
     private static string SeverityName(ITableEntryHandle entry)
     {
         switch (Value<__VSERRORCATEGORY>(entry, StandardTableKeyNames.ErrorSeverity))
@@ -372,9 +420,23 @@ internal sealed partial class VsAutomation
         }
     }
 
+    /// <summary>
+    /// Retrieves a value of the specified type from the table entry associated with the given key, returning the default value if the key is not found or the value is of an incompatible type.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <param name="key">The key.</param>
+    /// <returns>The t? result.</returns>
     private static T? Value<T>(ITableEntryHandle entry, string key) =>
         entry.TryGetValue(key, out var value) && value is T typed ? typed : default;
 
+    /// <summary>
+    /// Asynchronously retrieves a specified number of trailing lines from a designated or active Visual Studio Output window pane.
+    /// </summary>
+    /// <param name="pane">The pane.</param>
+    /// <param name="maxLines">The max lines.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     public async Task<string> ReadOutputAsync(string? pane, int maxLines, CancellationToken cancellationToken)
     {
         var dte = await EnterUiAsync(cancellationToken);
@@ -409,6 +471,13 @@ internal sealed partial class VsAutomation
         return string.Join("\n", lines);
     }
 
+    /// <summary>
+    /// Searches for an output window pane by name, returning an exact match or a partial match, and throws an &lt;see cref=&quot;InvalidOperationException&quot;/&gt; if no suitable pane is found.
+    /// </summary>
+    /// <param name="window">The window.</param>
+    /// <param name="name">The name.</param>
+    /// <returns>The output window pane result.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an error occurs during execution.</exception>
     private static OutputWindowPane FindPane(OutputWindow window, string name)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -429,6 +498,11 @@ internal sealed partial class VsAutomation
         return partial ?? throw new InvalidOperationException($"No Output pane named '{name}'. Panes: {PaneNames(window)}.");
     }
 
+    /// <summary>
+    /// Retrieves a comma-separated string containing the names of all panes associated with the specified output window.
+    /// </summary>
+    /// <param name="window">The window.</param>
+    /// <returns>The string result.</returns>
     private static string PaneNames(OutputWindow window)
     {
         ThreadHelper.ThrowIfNotOnUIThread();

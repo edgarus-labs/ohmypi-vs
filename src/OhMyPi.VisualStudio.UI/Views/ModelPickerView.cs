@@ -433,6 +433,11 @@ internal sealed class ModelPickerView : Grid
         _pinned.Visibility = group is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    /// <summary>
+    /// Calculates the vertical offset of a specified model row item relative to the scroller&apos;s current position.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <returns>The double result.</returns>
     private double OffsetOf(ModelRowItem item)
     {
         var scroller = Scroller();
@@ -444,8 +449,17 @@ internal sealed class ModelPickerView : Grid
         return scroller.VerticalOffset + row.TranslatePoint(new Point(0, 0), scroller).Y;
     }
 
+    /// <summary>
+    /// Retrieves the ScrollViewer instance associated with the specified list.
+    /// </summary>
+    /// <returns>The scroll viewer? result.</returns>
     private ScrollViewer? Scroller() => Find<ScrollViewer>(_list);
 
+    /// <summary>
+    /// Retrieves the associated ModelRowItem from the data context of the ListBoxItem container corresponding to the specified source element.
+    /// </summary>
+    /// <param name="source">The source.</param>
+    /// <returns>The model row item? result.</returns>
     private ModelRowItem? RowAt(object source) =>
         source is DependencyObject node && ItemsControl.ContainerFromElement(_list, node) is ListBoxItem item ? item.DataContext as ModelRowItem : null;
 
@@ -464,6 +478,10 @@ internal sealed class ModelPickerView : Grid
         return false;
     }
 
+    /// <summary>
+    /// Updates the favorite status of a specific model row item within the user preferences.
+    /// </summary>
+    /// <param name="item">The item.</param>
     private void OnFavoriteChanged(ModelRowItem item)
     {
         try
@@ -476,6 +494,10 @@ internal sealed class ModelPickerView : Grid
         }
     }
 
+    /// <summary>
+    /// Records the selected model row item in the user preferences and invokes the Picked event.
+    /// </summary>
+    /// <param name="row">The row.</param>
     private void Pick(ModelRowItem row)
     {
         if (row.Entry is null)
@@ -494,6 +516,9 @@ internal sealed class ModelPickerView : Grid
         Picked?.Invoke(row.Entry.Model);
     }
 
+    /// <summary>
+    /// Updates the visual state and styling of the favorites and recent toggle elements based on their current selection status.
+    /// </summary>
     private void SyncToggles()
     {
         _favoritesGlyph.Text = _favorites.IsChecked == true ? StarFilledGlyph : StarGlyph;
@@ -516,6 +541,11 @@ internal sealed class ModelPickerView : Grid
         }
     }
 
+    /// <summary>
+    /// Handles the preview key down event by evaluating the pressed key and modifiers to determine if the input should be marked as handled.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (HandleKey(e.Key, Keyboard.Modifiers))
@@ -600,6 +630,12 @@ internal sealed class ModelPickerView : Grid
         }
     }
 
+    /// <summary>
+    /// Creates a TextBlock element configured as an icon glyph using the specified character and font size.
+    /// </summary>
+    /// <param name="glyph">The glyph.</param>
+    /// <param name="size">The size.</param>
+    /// <returns>The text block result.</returns>
     private static TextBlock Glyph(string glyph, double size)
     {
         var text = new TextBlock { Text = glyph, FontSize = size, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -608,6 +644,13 @@ internal sealed class ModelPickerView : Grid
         return text;
     }
 
+    /// <summary>
+    /// Adds a UI element to a specified grid column and applies the provided margin if the element is a framework element.
+    /// </summary>
+    /// <param name="grid">The unique identifier of the gr.</param>
+    /// <param name="element">The element.</param>
+    /// <param name="column">The column.</param>
+    /// <param name="margin">The margin.</param>
     private static void AddAt(Grid grid, UIElement element, int column, Thickness margin)
     {
         if (element is FrameworkElement framework)
@@ -630,6 +673,11 @@ internal sealed class ModelPickerView : Grid
         return new ControlTemplate(typeof(TextBox)) { VisualTree = host };
     }
 
+    /// <summary>
+    /// Recursively searches the visual tree starting from the specified root element to find the first descendant of type T.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <returns>The t? result.</returns>
     private static T? Find<T>(DependencyObject root) where T : DependencyObject
     {
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)

@@ -370,6 +370,11 @@ public sealed class ChangeModel
             return false;
         }
 
+        /// <summary>
+        /// Retrieves the mapped key associated with the specified path if it exists in the entries collection.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns>The string? result.</returns>
         public string? PathOf(string path) => _entries.TryGetValue(Key(path), out var entry) ? entry.Key : null;
 
         public void Set(string path, TValue value)
@@ -385,6 +390,11 @@ public sealed class ChangeModel
             _order.Add(key);
         }
 
+        /// <summary>
+        /// Removes the entry associated with the specified path from the internal collection and returns a value indicating whether the operation succeeded.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool Delete(string path)
         {
             var key = Key(path);
@@ -398,14 +408,25 @@ public sealed class ChangeModel
             return true;
         }
 
+        /// <summary>
+        /// Removes all entries and resets the internal ordering of the collection.
+        /// </summary>
         public void Clear()
         {
             _entries.Clear();
             _order.Clear();
         }
 
+        /// <summary>
+        /// Returns a read-only list of keys from the entries in the order they were added.
+        /// </summary>
+        /// <returns>A collection of iread only list items.</returns>
         public IReadOnlyList<string> Keys() => _order.Select(key => _entries[key].Key).ToArray();
 
+        /// <summary>
+        /// Returns a read-only list of values from the entries, maintained in the order they were added.
+        /// </summary>
+        /// <returns>A collection of iread only list items.</returns>
         public IReadOnlyList<TValue> Values() => _order.Select(key => _entries[key].Value).ToArray();
     }
 }

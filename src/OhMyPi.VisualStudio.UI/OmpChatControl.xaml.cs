@@ -30,6 +30,8 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
     private readonly FollowBottom _follow = new FollowBottom();
     private ActivityItem? _activity;
     private readonly Dictionary<string, string> _statusTexts = new Dictionary<string, string>(StringComparer.Ordinal);
+    private bool _routerPaused;
+    private bool _routerRouting;
     private readonly DispatcherTimer _flushTimer;
     private readonly DispatcherTimer _recentTimer;
     private readonly List<Action> _detach = new List<Action>();
@@ -194,6 +196,12 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         Subscribe(service, host);
 
         _composer!.Commands = service.Commands;
+        foreach (var status in service.Statuses)
+        {
+            ApplyStatus(status.Key, status.Value);
+        }
+
+        RenderStatuses();
         _connection = service.Connection;
         _session = service.Session;
         _transcript.Reset(service.Transcript);
@@ -270,6 +278,7 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
 
         _header = new HeaderBar();
         _header.Renamed += name => _ = RunAsync("Rename session", WithService(() => service.SetSessionNameAsync(name)));
+        _header.ResumeRouterRequested += () => _ = RunAsync("Resume tier router", WithService(async () => await service.PromptAsync("/tier-auto")));
         HeaderHost.Content = _header;
 
         _banner = new Banner(host.OpenSettings, host.ShowLog, () => _ = RunAsync("Restart", host.RestartAsync));
@@ -554,6 +563,31 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         }
     }
 
+    private void ApplyStatus(string key, string? text)
+    {
+        if (key == "tier")
+        {
+            _routerPaused = !string.IsNullOrEmpty(text) && Chrome.IsRouterPaused(text!);
+            _routerRouting = !string.IsNullOrEmpty(text) && Chrome.IsRouterRouting(text!);
+        }
+
+        if (string.IsNullOrEmpty(text))
+        {
+            _statusTexts.Remove(key);
+        }
+        else
+        {
+            _statusTexts[key] = key == "tier" ? Chrome.RouterStatusText(text!) : text!;
+        }
+    }
+
+    private void RenderStatuses()
+    {
+        _header!.SetStatusTexts(_statusTexts.Values.ToList());
+        _header.SetRouterPaused(_routerPaused);
+        _composer!.SetRouterAuto(_routerRouting);
+    }
+
     private void Present(PresentationRequest request)
     {
         switch (request)
@@ -563,16 +597,8 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
                 break;
 
             case StatusPresentation status:
-                if (string.IsNullOrEmpty(status.Text))
-                {
-                    _statusTexts.Remove(status.Key);
-                }
-                else
-                {
-                    _statusTexts[status.Key] = status.Text!;
-                }
-
-                _header!.SetStatusTexts(_statusTexts.Values.ToList());
+                ApplyStatus(status.Key, status.Text);
+                RenderStatuses();
                 break;
 
             case OpenUrlPresentation openUrl:
@@ -827,6 +853,9 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         return new PickerItem(session, content, $"{title} {description}");
     }
 
+    /// <summary>
+    /// Attaches event handlers to the transcript scroller to manage auto-scrolling behavior, input-driven scroll releases, and visibility of the jump control.
+    /// </summary>
     private void HookScroller()
     {
         var scroller = Transcript.Scroller;
@@ -890,6 +919,11 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         _ = Dispatcher.InvokeAsync(() => _follow.ReaderScrolling = false, DispatcherPriority.ContextIdle);
     }
 
+    /// <summary>
+    /// Determines whether the specified dependency object or any of its ancestors in the visual or logical tree is a ScrollBar.
+    /// </summary>
+    /// <param name="node">The node.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private static bool InScrollBar(DependencyObject node)
     {
         for (var current = node; current is not null; current = current is Visual ? VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current))
@@ -903,6 +937,9 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         return false;
     }
 
+    /// <summary>
+    /// Scrolls the transcript view to the bottom and hides the jump-to-bottom indicator.
+    /// </summary>
     private void ScrollToBottom()
     {
         _follow.ToBottom();
@@ -929,8 +966,17 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
     /// <summary>Opens a tool path as OMP reported it; the host resolves it against OMP's working directory and home.</summary>
     private void OpenFile(string path, int? line) => _ = RunAsync("Open file", () => _host!.OpenFileAsync(path, line));
 
+    /// <summary>
+    /// Opens a difference view for the specified file path, optionally comparing it against a previously recorded version.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="recordedBefore">The recorded before.</param>
     private void OpenDiff(string path, string? recordedBefore) => _ = RunAsync("Open diff", () => _host!.OpenDiffAsync(path, recordedBefore));
 
+    /// <summary>
+    /// Validates the provided URL as a web URI and launches it in the system&apos;s default browser, logging a warning or failure if the operation cannot be completed.
+    /// </summary>
+    /// <param name="url">The url.</param>
     private void OpenUrl(string url)
     {
         if (!MarkdownView.TryWebUri(url, out var uri))
@@ -949,6 +995,10 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         }
     }
 
+    /// <summary>
+    /// Copies the specified text to the system clipboard and handles any potential exceptions during the operation.
+    /// </summary>
+    /// <param name="text">The text.</param>
     private void Copy(string text)
     {
         try
@@ -966,18 +1016,52 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
     {
         private readonly OmpChatControl _owner;
 
+        /// <summary>
+        /// Initializes a new instance of the AgentActions class with the specified chat control owner.
+        /// </summary>
+        /// <param name="owner">The owner.</param>
         public AgentActions(OmpChatControl owner) => _owner = owner;
 
+        /// <summary>
+        /// Gets the render context.
+        /// </summary>
         public RenderContext RenderContext => _owner._ctx!;
 
+        /// <summary>
+        /// Asynchronously retrieves the transcript items associated with the specified agent identifier.
+        /// </summary>
+        /// <param name="agentId">The unique identifier of the agent.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the iread only list.</returns>
         public Task<IReadOnlyList<TranscriptItem>> TranscriptAsync(string agentId) => _owner._service!.GetAgentTranscriptAsync(agentId);
 
+        /// <summary>
+        /// Asynchronously sends a steering message to a specific agent to guide its behavior or direction.
+        /// </summary>
+        /// <param name="agentId">The unique identifier of the agent.</param>
+        /// <param name="message">The message.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task SteerAsync(string agentId, string message) => _owner._service!.SteerAgentAsync(agentId, message);
 
+        /// <summary>
+        /// Asynchronously cancels the agent associated with the specified agent identifier.
+        /// </summary>
+        /// <param name="agentId">The unique identifier of the agent.</param>
+        /// <returns>A task representing the asynchronous operation. The task result is true if successful; otherwise, false.</returns>
         public Task<bool> CancelAsync(string agentId) => _owner._service!.CancelAgentAsync(agentId);
 
+        /// <summary>
+        /// Asynchronously executes the specified work delegate associated with a named action via the underlying owner.
+        /// </summary>
+        /// <param name="action">The action.</param>
+        /// <param name="work">The work.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public Task RunAsync(string action, Func<Task> work) => _owner.RunAsync(action, work);
 
+        /// <summary>
+        /// Adds a notification message with the specified severity level to the associated owner.
+        /// </summary>
+        /// <param name="level">The level.</param>
+        /// <param name="text">The text.</param>
         public void Notice(NoticeLevel level, string text) => _owner.AddNotice(level, text);
     }
 }

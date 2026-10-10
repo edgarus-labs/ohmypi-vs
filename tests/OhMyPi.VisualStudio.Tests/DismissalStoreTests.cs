@@ -5,12 +5,28 @@ namespace OhMyPi.VisualStudio.Tests;
 
 public sealed class DismissalStoreTests
 {
+    /// <summary>
+    /// Represents an in-memory implementation of the preference store used for testing or mocking purposes.
+    /// </summary>
     private sealed class FakeStore : IPreferenceStore
     {
+        /// <summary>
+        /// Gets the values.
+        /// </summary>
         public Dictionary<string, string> Values { get; } = new();
 
+        /// <summary>
+        /// Retrieves the value associated with the specified key if it exists; otherwise, returns null.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>The string? result.</returns>
         public string? Read(string key) => Values.TryGetValue(key, out var value) ? value : null;
 
+        /// <summary>
+        /// Writes the specified value to the collection associated with the provided key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
         public void Write(string key, string value) => Values[key] = value;
     }
 

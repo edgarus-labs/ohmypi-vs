@@ -13,15 +13,32 @@ namespace Omp.Core;
 /// </summary>
 public static class PromptFormatter
 {
+    /// <summary>
+    /// The editor context start.
+    /// </summary>
     private const string EditorContextStart = "<editor-context>";
+    /// <summary>
+    /// The editor context end.
+    /// </summary>
     private const string EditorContextEnd = "</editor-context>";
+    /// <summary>
+    /// The pasted end.
+    /// </summary>
     private const string PastedEnd = "</pasted-text>";
+    /// <summary>
+    /// The pasted end escaped.
+    /// </summary>
     private const string PastedEndEscaped = "<\\/pasted-text>";
     private static readonly Regex PastedBlock = new Regex("\n*<pasted-text name=\"([^\"]*)\">\n([\\s\\S]*?)\n</pasted-text>", RegexOptions.CultureInvariant);
     private static readonly Regex AttachedLine = new Regex("\n*Attached: ((?:@(?:\"(?:\\\\\"|[^\"])+\"|\\S+) ?)+)\\z", RegexOptions.CultureInvariant);
     private static readonly Regex Mention = new Regex("@(?:\"((?:\\\\\"|[^\"])+)\"|(\\S+))", RegexOptions.CultureInvariant);
     private static readonly Regex NeedsQuotes = new Regex("[\\s\"@]", RegexOptions.CultureInvariant);
 
+    /// <summary>
+    /// Formats the provided prompt components into a single structured string, incorporating editor context, text, pasted content, and attached file references.
+    /// </summary>
+    /// <param name="parts">The parts.</param>
+    /// <returns>The string result.</returns>
     public static string Format(PromptParts parts)
     {
         var blocks = new List<string>();
@@ -47,6 +64,11 @@ public static class PromptFormatter
         return string.Join("\n\n", blocks);
     }
 
+    /// <summary>
+    /// Parses a user message into its constituent parts, extracting editor context, attached files, and pasted text blocks.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <returns>The prompt parts result.</returns>
     public static PromptParts SplitUserMessage(string message)
     {
         var rest = message;

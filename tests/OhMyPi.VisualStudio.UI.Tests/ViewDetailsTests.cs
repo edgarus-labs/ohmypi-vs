@@ -14,6 +14,9 @@ namespace OhMyPi.VisualStudio.UI.Tests;
 [Collection("wpf")]
 public sealed class ViewDetailsTests
 {
+    /// <summary>
+    /// Represents a transcript item that could not be recognized or categorized during processing.
+    /// </summary>
     private sealed class UnknownItem : TranscriptItem
     {
     }

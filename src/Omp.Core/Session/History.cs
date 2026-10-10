@@ -82,6 +82,11 @@ internal static class History
         return items;
     }
 
+    /// <summary>
+    /// Calculates the total accumulated cost from the usage data of all assistant messages within the provided JSON array.
+    /// </summary>
+    /// <param name="messages">The messages.</param>
+    /// <returns>The double? result.</returns>
     public static double? CostOf(JArray? messages)
     {
         double? total = null;
@@ -102,6 +107,12 @@ internal static class History
         return total;
     }
 
+    /// <summary>
+    /// Parses a JSON message object to create a UserItem containing the user identifier, extracted text content, and the count of embedded images.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="message">The message.</param>
+    /// <returns>The user item result.</returns>
     public static UserItem UserItem(string id, JObject message)
     {
         var content = message["content"];
@@ -110,6 +121,13 @@ internal static class History
         return new UserItem { Id = id, Text = Json.TextOf(content), ImageCount = images };
     }
 
+    /// <summary>
+    /// Parses a JSON message object to create an AssistantItem, extracting content, thinking blocks, model information, and optional usage or error details based on the streaming state.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <param name="message">The message.</param>
+    /// <param name="streaming">The streaming.</param>
+    /// <returns>The assistant item result.</returns>
     public static AssistantItem AssistantItem(string id, JObject message, bool streaming)
     {
         var content = message["content"];
@@ -156,6 +174,12 @@ internal static class History
         return item;
     }
 
+    /// <summary>
+    /// Maps a JSON token and an optional error flag to a ToolResultView instance, extracting content and error details from the provided data.
+    /// </summary>
+    /// <param name="result">The result.</param>
+    /// <param name="isError">The is error.</param>
+    /// <returns>The tool result view result.</returns>
     public static ToolResultView ToolResultView(JToken? result, bool? isError)
     {
         var record = result as JObject;
@@ -172,6 +196,11 @@ internal static class History
         return view;
     }
 
+    /// <summary>
+    /// Maps a JSON object containing usage statistics to a UsageView instance.
+    /// </summary>
+    /// <param name="usage">The usage.</param>
+    /// <returns>The usage view? result.</returns>
     private static UsageView? UsageView(JObject? usage)
     {
         if (usage is null)

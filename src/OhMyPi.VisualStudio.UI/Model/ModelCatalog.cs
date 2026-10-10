@@ -12,6 +12,10 @@ internal sealed class ModelCatalog
 
     private readonly Dictionary<ModelKey, ModelEntry> _byKey = new Dictionary<ModelKey, ModelEntry>();
 
+    /// <summary>
+    /// Initializes a new instance of the ModelCatalog class by filtering for unique models, resolving their variants, and organizing them into a sorted collection of entries.
+    /// </summary>
+    /// <param name="models">The collection of models.</param>
     public ModelCatalog(IEnumerable<ModelView> models)
     {
         var seen = new HashSet<ModelKey>();
@@ -103,6 +107,11 @@ internal sealed class ModelCatalog
         return [.. families, .. rest];
     }
 
+    /// <summary>
+    /// Formats the model family as a combined vendor class and family string, returning null if the family is null or empty.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <returns>The string? result.</returns>
     private static string? FamilyOf(ModelEntry entry) =>
         string.IsNullOrEmpty(entry.Model.Family) ? null : (entry.Model.VendorClass ?? "") + "/" + entry.Model.Family;
 
@@ -124,6 +133,12 @@ internal sealed class ModelCatalog
             .ToList();
     }
 
+    /// <summary>
+    /// Determines whether the specified text contains the given term using a case-insensitive ordinal comparison.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="term">The term.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private static bool Contains(string text, string term) => text.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0;
 
     /// <summary>
@@ -190,8 +205,17 @@ internal sealed class ModelCatalog
     /// <summary>Orders text ignoring case, with runs of digits compared by value so "GPT-5" sorts before "GPT-10".</summary>
     private sealed class NaturalComparer : IComparer<string>
     {
+        /// <summary>
+        /// The instance.
+        /// </summary>
         public static readonly NaturalComparer Instance = new NaturalComparer();
 
+        /// <summary>
+        /// Compares two strings using a natural sort order that treats sequences of digits as single numeric values and ignores case.
+        /// </summary>
+        /// <param name="x">The x.</param>
+        /// <param name="y">The y.</param>
+        /// <returns>The int result.</returns>
         public int Compare(string? x, string? y)
         {
             x ??= "";

@@ -16,6 +16,9 @@ internal sealed class TablePanel : Panel
     private double[] _widths = [];
     private double[] _heights = [];
 
+    /// <summary>
+    /// Gets or sets the columns.
+    /// </summary>
     public int Columns { get; set; } = 1;
 
     /// <summary>The width the enclosing scroller can show without scrolling; set by <see cref="TableScroller"/>.</summary>
@@ -34,6 +37,11 @@ internal sealed class TablePanel : Panel
         }
     }
 
+    /// <summary>
+    /// Calculates the desired size of the table by measuring child cells and distributing available width across columns based on their natural and minimum size requirements.
+    /// </summary>
+    /// <param name="availableSize">The available size.</param>
+    /// <returns>The size result.</returns>
     protected override Size MeasureOverride(Size availableSize)
     {
         var columns = Math.Max(1, Columns);
@@ -72,6 +80,11 @@ internal sealed class TablePanel : Panel
         return new Size(width, height);
     }
 
+    /// <summary>
+    /// Arranges the child elements in a grid layout based on the specified column count and the predefined width and height dimensions.
+    /// </summary>
+    /// <param name="finalSize">The final size.</param>
+    /// <returns>The size result.</returns>
     protected override Size ArrangeOverride(Size finalSize)
     {
         var columns = Math.Max(1, Columns);

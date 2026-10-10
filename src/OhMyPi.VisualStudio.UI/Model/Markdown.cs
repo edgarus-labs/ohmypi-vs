@@ -25,6 +25,11 @@ internal static class Markdown
         @"|(?<!\w)_(?<u>[^_\s](?:[^_\n]*[^_\s])?)_(?!\w)",
         RegexOptions.Compiled);
 
+    /// <summary>
+    /// Parses a Markdown-formatted string into a read-only list of block-level elements, such as paragraphs, lists, and code blocks.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>A collection of iread only list items.</returns>
     public static IReadOnlyList<MdBlock> Parse(string text)
     {
         var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
@@ -133,6 +138,11 @@ internal static class Markdown
         return output;
     }
 
+    /// <summary>
+    /// Determines whether the specified string starts with a whitespace character.
+    /// </summary>
+    /// <param name="line">The line.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private static bool StartsWithWhitespace(string line) => line.Length > 0 && char.IsWhiteSpace(line[0]);
 
     /// <summary>Nested lists from list item lines; indented non-item lines continue the previous item.</summary>
@@ -193,6 +203,10 @@ internal static class Markdown
         return roots;
     }
 
+    /// <summary>
+    /// Recursively parses the inline content of each item within the specified markdown list and its nested children.
+    /// </summary>
+    /// <param name="list">The list.</param>
     private static void ParseItems(MdList list)
     {
         foreach (var item in list.Items)
@@ -205,6 +219,11 @@ internal static class Markdown
         }
     }
 
+    /// <summary>
+    /// Parses a Markdown-style table row by removing surrounding pipe characters and splitting the line into a list of trimmed cell values.
+    /// </summary>
+    /// <param name="line">The line.</param>
+    /// <returns>A collection of iread only list items.</returns>
     private static IReadOnlyList<string> TableCells(string line)
     {
         var trimmed = line.Trim();
@@ -221,6 +240,13 @@ internal static class Markdown
         return trimmed.Split('|').Select(cell => cell.Trim()).ToList();
     }
 
+    /// <summary>
+    /// Parses a Markdown table by processing the header, alignment separator, and row data into a structured MdTable object.
+    /// </summary>
+    /// <param name="header">The header.</param>
+    /// <param name="separator">The separator.</param>
+    /// <param name="rows">The collection of rows.</param>
+    /// <returns>The md table result.</returns>
     private static MdTable ParseTable(string header, string separator, List<string> rows)
     {
         var aligns = TableCells(separator).Select(cell =>
@@ -282,6 +308,13 @@ internal static class Markdown
         return result;
     }
 
+    /// <summary>
+    /// Creates an emphasis inline element by unmasking the provided text and conditionally nesting child elements if code segments are detected.
+    /// </summary>
+    /// <param name="kind">The kind.</param>
+    /// <param name="masked">The masked.</param>
+    /// <param name="codes">The collection of codes.</param>
+    /// <returns>The md inline result.</returns>
     private static MdInline Emphasis(MdInlineKind kind, string masked, List<string> codes)
     {
         var children = Unmask(masked, codes).ToList();
@@ -316,6 +349,12 @@ internal static class Markdown
         }
     }
 
+    /// <summary>
+    /// Replaces masked placeholders within a string with their corresponding values from a provided list of codes based on the index specified in each placeholder.
+    /// </summary>
+    /// <param name="masked">The masked.</param>
+    /// <param name="codes">The collection of codes.</param>
+    /// <returns>The string result.</returns>
     private static string Plain(string masked, List<string> codes) =>
         CodeMark.Replace(masked, mark => int.TryParse(mark.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var index) && index < codes.Count ? codes[index] : mark.Value);
 

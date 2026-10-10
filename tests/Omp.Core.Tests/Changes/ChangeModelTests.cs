@@ -14,10 +14,20 @@ public class ChangeModelTests
     /// <summary>In-memory disk: absent keys are missing files; null values are untrackable; Reads lists every path read.</summary>
     private sealed class Disk
     {
+        /// <summary>
+        /// Gets the files.
+        /// </summary>
         public Dictionary<string, Snapshot?> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Gets the collection of reads.
+        /// </summary>
         public List<string> Reads { get; } = new();
 
+        /// <summary>
+        /// Initializes a new instance of the Disk class and populates it with the specified initial set of file paths and their corresponding content.
+        /// </summary>
+        /// <param name="initial">The collection of initial.</param>
         public Disk(params (string Path, string? Content)[] initial)
         {
             foreach (var (path, content) in initial)
@@ -26,8 +36,18 @@ public class ChangeModelTests
             }
         }
 
+        /// <summary>
+        /// Assigns a snapshot of the specified content to the file system at the given path.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="content">The content.</param>
         public void Set(string path, string content) => Files[path] = Snapshot.Of(content);
 
+        /// <summary>
+        /// Asynchronously retrieves a snapshot for the specified path and tracks the read operation.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the snapshot?.</returns>
         public Task<Snapshot?> Read(string path)
         {
             Reads.Add(path);

@@ -10,6 +10,9 @@ namespace OhMyPi.VisualStudio.UI.Tests;
 [Collection("wpf")]
 public sealed class InteractionCardsTests
 {
+    /// <summary>
+    /// Represents an interaction request that could not be identified or mapped to a known request type.
+    /// </summary>
     private sealed class UnknownRequest : InteractionRequest
     {
     }

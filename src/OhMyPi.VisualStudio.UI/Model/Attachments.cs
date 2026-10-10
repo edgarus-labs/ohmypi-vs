@@ -8,10 +8,25 @@ namespace OhMyPi.VisualStudio.UI.Model;
 /// <summary>Composer attachment rules: paste classification, image admission limits and the prompt OMP receives.</summary>
 internal static class Attachments
 {
+    /// <summary>
+    /// The max image bytes.
+    /// </summary>
     public const long MaxImageBytes = 10 * 1024 * 1024;
+    /// <summary>
+    /// The max images.
+    /// </summary>
     public const int MaxImages = 8;
+    /// <summary>
+    /// The max total image bytes.
+    /// </summary>
     public const long MaxTotalImageBytes = 20 * 1024 * 1024;
+    /// <summary>
+    /// The inline max lines.
+    /// </summary>
     private const int InlineMaxLines = 10;
+    /// <summary>
+    /// The inline max chars.
+    /// </summary>
     private const int InlineMaxChars = 1000;
 
     /// <summary>Long pastes (more than 10 lines or 1000 characters) become an attachment instead of flooding the input.</summary>
@@ -54,8 +69,18 @@ internal static class Attachments
         return path.Substring(root.Length + 1);
     }
 
+    /// <summary>
+    /// Normalizes the specified path by replacing all forward slash characters with backslashes.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <returns>The string result.</returns>
     private static string Normalize(string path) => path.Replace('/', '\\');
 
+    /// <summary>
+    /// Returns the label of the specified attachment, appending the line count if the attachment is a pasted text attachment.
+    /// </summary>
+    /// <param name="attachment">The attachment.</param>
+    /// <returns>The string result.</returns>
     public static string ChipLabel(Attachment attachment) =>
         attachment is PastedTextAttachment text ? $"{text.Label} · {Chrome.LineCount(text.Text)}" : attachment.Label;
 

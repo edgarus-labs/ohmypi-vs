@@ -6,6 +6,9 @@ using Task = System.Threading.Tasks.Task;
 
 namespace OhMyPi.VisualStudio;
 
+/// <summary>
+/// Provides utility methods for managing and executing background processing tasks.
+/// </summary>
 internal static class Background
 {
     /// <summary>Runs <paramref name="work"/> as a joinable task; a failure is logged, never thrown at the caller.</summary>

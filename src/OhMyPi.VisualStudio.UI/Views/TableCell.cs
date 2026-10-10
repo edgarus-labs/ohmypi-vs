@@ -20,6 +20,13 @@ internal sealed class TableCell : Grid
 
     private double? _widestWord;
 
+    /// <summary>
+    /// Initializes a new instance of the TableCell class and configures the layout, margins, and visibility of the provided sizer, text box, and border elements.
+    /// </summary>
+    /// <param name="sizer">The sizer.</param>
+    /// <param name="box">The box.</param>
+    /// <param name="chrome">The chrome.</param>
+    /// <param name="padding">The padding.</param>
     public TableCell(TextBlock sizer, RichTextBox box, Border chrome, Thickness padding)
     {
         Sizer = sizer;
@@ -36,8 +43,14 @@ internal sealed class TableCell : Grid
         Children.Add(box);
     }
 
+    /// <summary>
+    /// Gets the sizer.
+    /// </summary>
     public TextBlock Sizer { get; }
 
+    /// <summary>
+    /// Gets the box.
+    /// </summary>
     public RichTextBox Box { get; }
 
     /// <summary>
@@ -47,6 +60,10 @@ internal sealed class TableCell : Grid
     /// </summary>
     public double MinimumWidth => (_widestWord ?? (_widestWord = WidestWord()).Value) + Sizer.Margin.Left + Sizer.Margin.Right;
 
+    /// <summary>
+    /// Handles changes to dependency properties and resets the cached widest word value when font-related properties are modified.
+    /// </summary>
+    /// <param name="e">The e.</param>
     protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
@@ -57,6 +74,10 @@ internal sealed class TableCell : Grid
         }
     }
 
+    /// <summary>
+    /// Calculates the width of the longest individual word across all text runs in the sizer&apos;s inlines, accounting for DPI and typeface settings.
+    /// </summary>
+    /// <returns>The double result.</returns>
     private double WidestWord()
     {
         var pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
@@ -74,6 +95,11 @@ internal sealed class TableCell : Grid
         return widest;
     }
 
+    /// <summary>
+    /// Recursively extracts all Run elements from the specified inline collection, including those nested within Span elements.
+    /// </summary>
+    /// <param name="inlines">The inlines.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<Run> Runs(InlineCollection inlines)
     {
         foreach (var inline in inlines)

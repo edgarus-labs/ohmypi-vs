@@ -40,6 +40,8 @@ internal sealed class Composer : Border
     private readonly WrapPanel _chips = new WrapPanel { Margin = new Thickness(TextInset, 6, TextInset, 0), Visibility = Visibility.Collapsed };
     private readonly TextBlock _placeholder;
     private readonly TextBlock _modelText;
+    private ModelView? _model;
+    private bool _routerAuto;
     private readonly TextBlock _effortText;
     private readonly Button _action;
     private string? _activeDocument;
@@ -213,9 +215,17 @@ internal sealed class Composer : Border
         RenderActions();
     }
 
+    /// <summary>Marks the model button <c>tier auto</c> while the tier router chooses the model.</summary>
+    public void SetRouterAuto(bool auto)
+    {
+        _routerAuto = auto;
+        RenderModel();
+    }
+
     public void RenderSession(SessionView session)
     {
-        _modelText.Text = session.Model?.Name is string name && name.Length > 0 ? name : "Select model";
+        _model = session.Model;
+        RenderModel();
         ModelButton.ToolTip = session.Model is not null ? $"{session.Model.Provider}/{session.Model.Id}\nClick to change the model" : "Select model";
         var effort = Effort.Label(session);
         EffortButton.Visibility = effort.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -226,6 +236,8 @@ internal sealed class Composer : Border
         FastButton.IsChecked = fast;
         FastButton.ToolTip = fast ? $"Fast mode on{(session.FastModeActive == true ? " (active)" : "")}; click to turn off" : "Fast mode off; click to turn on";
     }
+
+    private void RenderModel() => _modelText.Text = Chrome.ComposerModelText(_model, _routerAuto);
 
     /// <summary>Replaces the draft (OMP <c>set_editor_text</c>).</summary>
     public void SetText(string text)
@@ -489,6 +501,11 @@ internal sealed class Composer : Border
         }
     }
 
+    /// <summary>
+    /// Handles the paste event by processing the clipboard data, diverting non-text content to a specialized handler, and converting specific text patterns into attachments.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnPaste(object sender, DataObjectPastingEventArgs e)
     {
         try
@@ -522,6 +539,10 @@ internal sealed class Composer : Border
         }
     }
 
+    /// <summary>
+    /// Encodes the specified bitmap source as a PNG image and adds it to the image collection with a sequenced label.
+    /// </summary>
+    /// <param name="bitmap">The bitmap.</param>
     private void AddImage(BitmapSource bitmap)
     {
         var encoder = new PngBitmapEncoder();
@@ -567,6 +588,11 @@ internal sealed class Composer : Border
         }
     }
 
+    /// <summary>
+    /// Handles the drag-over event by validating that the dropped data contains files and setting the drag-drop effect to copy.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private static void OnDragOver(object sender, DragEventArgs e)
     {
         if (!e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -578,6 +604,11 @@ internal sealed class Composer : Border
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Handles the drop event by extracting file paths from the drag-and-drop data and initiating the asynchronous process to add the dropped files.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnDrop(object sender, DragEventArgs e)
     {
         if (!(e.Data.GetData(DataFormats.FileDrop) is string[] paths) || paths.Length == 0)
@@ -631,8 +662,17 @@ internal sealed class Composer : Border
     /// <summary>Attachments are values the user added once; two equal-looking ones are still two chips.</summary>
     private sealed class ByReference : IEqualityComparer<Attachment>
     {
+        /// <summary>
+        /// The instance.
+        /// </summary>
         public static readonly ByReference Instance = new ByReference();
 
+        /// <summary>
+        /// Determines whether two attachment instances refer to the same object in memory.
+        /// </summary>
+        /// <param name="x">The x.</param>
+        /// <param name="y">The y.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool Equals(Attachment? x, Attachment? y) => ReferenceEquals(x, y);
 
         public int GetHashCode(Attachment obj) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);

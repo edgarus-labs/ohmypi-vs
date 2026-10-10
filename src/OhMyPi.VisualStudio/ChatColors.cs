@@ -23,6 +23,10 @@ internal static class ChatColors
         VSColorTheme.ThemeChanged += _ => Apply(resources);
     }
 
+    /// <summary>
+    /// Calculates and applies theme-aware chat palette colors to the specified resource dictionary based on the current Visual Studio environment colors.
+    /// </summary>
+    /// <param name="resources">The resources.</param>
     private static void Apply(ResourceDictionary resources)
     {
         var c = VSColorTheme.GetThemedColor(EnvironmentColors.ToolWindowBackgroundColorKey);
@@ -39,6 +43,11 @@ internal static class ChatColors
         resources[PaletteKeys.DiffRemovedWord] = Freeze(ChatPalette.RemovedWord(dark));
     }
 
+    /// <summary>
+    /// Creates a frozen SolidColorBrush using the specified ARGB color values to improve performance and ensure immutability.
+    /// </summary>
+    /// <param name="c">The c.</param>
+    /// <returns>The solid color brush result.</returns>
     private static SolidColorBrush Freeze(Argb c)
     {
         var brush = new SolidColorBrush(Color.FromArgb(c.A, c.R, c.G, c.B));

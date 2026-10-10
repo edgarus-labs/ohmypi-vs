@@ -23,10 +23,23 @@ internal readonly struct DiffSource : IEquatable<DiffSource>
 
     public bool Equals(DiffSource other) => Deleted == other.Deleted && Before == other.Before;
 
+    /// <summary>
+    /// Determines whether the specified object is an instance of DiffSource and has the same values as the current instance.
+    /// </summary>
+    /// <param name="obj">The obj.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     public override bool Equals(object? obj) => obj is DiffSource other && Equals(other);
 
+    /// <summary>
+    /// Returns a hash code based on the combined values of the Deleted and Before properties.
+    /// </summary>
+    /// <returns>The int result.</returns>
     public override int GetHashCode() => (Deleted, Before).GetHashCode();
 
+    /// <summary>
+    /// Returns a string representation of the current object, detailing its deletion status and the associated timestamp.
+    /// </summary>
+    /// <returns>The string result.</returns>
     public override string ToString() => $"Deleted={Deleted}, Before={Before}";
 }
 
@@ -67,6 +80,9 @@ internal sealed class ChangeFeed : IDisposable
     /// <summary>Snapshot sorted by path; safe to read from any thread.</summary>
     public IReadOnlyList<TrackedChange> Changes => _changes;
 
+    /// <summary>
+    /// Asynchronously clears the underlying model, publishes the change, and raises the Cleared event.
+    /// </summary>
     public void Clear() => _ = EnqueueAsync(() =>
                                 {
                                     _model.Clear();
@@ -109,6 +125,9 @@ internal sealed class ChangeFeed : IDisposable
 #pragma warning restore VSTHRD003
     }
 
+    /// <summary>
+    /// Releases the allocated resources and unsubscribes from tool execution and session change events.
+    /// </summary>
     public void Dispose()
     {
         lock (_gate)
@@ -124,6 +143,11 @@ internal sealed class ChangeFeed : IDisposable
         _service.SessionChanged -= OnSessionChanged;
     }
 
+    /// <summary>
+    /// Handles the tool execution event by asynchronously applying the tool&apos;s logic to the model and publishing changes if the operation modifies the state.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnToolExecution(object sender, ToolExecutionEvent e) => _ = EnqueueAsync(async () =>
                                                                               {
                                                                                   try
@@ -142,6 +166,11 @@ internal sealed class ChangeFeed : IDisposable
                                                                                   return true;
                                                                               });
 
+    /// <summary>
+    /// Handles the session change event by updating the current session identifier and clearing existing state if a session transition occurs.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="session">The session.</param>
     private void OnSessionChanged(object sender, SessionView session)
     {
         lock (_gate)
@@ -161,6 +190,9 @@ internal sealed class ChangeFeed : IDisposable
         Clear();
     }
 
+    /// <summary>
+    /// Sorts the model changes by path and notifies subscribers that the changes collection has been updated.
+    /// </summary>
     private void Publish()
     {
         _changes = _model.Changes.OrderBy(change => change.Path, StringComparer.OrdinalIgnoreCase).ToArray();

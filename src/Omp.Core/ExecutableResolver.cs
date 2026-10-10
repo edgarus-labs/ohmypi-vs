@@ -24,6 +24,14 @@ public static class ExecutableResolver
     public static string Locate(string? configured) =>
         Locate(configured, Environment.GetEnvironmentVariable, File.Exists);
 
+    /// <summary>
+    /// Resolves the absolute path to the OMP executable by validating a configured path or searching through system environment variables and predefined installation directories.
+    /// </summary>
+    /// <param name="configured">The configured.</param>
+    /// <param name="env">The env.</param>
+    /// <param name="isFile">The is file.</param>
+    /// <returns>The string result.</returns>
+    /// <exception cref="FileNotFoundException">Thrown when an error occurs during execution.</exception>
     internal static string Locate(string? configured, Func<string, string?> env, Func<string, bool> isFile)
     {
         var home = env("USERPROFILE") ?? env("HOME") ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -86,6 +94,11 @@ public static class ExecutableResolver
             string.Join("\n", tried.Select(p => "  " + p)));
     }
 
+    /// <summary>
+    /// Determines whether the specified path is an absolute path, supporting both UNC and drive-letter formats.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     private static bool IsAbsolute(string path) =>
         path.StartsWith("\\\\", StringComparison.Ordinal) ||
         (path.Length >= 3 && char.IsLetter(path[0]) && path[1] == ':' && (path[2] == '\\' || path[2] == '/'));

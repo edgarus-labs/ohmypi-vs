@@ -21,6 +21,10 @@ internal sealed class ActivityView : StackPanel
     private readonly DispatcherTimer _timer;
     private int _frame;
 
+    /// <summary>
+    /// Initializes a new instance of the ActivityView class using the specified activity item to configure the visual layout and initialize the elapsed time timer.
+    /// </summary>
+    /// <param name="item">The item.</param>
     public ActivityView(ActivityItem item)
     {
         _item = item;
@@ -48,6 +52,9 @@ internal sealed class ActivityView : StackPanel
         Unloaded += (_, __) => _timer.Stop();
     }
 
+    /// <summary>
+    /// Advances the animation frame index and updates the associated marker text and elapsed time display.
+    /// </summary>
     private void Advance()
     {
         _frame = (_frame + 1) % Frames.Length;

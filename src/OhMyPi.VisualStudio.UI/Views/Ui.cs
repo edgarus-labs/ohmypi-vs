@@ -143,6 +143,14 @@ internal static class Ui
         return button;
     }
 
+    /// <summary>
+    /// Creates a button styled as a link with the specified text, click action, optional tooltip, and optional monospace font formatting.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="onClick">The on click.</param>
+    /// <param name="tooltip">The tooltip.</param>
+    /// <param name="mono">The mono.</param>
+    /// <returns>The button result.</returns>
     public static Button Link(string text, Action onClick, string? tooltip = null, bool mono = false)
     {
         var label = new TextBlock { Text = text, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -157,6 +165,11 @@ internal static class Ui
         return button;
     }
 
+    /// <summary>
+    /// Sets the automation name for the specified dependency object to improve accessibility for assistive technologies.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <param name="name">The name.</param>
     public static void AutomationName(DependencyObject element, string name) =>
         System.Windows.Automation.AutomationProperties.SetName(element, name);
 
@@ -172,6 +185,12 @@ internal static class Ui
         peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
 
+    /// <summary>
+    /// Creates a styled border element that acts as a card container for the specified child element and padding.
+    /// </summary>
+    /// <param name="child">The child.</param>
+    /// <param name="padding">The padding.</param>
+    /// <returns>The border result.</returns>
     public static Border Card(UIElement child, Thickness padding) => new Border { Child = child, Padding = padding }.Styled("Omp.Card");
 
     /// <summary>Size of monospace text relative to the body text: a monospace face reads as large as prose a step smaller.</summary>
@@ -256,8 +275,15 @@ internal static class Ui
     /// </summary>
     private sealed class ProseBox : RichTextBox
     {
+        /// <summary>
+        /// Initializes a new instance of the ProseBox class using the specified flow document.
+        /// </summary>
+        /// <param name="document">The document.</param>
         public ProseBox(FlowDocument document) : base(document) { }
 
+        /// <summary>
+        /// Overrides the default template application process to reset the document page padding to zero.
+        /// </summary>
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
@@ -291,10 +317,30 @@ internal static class Ui
     /// <summary>Widens the prose a little past its text so the caret's reserved width never forces an extra line break.</summary>
     private sealed class CaretSlack : System.Windows.Data.IValueConverter
     {
+        /// <summary>
+        /// The instance.
+        /// </summary>
         public static readonly CaretSlack Instance = new CaretSlack();
 
+        /// <summary>
+        /// Converts the specified value to the target type by adding a constant offset of four to the numeric input.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="targetType">The target type.</param>
+        /// <param name="parameter">The parameter.</param>
+        /// <param name="culture">The culture.</param>
+        /// <returns>The object result.</returns>
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => (double)value + 4;
 
+        /// <summary>
+        /// Converts a value back to the target type using the specified parameter and culture information.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="targetType">The target type.</param>
+        /// <param name="parameter">The parameter.</param>
+        /// <param name="culture">The culture.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => throw new NotSupportedException();
     }
 
@@ -326,6 +372,11 @@ internal static class Ui
                                                                   ((sender as FrameworkElement)?.Parent as UIElement)?.RaiseEvent(forwarded);
                                                               };
 
+    /// <summary>
+    /// Creates a horizontal StackPanel containing the specified child UI elements.
+    /// </summary>
+    /// <param name="children">The collection of children.</param>
+    /// <returns>The stack panel result.</returns>
     public static StackPanel Row(params UIElement[] children)
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal };
@@ -337,6 +388,12 @@ internal static class Ui
         return panel;
     }
 
+    /// <summary>
+    /// Creates a StackPanel containing the specified child elements with a uniform vertical spacing applied between them.
+    /// </summary>
+    /// <param name="spacing">The spacing.</param>
+    /// <param name="children">The collection of children.</param>
+    /// <returns>The stack panel result.</returns>
     public static StackPanel Column(double spacing, params UIElement?[] children)
     {
         var panel = new StackPanel();
@@ -370,6 +427,12 @@ internal static class Ui
                                                                               action();
                                                                           };
 
+    /// <summary>
+    /// Creates and configures a Popup element that anchors to a target UI element, wraps the provided content in a styled border, and synchronizes layout and font properties with the target&apos;s owner.
+    /// </summary>
+    /// <param name="target">The target.</param>
+    /// <param name="content">The content.</param>
+    /// <returns>The popup result.</returns>
     public static Popup Popup(UIElement target, UIElement content)
     {
         var popup = new Popup
@@ -406,6 +469,11 @@ internal static class Ui
     /// <summary>The zoom factor applied to <paramref name="element"/>'s chat control; 1 outside one.</summary>
     public static double ZoomOf(DependencyObject element) => FindOwner(element)?.ZoomTransform.ScaleX ?? 1;
 
+    /// <summary>
+    /// Traverses the visual or logical tree upwards from the specified element to find and return the nearest ancestral OmpChatControl.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns>The omp chat control? result.</returns>
     private static OmpChatControl? FindOwner(DependencyObject? element)
     {
         while (element is not null && element is not OmpChatControl)

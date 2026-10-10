@@ -101,6 +101,10 @@ internal sealed class OmpCommands
                                                                   }
                                                               });
 
+    /// <summary>
+    /// Asynchronously initializes a new session, clears pending host changes, and displays the chat interface.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task NewSessionAsync()
     {
         await _runtime.Supervisor.NewSessionAsync();
@@ -128,20 +132,37 @@ internal sealed class OmpCommands
         return window.ShowCurrent() ?? throw new InvalidOperationException("The oh-my-pi chat is not available.");
     }
 
+    /// <summary>
+    /// Asynchronously toggles the fast mode setting of the current session via the runtime supervisor service.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task ToggleFastModeAsync()
     {
         var service = await _runtime.Supervisor.EnsureServiceAsync();
         await service.SetFastModeAsync(service.Session.FastModeEnabled != true);
     }
 
+    /// <summary>
+    /// Asynchronously requests the termination of the underlying runtime supervisor service if it is currently available.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private Task AbortAsync() => _runtime.Supervisor.Service?.AbortAsync() ?? Task.CompletedTask;
 
+    /// <summary>
+    /// Updates the enabled state of the query abort menu command based on whether the current session phase is active and not idle.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void QueryAbort(object sender, EventArgs e)
     {
         var phase = _runtime.Supervisor.Service?.Session.Phase;
         ((OleMenuCommand)sender).Enabled = phase is not null && phase != SessionPhase.Idle;
     }
 
+    /// <summary>
+    /// Asynchronously adds the currently active document&apos;s file path to the package.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task AddActiveFileAsync()
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
@@ -149,12 +170,21 @@ internal sealed class OmpCommands
         await AddFilesAsync(path is null ? [] : new[] { path });
     }
 
+    /// <summary>
+    /// Asynchronously retrieves the currently selected file paths and adds them to the package on the main thread.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task AddSelectedFilesAsync()
     {
         await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
         await AddFilesAsync(await SelectedItemPathsAsync());
     }
 
+    /// <summary>
+    /// Asynchronously adds the specified file paths as mentions to the OMP chat or notifies the user if no paths are provided.
+    /// </summary>
+    /// <param name="paths">The collection of paths.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task AddFilesAsync(IReadOnlyList<string> paths)
     {
         if (paths.Count == 0)
@@ -208,6 +238,12 @@ internal sealed class OmpCommands
         return paths;
     }
 
+    /// <summary>
+    /// Resolves the file system path for a specified hierarchy item and adds it to the provided list if the path exists and is not already present.
+    /// </summary>
+    /// <param name="paths">The collection of paths.</param>
+    /// <param name="hierarchy">The hierarchy.</param>
+    /// <param name="itemId">The unique identifier of the item.</param>
     private static void AddItemPath(List<string> paths, IVsHierarchy? hierarchy, uint itemId)
     {
         ThreadHelper.ThrowIfNotOnUIThread();

@@ -122,9 +122,21 @@ internal sealed class VsHostTools : IHostTools
         return save ? $"Saved and closed {path}." : $"Closed {path}.";
     }
 
+    /// <summary>
+    /// Asynchronously retrieves the current selection from the Visual Studio environment and formats it using the specified tool arguments.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> SelectionAsync(VsToolArguments a, CancellationToken ct) =>
         VsToolFormat.Selection(await _vs.GetSelectionAsync(ct).ConfigureAwait(false));
 
+    /// <summary>
+    /// Asynchronously executes a Visual Studio build, clean, or rebuild operation based on the provided tool arguments and returns the formatted result.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> BuildAsync(VsToolArguments a, CancellationToken ct)
     {
         var name = a.OptionalChoice("action", VsToolDefinitions.BuildActions, "build");
@@ -135,6 +147,12 @@ internal sealed class VsHostTools : IHostTools
         return VsToolFormat.Build(action, await _vs.BuildAsync(action, project, configuration, ct).ConfigureAwait(false));
     }
 
+    /// <summary>
+    /// Asynchronously retrieves and formats tool errors based on the specified severity and maximum count.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> ErrorsAsync(VsToolArguments a, CancellationToken ct)
     {
         var severity = a.OptionalChoice("severity", VsToolDefinitions.Severities, "error");
@@ -143,6 +161,12 @@ internal sealed class VsHostTools : IHostTools
         return VsToolFormat.Errors(await _vs.GetErrorsAsync(ct).ConfigureAwait(false), severity, max);
     }
 
+    /// <summary>
+    /// Asynchronously retrieves and formats the output from a specified Visual Studio pane based on the provided tool arguments.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> OutputAsync(VsToolArguments a, CancellationToken ct)
     {
         var pane = a.OptionalString("pane");
@@ -151,6 +175,12 @@ internal sealed class VsHostTools : IHostTools
         return VsToolFormat.Output(await _vs.ReadOutputAsync(pane, maxLines, ct).ConfigureAwait(false));
     }
 
+    /// <summary>
+    /// Asynchronously adds a specified file to a Visual Studio project using the provided arguments and returns a confirmation message.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> AddFileToProjectAsync(VsToolArguments a, CancellationToken ct)
     {
         var project = a.RequiredString("project");
@@ -160,6 +190,12 @@ internal sealed class VsHostTools : IHostTools
         return $"Added {path} to project {project}.";
     }
 
+    /// <summary>
+    /// Asynchronously removes a specified file from a Visual Studio project using the provided tool arguments and returns a confirmation message.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> RemoveFileFromProjectAsync(VsToolArguments a, CancellationToken ct)
     {
         var project = a.RequiredString("project");
@@ -169,6 +205,12 @@ internal sealed class VsHostTools : IHostTools
         return $"Removed {path} from project {project}.";
     }
 
+    /// <summary>
+    /// Asynchronously executes a specified Visual Studio debugging action based on the provided tool arguments and returns the resulting debugger state as a formatted string.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> DebugAsync(VsToolArguments a, CancellationToken ct)
     {
         var action = a.RequiredChoice("action", VsToolDefinitions.DebugActions);
@@ -189,6 +231,12 @@ internal sealed class VsHostTools : IHostTools
         return VsToolFormat.Debugger(state);
     }
 
+    /// <summary>
+    /// Asynchronously manages Visual Studio breakpoints by listing, adding, or removing them based on the provided tool arguments.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> BreakpointsAsync(VsToolArguments a, CancellationToken ct)
     {
         var action = a.RequiredChoice("action", VsToolDefinitions.BreakpointActions);
@@ -212,6 +260,12 @@ internal sealed class VsHostTools : IHostTools
         return VsToolFormat.BreakpointsRemoved(removed, path, removeLine);
     }
 
+    /// <summary>
+    /// Asynchronously retrieves and formats debug inspection data, such as expression evaluations, call stacks, or local variables, based on the specified tool arguments.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> DebugInspectAsync(VsToolArguments a, CancellationToken ct)
     {
         var kind = a.RequiredChoice("kind", VsToolDefinitions.InspectKinds);
@@ -229,6 +283,12 @@ internal sealed class VsHostTools : IHostTools
         }
     }
 
+    /// <summary>
+    /// Asynchronously retrieves and formats a list of commands based on the provided filter and maximum result count.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> FindCommandsAsync(VsToolArguments a, CancellationToken ct)
     {
         var filter = a.RequiredString("filter");
@@ -237,6 +297,12 @@ internal sealed class VsHostTools : IHostTools
         return VsToolFormat.Commands(await _vs.FindCommandsAsync(filter, max, ct).ConfigureAwait(false), filter);
     }
 
+    /// <summary>
+    /// Asynchronously executes a specified Visual Studio command with the provided arguments and returns a formatted execution result.
+    /// </summary>
+    /// <param name="a">The a.</param>
+    /// <param name="ct">The cancellation token to monitor for cancellation requests.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the string.</returns>
     private async Task<string> ExecuteCommandAsync(VsToolArguments a, CancellationToken ct)
     {
         var command = a.RequiredString("command");

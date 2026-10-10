@@ -363,6 +363,10 @@ internal sealed class OmpRuntime : IDisposable
         GenerationChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Unsubscribes from interaction events and disposes of the host and service associated with the specified generation.
+    /// </summary>
+    /// <param name="generation">The generation.</param>
     private void Release(Generation generation)
     {
         generation.Service.InteractionRequested -= OnInteractionRequested;
@@ -373,8 +377,18 @@ internal sealed class OmpRuntime : IDisposable
         }
     }
 
+    /// <summary>
+    /// Handles the interaction request by asynchronously revealing the oh-my-pi component on a background thread.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="request">The request containing the operation data.</param>
     private void OnInteractionRequested(object sender, InteractionRequest request) => Background.Run(Package.JoinableTaskFactory, Logger, "Revealing oh-my-pi for an OMP request", RevealForInteractionAsync);
 
+    /// <summary>
+    /// Handles the session change event by refreshing phase-specific commands and asynchronously persisting the current session file to the last session store.
+    /// </summary>
+    /// <param name="service">The service.</param>
+    /// <param name="session">The session.</param>
     private void OnSessionChanged(IOmpService service, SessionView session)
     {
         RefreshCommandsOnPhaseChange(session.Phase);
@@ -417,12 +431,22 @@ internal sealed class OmpRuntime : IDisposable
         });
     }
 
+    /// <summary>
+    /// Handles the solution change event by ensuring execution on the UI thread and scheduling a verification of the working directory.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnSolutionChanged(object sender, EventArgs e)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         ScheduleWorkingDirectoryCheck();
     }
 
+    /// <summary>
+    /// Handles the folder change event by ensuring execution on the UI thread and scheduling a verification of the working directory.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnFolderChanged(object sender, FolderEventArgs e)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
@@ -550,6 +574,12 @@ internal sealed class OmpRuntime : IDisposable
     /// <summary>The options that require a new OMP process when they change.</summary>
     private readonly struct ProcessSettings : IEquatable<ProcessSettings>
     {
+        /// <summary>
+        /// Initializes a new instance of the ProcessSettings struct with the specified executable path, additional arguments, and auto-restart configuration.
+        /// </summary>
+        /// <param name="executablePath">The executable path.</param>
+        /// <param name="extraArgs">The extra args.</param>
+        /// <param name="autoRestart">The auto restart.</param>
         private ProcessSettings(string executablePath, string extraArgs, bool autoRestart)
         {
             ExecutablePath = executablePath;
@@ -557,19 +587,47 @@ internal sealed class OmpRuntime : IDisposable
             AutoRestart = autoRestart;
         }
 
+        /// <summary>
+        /// Gets the executable path.
+        /// </summary>
         public string ExecutablePath { get; }
 
+        /// <summary>
+        /// Gets the extra args.
+        /// </summary>
         public string ExtraArgs { get; }
 
+        /// <summary>
+        /// Gets a value indicating whether auto restart.
+        /// </summary>
         public bool AutoRestart { get; }
 
+        /// <summary>
+        /// Creates a new ProcessSettings instance based on the configuration provided in the specified OmpOptionsPage.
+        /// </summary>
+        /// <param name="options">The options.</param>
+        /// <returns>The process settings result.</returns>
         public static ProcessSettings From(OmpOptionsPage options) => new ProcessSettings(options.ExecutablePath ?? "", options.ExtraArgs ?? "", options.AutoRestart);
 
+        /// <summary>
+        /// Determines whether the current instance and the specified process settings are equal based on the executable path, extra arguments, and auto-restart configuration.
+        /// </summary>
+        /// <param name="other">The other.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool Equals(ProcessSettings other) =>
             ExecutablePath == other.ExecutablePath && ExtraArgs == other.ExtraArgs && AutoRestart == other.AutoRestart;
 
+        /// <summary>
+        /// Determines whether the specified object is an instance of ProcessSettings and has equivalent values.
+        /// </summary>
+        /// <param name="obj">The obj.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public override bool Equals(object? obj) => obj is ProcessSettings other && Equals(other);
 
+        /// <summary>
+        /// Returns a hash code based on the executable path, extra arguments, and auto-restart configuration.
+        /// </summary>
+        /// <returns>The int result.</returns>
         public override int GetHashCode() => (ExecutablePath, ExtraArgs, AutoRestart).GetHashCode();
     }
 }

@@ -17,11 +17,19 @@ internal sealed class DiffBaselines
     private readonly object _gate = new object();
     private int _batch = 1;
 
+    /// <summary>
+    /// Initializes a new instance of the DiffBaselines class and generates a unique root directory path based on the specified parent directory and process identifier.
+    /// </summary>
+    /// <param name="parent">The parent.</param>
+    /// <param name="processId">The unique identifier of the process.</param>
     public DiffBaselines(string parent, int processId)
     {
         Root = Path.Combine(parent, processId.ToString(CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N"));
     }
 
+    /// <summary>
+    /// Gets the root.
+    /// </summary>
     public string Root { get; }
 
     /// <summary>The batch new copies go to; <see cref="Rotate"/> starts the next one.</summary>
@@ -36,6 +44,11 @@ internal sealed class DiffBaselines
         }
     }
 
+    /// <summary>
+    /// Constructs the full file system path to a specific batch directory based on the provided batch identifier.
+    /// </summary>
+    /// <param name="batch">The batch.</param>
+    /// <returns>The string result.</returns>
     public string BatchDirectory(int batch) => Path.Combine(Root, batch.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>A read-only file named like <paramref name="path"/> holding <paramref name="content"/>, in <paramref name="batch"/>.</summary>
@@ -121,6 +134,12 @@ internal sealed class DiffBaselines
         return failures;
     }
 
+    /// <summary>
+    /// Generates a truncated SHA-256 hash fingerprint based on the combination of the provided path and content.
+    /// </summary>
+    /// <param name="path">The path.</param>
+    /// <param name="content">The content.</param>
+    /// <returns>The string result.</returns>
     private static string Fingerprint(string path, string content)
     {
         using (var sha = SHA256.Create())

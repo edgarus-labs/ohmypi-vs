@@ -54,17 +54,42 @@ internal static class ChatPalette
     /// <summary>Moves a channel by <paramref name="distance"/> toward white when <paramref name="up"/>, toward black otherwise, clamped to 0–255.</summary>
     private static byte Step(byte c, bool up, int distance) => (byte)Math.Max(0, Math.Min(255, up ? c + distance : c - distance));
 
+    /// <summary>
+    /// Returns the appropriate ARGB color value for an added line based on the specified theme mode.
+    /// </summary>
+    /// <param name="darkTheme">The dark theme.</param>
+    /// <returns>The argb result.</returns>
     public static Argb AddedLine(bool darkTheme) => darkTheme ? new Argb(0x26, 0x3F, 0xB9, 0x50) : new Argb(0x33, 0x2D, 0xA4, 0x4E);
 
+    /// <summary>
+    /// Returns the ARGB color value used to represent a removed line of text, adjusted based on whether a dark theme is active.
+    /// </summary>
+    /// <param name="darkTheme">The dark theme.</param>
+    /// <returns>The argb result.</returns>
     public static Argb RemovedLine(bool darkTheme) => darkTheme ? new Argb(0x26, 0xF8, 0x51, 0x49) : new Argb(0x33, 0xCF, 0x22, 0x2E);
 
+    /// <summary>
+    /// Returns the ARGB color value used for added words based on the specified theme mode.
+    /// </summary>
+    /// <param name="darkTheme">The dark theme.</param>
+    /// <returns>The argb result.</returns>
     public static Argb AddedWord(bool darkTheme) => darkTheme ? new Argb(0x66, 0x3F, 0xB9, 0x50) : new Argb(0x55, 0x2D, 0xA4, 0x4E);
 
+    /// <summary>
+    /// Returns the ARGB color value used to represent a removed word, adjusted based on whether a dark theme is active.
+    /// </summary>
+    /// <param name="darkTheme">The dark theme.</param>
+    /// <returns>The argb result.</returns>
     public static Argb RemovedWord(bool darkTheme) => darkTheme ? new Argb(0x66, 0xF8, 0x51, 0x49) : new Argb(0x55, 0xCF, 0x22, 0x2E);
 
     /// <summary>Whether a background color is dark, by its luminance.</summary>
     public static bool IsDark(byte r, byte g, byte b) => 0.2126 * r + 0.7152 * g + 0.0722 * b < 128;
 
+    /// <summary>
+    /// Determines whether the specified ARGB color is perceived as dark based on its red, green, and blue components.
+    /// </summary>
+    /// <param name="background">The background.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     public static bool IsDark(Argb background) => IsDark(background.R, background.G, background.B);
 
     /// <summary>Mixes the window background toward the text (white on dark, black on light) by the fraction for its side.</summary>
@@ -77,5 +102,12 @@ internal static class ChatPalette
         return new Argb(0xFF, Mix(background.R, target, fraction), Mix(background.G, target, fraction), Mix(background.B, target, fraction));
     }
 
+    /// <summary>
+    /// Calculates a linearly interpolated byte value between a source byte and a target integer based on the specified fraction.
+    /// </summary>
+    /// <param name="c">The c.</param>
+    /// <param name="target">The target.</param>
+    /// <param name="fraction">The fraction.</param>
+    /// <returns>The byte result.</returns>
     private static byte Mix(byte c, int target, double fraction) => (byte)Math.Round(c + (target - c) * fraction);
 }

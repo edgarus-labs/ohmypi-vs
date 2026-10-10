@@ -212,6 +212,11 @@ internal static class ToolView
         return layout;
     }
 
+    /// <summary>
+    /// Creates a TextBlock icon configured with a glyph, color, and tooltip based on the specified tool state.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <returns>The text block result.</returns>
     private static TextBlock StatusIcon(ToolState state)
     {
         string glyph, tip;
@@ -321,6 +326,11 @@ internal static class ToolView
         return header;
     }
 
+    /// <summary>
+    /// Converts a ToolState enumeration value into its corresponding human-readable string representation.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <returns>The string result.</returns>
     private static string StateName(ToolState state) =>
         state == ToolState.Running ? "running" : state == ToolState.Failed ? "failed" : state == ToolState.Background ? "running in the background" : "done";
 
@@ -373,6 +383,13 @@ internal static class ToolView
         return column;
     }
 
+    /// <summary>
+    /// Returns a collection of UI elements tailored to the specific renderer kind associated with the provided tool item.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="row">The row.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<UIElement?> Specialized(ToolItem item, RenderContext ctx, ToolRow row)
     {
         switch (ToolFormat.PickRenderer(item.Name))
@@ -387,6 +404,13 @@ internal static class ToolView
         }
     }
 
+    /// <summary>
+    /// Generates a collection of UI elements comprising the arguments and output sections for a specified tool item within the given render context and row.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="row">The row.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<UIElement?> Generic(ToolItem item, RenderContext ctx, ToolRow row) => new[] { ArgsSection(item, row), OutputSection(item, ctx, row) };
 
     /// <summary>
@@ -435,6 +459,13 @@ internal static class ToolView
         return body;
     }
 
+    /// <summary>
+    /// Generates a collection of UI elements representing the shell command, parameters, and output section for a specified tool item within the given render context and row.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="row">The row.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<UIElement?> ShellBody(ToolItem item, RenderContext ctx, ToolRow row)
     {
         var command = ToolFormat.ShellCommand(item);
@@ -477,6 +508,13 @@ internal static class ToolView
         return grid;
     }
 
+    /// <summary>
+    /// Constructs a collection of UI elements representing the task body, including agent links, a list of task names, and the output section for a specified tool item.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="row">The row.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<UIElement?> TaskBody(ToolItem item, RenderContext ctx, ToolRow row)
     {
         var names = ToolFormat.TaskNames(item.Args?.Type == JTokenType.Object ? item.Args["tasks"] : null);
@@ -485,6 +523,13 @@ internal static class ToolView
         return new[] { ActionsLine(Ui.Link("Agents", ctx.ShowAgents, "Show the Agents section")), list, OutputSection(item, ctx, row) };
     }
 
+    /// <summary>
+    /// Constructs a collection of UI elements representing the Language Server Protocol (LSP) body, including file links, argument sections, and output details for a specified tool item.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="row">The row.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<UIElement?> LspBody(ToolItem item, RenderContext ctx, ToolRow row)
     {
         var args = item.Args as JObject;
@@ -494,6 +539,11 @@ internal static class ToolView
         return new[] { ActionsLine(file is not null ? FileLink(ctx, file, line) : null), ArgsSection(item, row), OutputSection(item, ctx, row) };
     }
 
+    /// <summary>
+    /// Creates a WrapPanel containing the provided non-null UI elements, applying a right margin to each framework element to ensure consistent spacing.
+    /// </summary>
+    /// <param name="children">The collection of children.</param>
+    /// <returns>The uielement? result.</returns>
     private static UIElement? ActionsLine(params UIElement?[] children)
     {
         var present = children.Where(c => c != null).ToArray();
@@ -583,6 +633,13 @@ internal static class ToolView
         return Labeled("OUT", output.Element);
     }
 
+    /// <summary>
+    /// Creates a UI element that displays the difference content for a specific tool item within the provided render context.
+    /// </summary>
+    /// <param name="item">The item.</param>
+    /// <param name="ctx">The ctx.</param>
+    /// <param name="diff">The diff.</param>
+    /// <returns>The uielement? result.</returns>
     private static UIElement? DiffSection(ToolItem item, RenderContext ctx, string diff) => DiffView(ctx, $"{item.Id}:diff:more", diff);
 
     /// <summary>
@@ -652,10 +709,31 @@ internal static class ToolView
     {
         private readonly double _extra;
 
+        /// <summary>
+        /// Initializes a new instance of the Widen class with the specified extra width.
+        /// </summary>
+        /// <param name="extra">The extra.</param>
         public Widen(double extra) => _extra = extra;
 
+        /// <summary>
+        /// Converts the specified value to the target type by adding a predefined extra value to the input.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="targetType">The target type.</param>
+        /// <param name="parameter">The parameter.</param>
+        /// <param name="culture">The culture.</param>
+        /// <returns>The object result.</returns>
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => (double)value + _extra;
 
+        /// <summary>
+        /// Converts a value back to the target type based on the specified parameter and culture information.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <param name="targetType">The target type.</param>
+        /// <param name="parameter">The parameter.</param>
+        /// <param name="culture">The culture.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) => throw new NotSupportedException();
     }
 

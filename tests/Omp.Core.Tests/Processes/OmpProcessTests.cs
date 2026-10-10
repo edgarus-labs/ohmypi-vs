@@ -264,8 +264,17 @@ public sealed class OmpProcessTests : IAsyncLifetime
         Assert.Contains("killing its process tree", fake.Logger.Text("info"));
     }
 
+    /// <summary>
+    /// Represents a native implementation for traversing a process tree to manage and retrieve information about process lifecycles and parent-child relationships.
+    /// </summary>
     private sealed class BlindTreeWalk : ProcessTree.INative
     {
+        /// <summary>
+        /// Opens a process handle for the specified process identifier and outputs any resulting error code.
+        /// </summary>
+        /// <param name="pid">The unique identifier of the p.</param>
+        /// <param name="error">The error.</param>
+        /// <returns>The microsoft.win32.safe handles.safe process handle result.</returns>
         public Microsoft.Win32.SafeHandles.SafeProcessHandle Open(int pid, out int error)
         {
             error = 87;
@@ -273,6 +282,12 @@ public sealed class OmpProcessTests : IAsyncLifetime
             return new Microsoft.Win32.SafeHandles.SafeProcessHandle(IntPtr.Zero, false);
         }
 
+        /// <summary>
+        /// Retrieves the creation timestamp of the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="created">The created.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool GetCreated(Microsoft.Win32.SafeHandles.SafeProcessHandle process, out long created)
         {
             created = 0;
@@ -280,8 +295,19 @@ public sealed class OmpProcessTests : IAsyncLifetime
             return false;
         }
 
+        /// <summary>
+        /// Terminates the process associated with the specified safe process handle.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool Terminate(Microsoft.Win32.SafeHandles.SafeProcessHandle process) => false;
 
+        /// <summary>
+        /// Attempts to retrieve the exit code of the specified process handle.
+        /// </summary>
+        /// <param name="process">The process.</param>
+        /// <param name="code">The code.</param>
+        /// <returns>true if the condition is met; otherwise, false.</returns>
         public bool TryGetExitCode(Microsoft.Win32.SafeHandles.SafeProcessHandle process, out uint code)
         {
             code = 0;
@@ -289,6 +315,10 @@ public sealed class OmpProcessTests : IAsyncLifetime
             return false;
         }
 
+        /// <summary>
+        /// Retrieves a list of parent-child process identifier mappings.
+        /// </summary>
+        /// <returns>A collection of list items.</returns>
         public List<(int Pid, int ParentPid)> Parents() => new();
     }
 
@@ -303,26 +333,69 @@ public sealed class OmpProcessTests : IAsyncLifetime
         Assert.Contains("survived killing its process tree", fake.Logger.Text("warn"));
     }
 
+    /// <summary>
+    /// Represents a mock implementation of the IProcessNative interface used for testing failure scenarios by simulating flaky behavior across process lifecycle operations.
+    /// </summary>
     private sealed class FlakyNative : IProcessNative
     {
+        /// <summary>
+        /// Gets or sets a value indicating whether job creation fails.
+        /// </summary>
         public bool JobCreationFails { get; init; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether set limit fails.
+        /// </summary>
         public bool SetLimitFails { get; init; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether assign fails.
+        /// </summary>
         public bool AssignFails { get; init; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether resume fails.
+        /// </summary>
         public bool ResumeFails { get; init; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether terminate fails.
+        /// </summary>
         public bool TerminateFails { get; init; }
 
+        /// <summary>
+        /// Creates a new Windows job object handle via the native API, returning an empty handle if job creation is configured to fail.
+        /// </summary>
+        /// <returns>The safe job handle result.</returns>
         public SafeJobHandle CreateJob() => JobCreationFails ? new SafeJobHandle() : WindowsProcessNative.Instance.CreateJob();
 
+        /// <summary>
+        /// Configures the specified job handle to be terminated automatically when the process closes, provided that limit failures are not disabled.
+        /// </summary>
+        /// <param name="job">The job.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool SetKillOnClose(SafeJobHandle job) => !SetLimitFails && WindowsProcessNative.Instance.SetKillOnClose(job);
 
+        /// <summary>
+        /// Assigns the specified process to the given job object using native Windows API calls.
+        /// </summary>
+        /// <param name="job">The job.</param>
+        /// <param name="process">The process.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool AssignToJob(SafeJobHandle job, IntPtr process) => !AssignFails && WindowsProcessNative.Instance.AssignToJob(job, process);
 
+        /// <summary>
+        /// Resumes the execution of the specified thread using native Windows process operations.
+        /// </summary>
+        /// <param name="thread">The thread.</param>
+        /// <returns>The int result.</returns>
         public int Resume(IntPtr thread) => ResumeFails ? -1 : WindowsProcessNative.Instance.Resume(thread);
 
+        /// <summary>
+        /// Terminates the specified job using the provided safe job handle and returns a value indicating whether the operation succeeded.
+        /// </summary>
+        /// <param name="job">The job.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool TerminateJob(SafeJobHandle job) => !TerminateFails && WindowsProcessNative.Instance.TerminateJob(job);
     }
 

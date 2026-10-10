@@ -433,6 +433,33 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         }));
     }
 
+    [Fact]
+    public async Task KeepsExtensionStatusesForAUiAttachedAfterTheyWereSet()
+    {
+        var omp = new MemoryOmp();
+        var (service, _, _) = Create(omp);
+        await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
+        omp.Emit(new JObject { ["type"] = "extension_ui_request", ["id"] = "1", ["method"] = "setStatus", ["statusKey"] = "tier", ["statusText"] = "tier-router: on (main on)" });
+        omp.Emit(new JObject { ["type"] = "extension_ui_request", ["id"] = "2", ["method"] = "setStatus", ["statusKey"] = "other", ["statusText"] = "x" });
+        omp.Emit(new JObject { ["type"] = "extension_ui_request", ["id"] = "3", ["method"] = "setStatus", ["statusKey"] = "other" });
+        Assert.Equal(new[] { "tier=tier-router: on (main on)" }, service.Statuses.Select(s => $"{s.Key}={s.Value}"));
+    }
+
+    [Fact]
+    public async Task WithdrawsExtensionStatusesWhenOmpEnds()
+    {
+        var omp = new MemoryOmp();
+        var (service, _, _) = Create(omp);
+        var presentations = new List<string>();
+        service.Presentation += (_, p) => presentations.Add(p is StatusPresentation s ? $"{s.Key}={s.Text}" : "?");
+        await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
+        omp.Emit(new JObject { ["type"] = "extension_ui_request", ["id"] = "1", ["method"] = "setStatus", ["statusKey"] = "tier", ["statusText"] = "tier-router: on (main on)" });
+        omp.Close(3, omp.Pid);
+        await Wait.For(() => service.Connection.State == ConnectionState.Failed, 1000, "failed");
+        Assert.Empty(service.Statuses);
+        Assert.Equal(new[] { "tier=tier-router: on (main on)", "tier=" }, presentations);
+    }
+
     private (OmpService Service, MemoryLogger Logger, List<MemoryOmp> Spawned) CreateRestarting(int[] delays)
     {
         var logger = new MemoryLogger();
@@ -657,6 +684,9 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         await Assert.ThrowsAsync<ObjectDisposedException>(() => service.StartAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
+    /// <summary>
+    /// The usage text.
+    /// </summary>
     private const string UsageText = "```\nUsage (0s ago)\n\nAnthropic\n- Claude 5 Hour\n  user@example.com: 4.00% used (96.0% left)\n  resets in 4h\n```";
 
     [Fact]

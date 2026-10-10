@@ -650,6 +650,14 @@ internal sealed class ServiceSupervisor
         return tracked;
     }
 
+    /// <summary>
+    /// Asynchronously coordinates the execution of a state change by awaiting a synchronization gate and any preceding operation before invoking the specified action and clearing the change token.
+    /// </summary>
+    /// <param name="previous">The previous.</param>
+    /// <param name="gate">The gate.</param>
+    /// <param name="run">The run.</param>
+    /// <param name="token">The token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task ChangeCoreAsync(Task? previous, Task gate, Func<Task> run, object token)
     {
         try
@@ -680,14 +688,33 @@ internal sealed class ServiceSupervisor
     private static Task SettledAsync(Task task) =>
         task.ContinueWith(_ => { }, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
+    /// <summary>
+    /// Determines whether the specified connection state indicates that the connection has stopped or failed.
+    /// </summary>
+    /// <param name="state">The state.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     private static bool IsStopped(ConnectionState state) => state == ConnectionState.Stopped || state == ConnectionState.Failed;
 
     private static bool IsTransitional(ConnectionState state) => state == ConnectionState.Starting || state == ConnectionState.Restarting;
 
+    /// <summary>
+    /// Determines whether the specified exception is an &lt;see cref=&quot;OperationCanceledException&quot;/&gt;, indicating that the error has been superseded by a cancellation request.
+    /// </summary>
+    /// <param name="error">The error.</param>
+    /// <returns>true if the condition is met; otherwise, false.</returns>
     private static bool IsSuperseded(Exception error) => error is OperationCanceledException;
 
+    /// <summary>
+    /// Initiates the specified asynchronous work item as a fire-and-forget operation.
+    /// </summary>
+    /// <param name="work">The work.</param>
     private void Fire(Func<Task> work) => _ = FireAsync(work);
 
+    /// <summary>
+    /// Asynchronously executes the specified work delegate and logs any exceptions encountered during the notification process.
+    /// </summary>
+    /// <param name="work">The work.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task FireAsync(Func<Task> work)
     {
         try

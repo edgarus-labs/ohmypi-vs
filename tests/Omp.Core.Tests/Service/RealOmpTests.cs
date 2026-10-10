@@ -9,6 +9,9 @@ public sealed class RealOmpTests : IAsyncLifetime
     private readonly MemoryLogger _logger = new(trace: true);
     private OmpService? _service;
 
+    /// <summary>
+    /// Gets a value indicating whether enabled.
+    /// </summary>
     public static bool Enabled => Environment.GetEnvironmentVariable("OMP_REAL") == "1";
 
     public ValueTask InitializeAsync() => default;

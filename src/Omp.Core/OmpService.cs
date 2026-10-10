@@ -50,6 +50,7 @@ public sealed class OmpService : IOmpService
     /// <summary>Host tool calls in flight, by OMP's request id, so OMP can cancel them.</summary>
     private readonly Dictionary<string, CancellationTokenSource> _hostCalls = new Dictionary<string, CancellationTokenSource>(StringComparer.Ordinal);
     private IReadOnlyList<SlashCommandView> _commands = Array.Empty<SlashCommandView>();
+    private readonly Dictionary<string, string> _statuses = new Dictionary<string, string>(StringComparer.Ordinal);
     private readonly PromptTracker _tracker;
     /// <summary>Pending interaction ids and whether each answer is redacted from RPC traces.</summary>
     private readonly Dictionary<string, bool> _pendingInteractions = new Dictionary<string, bool>(StringComparer.Ordinal);
@@ -173,6 +174,17 @@ public sealed class OmpService : IOmpService
             lock (_sync)
             {
                 return _commands;
+            }
+        }
+    }
+
+    public IReadOnlyDictionary<string, string> Statuses
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return new Dictionary<string, string>(_statuses, StringComparer.Ordinal);
             }
         }
     }
@@ -815,6 +827,12 @@ public sealed class OmpService : IOmpService
 
         _pendingInteractions.Clear();
         _pendingRequests.Clear();
+        foreach (var key in _statuses.Keys.ToList())
+        {
+            Raise(Presentation, nameof(Presentation), new StatusPresentation { Key = key, Text = null });
+        }
+
+        _statuses.Clear();
     }
 
     /// <param name="restartTimer">The restart timer that fired, for an automatic restart; it must still be the current one.</param>
@@ -1190,12 +1208,19 @@ public sealed class OmpService : IOmpService
         });
     }
 
+    /// <summary>
+    /// Updates the main agent configuration based on the current session phase, model identity, and active running tool.
+    /// </summary>
     private void UpdateMainAgent()
     {
         var session = _store.Session;
         _agents.SetMain(session.Phase, session.Model is null ? null : $"{session.Model.Provider}/{session.Model.Id}", _store.RunningTool);
     }
 
+    /// <summary>
+    /// Subscribes to the OmpRpcClient event handlers to route session events, host tool calls, prompt results, and command updates to the internal state and tracking mechanisms.
+    /// </summary>
+    /// <param name="client">The client.</param>
     private void Wire(OmpRpcClient client)
     {
         void Current(Action action)
@@ -1281,6 +1306,10 @@ public sealed class OmpService : IOmpService
         client.Closed += close => OnClose(client, close);
     }
 
+    /// <summary>
+    /// Processes a session event by applying it to the store and updating the agent tracker or system state based on the event type.
+    /// </summary>
+    /// <param name="e">The e.</param>
     private void OnSessionEvent(JObject e)
     {
         _store.ApplyEvent(e);
@@ -1301,6 +1330,11 @@ public sealed class OmpService : IOmpService
         }
     }
 
+    /// <summary>
+    /// Parses an incoming JSON-RPC request and dispatches the corresponding user interface interaction, such as confirmation, selection, input, or editor prompts.
+    /// </summary>
+    /// <param name="client">The client.</param>
+    /// <param name="request">The request containing the operation data.</param>
     private void OnUiRequest(OmpRpcClient client, JObject request)
     {
         var id = Json.Str(request, "id") ?? "";
@@ -1374,7 +1408,18 @@ public sealed class OmpService : IOmpService
                 return;
 
             case "setStatus":
-                Raise(Presentation, nameof(Presentation), new StatusPresentation { Key = Json.Str(request, "statusKey") ?? "", Text = Json.Str(request, "statusText") });
+                var statusKey = Json.Str(request, "statusKey") ?? "";
+                var statusText = Json.Str(request, "statusText");
+                if (string.IsNullOrEmpty(statusText))
+                {
+                    _statuses.Remove(statusKey);
+                }
+                else
+                {
+                    _statuses[statusKey] = statusText!;
+                }
+
+                Raise(Presentation, nameof(Presentation), new StatusPresentation { Key = statusKey, Text = statusText });
                 return;
 
             case "open_url":
@@ -1396,6 +1441,11 @@ public sealed class OmpService : IOmpService
         }
     }
 
+    /// <summary>
+    /// Maps a JSON object containing question data to a corresponding AskQuestionView instance.
+    /// </summary>
+    /// <param name="question">The question.</param>
+    /// <returns>The ask question view result.</returns>
     private static AskQuestionView AskQuestion(JObject question) => new AskQuestionView
     {
         Id = Json.Str(question, "id") ?? "",
@@ -1455,6 +1505,11 @@ public sealed class OmpService : IOmpService
         Raise(InteractionRequested, nameof(InteractionRequested), request);
     }
 
+    /// <summary>
+    /// Removes all pending requests and interactions associated with the specified identifier and returns a value indicating whether the interaction was successfully removed.
+    /// </summary>
+    /// <param name="id">The unique identifier.</param>
+    /// <returns>true if the operation succeeded; otherwise, false.</returns>
     private bool RemovePending(string id)
     {
         _pendingRequests.RemoveAll(r => r.Id == id);
@@ -1462,6 +1517,11 @@ public sealed class OmpService : IOmpService
         return _pendingInteractions.Remove(id);
     }
 
+    /// <summary>
+    /// Handles the closure of the RPC client connection by terminating the session and initiating an automatic restart if configured.
+    /// </summary>
+    /// <param name="client">The client.</param>
+    /// <param name="close">The close.</param>
     private void OnClose(OmpRpcClient client, TransportClose close)
     {
         lock (_sync)
@@ -1510,6 +1570,10 @@ public sealed class OmpService : IOmpService
         return newline < 0 ? detail + suffix : detail.Substring(0, newline) + suffix + detail.Substring(newline);
     }
 
+    /// <summary>
+    /// Schedules a connection restart based on a predefined delay budget and window, or marks the connection as failed if the maximum number of restart attempts has been exceeded.
+    /// </summary>
+    /// <param name="detail">The detail.</param>
     private void ScheduleRestart(string detail)
     {
         var now = Listeners.NowMs();
@@ -1536,6 +1600,12 @@ public sealed class OmpService : IOmpService
         timer.Change(delay, Timeout.Infinite);
     }
 
+    /// <summary>
+    /// Handles the restart trigger by asynchronously launching a new session and scheduling a subsequent retry if the restart process fails.
+    /// </summary>
+    /// <param name="timer">The timer.</param>
+    /// <param name="sessionFile">The session file.</param>
+    /// <param name="detail">The detail.</param>
     private void OnRestartDue(Timer timer, string? sessionFile, string detail) => _ = LaunchAsync(new StartOptions { ResumeSessionFile = sessionFile }, ConnectionState.Restarting, detail, timer).ContinueWith(launch =>
                                                                                        {
                                                                                            if (launch.Status == TaskStatus.RanToCompletion)

@@ -13,7 +13,13 @@ namespace Omp.Core.Session;
 /// <summary>Summaries of the OMP session files stored in one directory.</summary>
 internal static class SessionLister
 {
+    /// <summary>
+    /// The head bytes.
+    /// </summary>
     private const int HeadBytes = 64 * 1024;
+    /// <summary>
+    /// The first message chars.
+    /// </summary>
     private const int FirstMessageChars = 200;
     /// <summary>Session files read at the same time, so large session directories stay within handle limits.</summary>
     private const int ReadConcurrency = 16;
@@ -71,6 +77,11 @@ internal static class SessionLister
         return summaries.OrderByDescending(s => s.Modified).ToArray();
     }
 
+    /// <summary>
+    /// Asynchronously reads and parses a session file to extract metadata and summary details into a SessionSummary object.
+    /// </summary>
+    /// <param name="file">The file.</param>
+    /// <returns>A task representing the asynchronous operation. The task result contains the session summary?.</returns>
     private static async Task<SessionSummary?> ReadSummaryAsync(string file)
     {
         byte[] head;
@@ -153,6 +164,11 @@ internal static class SessionLister
         return hasHeader ? summary : null;
     }
 
+    /// <summary>
+    /// Extracts the user-provided text from a JSON token, supporting both direct string values and structured text blocks within an array.
+    /// </summary>
+    /// <param name="content">The content.</param>
+    /// <returns>The string? result.</returns>
     private static string? UserText(JToken? content)
     {
         var text = Json.Str(content);

@@ -105,26 +105,88 @@ public sealed class ComposerTests
     {
         public object GetData(string format) => throw new COMException("clipboard busy");
 
+        /// <summary>
+        /// Retrieves data in the specified format from the clipboard.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="COMException">Thrown when an error occurs during execution.</exception>
         public object GetData(Type format) => throw new COMException("clipboard busy");
 
+        /// <summary>
+        /// Retrieves data in the specified format, optionally performing automatic conversion.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="autoConvert">The auto convert.</param>
+        /// <returns>The object result.</returns>
+        /// <exception cref="COMException">Thrown when an error occurs during execution.</exception>
         public object GetData(string format, bool autoConvert) => throw new COMException("clipboard busy");
 
+        /// <summary>
+        /// Determines whether the specified data format is present, returning true if the format is a bitmap.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool GetDataPresent(string format) => format == DataFormats.Bitmap;
 
+        /// <summary>
+        /// Determines whether data is available in the specified format.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool GetDataPresent(Type format) => false;
 
+        /// <summary>
+        /// Determines whether the specified data format is present, optionally supporting automatic conversion.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="autoConvert">The auto convert.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         public bool GetDataPresent(string format, bool autoConvert) => format == DataFormats.Bitmap;
 
+        /// <summary>
+        /// Retrieves a collection of supported data formats available for use.
+        /// </summary>
+        /// <returns>A collection of string items.</returns>
         public string[] GetFormats() => [DataFormats.Bitmap];
 
+        /// <summary>
+        /// Retrieves the collection of supported data formats, optionally including those that require automatic conversion.
+        /// </summary>
+        /// <param name="autoConvert">The auto convert.</param>
+        /// <returns>A collection of string items.</returns>
         public string[] GetFormats(bool autoConvert) => [DataFormats.Bitmap];
 
+        /// <summary>
+        /// Sets the underlying data for the instance, although this operation is currently not supported.
+        /// </summary>
+        /// <param name="data">The data.</param>
+        /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
         public void SetData(object data) => throw new NotSupportedException();
 
+        /// <summary>
+        /// Sets the data for the specified format.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="data">The data.</param>
+        /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
         public void SetData(string format, object data) => throw new NotSupportedException();
 
+        /// <summary>
+        /// Sets the provided data associated with the specified format type.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="data">The data.</param>
+        /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
         public void SetData(Type format, object data) => throw new NotSupportedException();
 
+        /// <summary>
+        /// Sets the data using the specified format and optionally applies automatic type conversion.
+        /// </summary>
+        /// <param name="format">The format.</param>
+        /// <param name="data">The data.</param>
+        /// <param name="autoConvert">The auto convert.</param>
+        /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
         public void SetData(string format, object data, bool autoConvert) => throw new NotSupportedException();
     }
 }

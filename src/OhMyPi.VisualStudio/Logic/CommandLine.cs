@@ -6,6 +6,11 @@ namespace OhMyPi.VisualStudio.Logic;
 /// <summary>Splits the Extra arguments option the way Windows splits a command line.</summary>
 internal static class CommandLine
 {
+    /// <summary>
+    /// Splits the specified text into a list of arguments, respecting quoted strings and escape sequences.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>A collection of iread only list items.</returns>
     public static IReadOnlyList<string> Split(string? text)
     {
         var args = new List<string>();

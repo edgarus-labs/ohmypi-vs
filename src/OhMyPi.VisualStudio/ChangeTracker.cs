@@ -53,8 +53,14 @@ internal sealed class ChangeTracker : IDisposable
         remove => _feed.ChangesChanged -= value;
     }
 
+    /// <summary>
+    /// Gets the collection of changes.
+    /// </summary>
     public IReadOnlyList<TrackedChange> Changes => _feed.Changes;
 
+    /// <summary>
+    /// Removes all items from the feed.
+    /// </summary>
     public void Clear() => _feed.Clear();
 
     /// <summary>
@@ -131,6 +137,9 @@ internal sealed class ChangeTracker : IDisposable
         }
     }
 
+    /// <summary>
+    /// Releases the resources used by the current instance, unsubscribes from feed events, and initiates the asynchronous closure of OMP change diffs.
+    /// </summary>
     public void Dispose()
     {
         if (_disposed)
@@ -144,6 +153,11 @@ internal sealed class ChangeTracker : IDisposable
         Background.Run(_package.JoinableTaskFactory, _logger, "Closing OMP change diffs", () => CloseDiffsAsync(_baselines.Root));
     }
 
+    /// <summary>
+    /// Handles the cleared event by asynchronously closing the OMP change differences on the main thread.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnCleared(object sender, EventArgs e) => Background.Run(_package.JoinableTaskFactory, _logger, "Closing OMP change diffs", async () =>
                                                                {
                                                                    await _package.JoinableTaskFactory.SwitchToMainThreadAsync();
@@ -174,15 +188,27 @@ internal sealed class ChangeTracker : IDisposable
         }
     }
 
+    /// <summary>
+    /// Represents a notification handler that implements the IVsWindowFrameNotify interface to manage events when a window frame is closed.
+    /// </summary>
     private sealed class FrameClosed : IVsWindowFrameNotify
     {
         private readonly Action _closed;
 
+        /// <summary>
+        /// Initializes a new instance of the FrameClosed class with the specified action to be executed when the frame is closed.
+        /// </summary>
+        /// <param name="closed">The closed.</param>
         public FrameClosed(Action closed)
         {
             _closed = closed;
         }
 
+        /// <summary>
+        /// Handles the frame show event and triggers the closed callback when the window is closed.
+        /// </summary>
+        /// <param name="fShow">The f show.</param>
+        /// <returns>The int result.</returns>
         public int OnShow(int fShow)
         {
             if (fShow == (int)__FRAMESHOW.FRAMESHOW_WinClosed)
@@ -193,10 +219,23 @@ internal sealed class ChangeTracker : IDisposable
             return VSConstants.S_OK;
         }
 
+        /// <summary>
+        /// Handles the move event and returns a success code indicating the operation completed successfully.
+        /// </summary>
+        /// <returns>The int result.</returns>
         public int OnMove() => VSConstants.S_OK;
 
+        /// <summary>
+        /// Returns a success status indicating the size of the object.
+        /// </summary>
+        /// <returns>The int result.</returns>
         public int OnSize() => VSConstants.S_OK;
 
+        /// <summary>
+        /// Handles the notification when a dockable window&apos;s state changes and returns a success status.
+        /// </summary>
+        /// <param name="fDockable">The f dockable.</param>
+        /// <returns>The int result.</returns>
         public int OnDockableChange(int fDockable) => VSConstants.S_OK;
     }
 }

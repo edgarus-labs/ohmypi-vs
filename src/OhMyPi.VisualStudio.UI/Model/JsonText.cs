@@ -33,10 +33,21 @@ internal static class JsonText
         private readonly StringBuilder _out = new StringBuilder();
         private int _i;
 
+        /// <summary>
+        /// Initializes a new instance of the Writer class with the specified source.
+        /// </summary>
+        /// <param name="source">The source.</param>
         public Writer(string source) => _s = source;
 
+        /// <summary>
+        /// Gets the result.
+        /// </summary>
         public string Result => _out.ToString();
 
+        /// <summary>
+        /// Attempts to write the current value to the output stream and returns true if the operation completes and the end of the sequence is reached.
+        /// </summary>
+        /// <returns>true if the condition is met; otherwise, false.</returns>
         public bool TryWrite()
         {
             if (!Value(0))
@@ -49,6 +60,9 @@ internal static class JsonText
             return _i == _s.Length;
         }
 
+        /// <summary>
+        /// Advances the current index position to skip any leading whitespace or tab characters in the input string.
+        /// </summary>
         private void SkipSpace()
         {
             while (_i < _s.Length && (_s[_i] == ' ' || _s[_i] == '\t'))
@@ -57,6 +71,10 @@ internal static class JsonText
             }
         }
 
+        /// <summary>
+        /// Appends a newline character and the specified number of indentation levels to the output buffer.
+        /// </summary>
+        /// <param name="depth">The depth.</param>
         private void Break(int depth)
         {
             _out.Append('\n');
@@ -66,6 +84,11 @@ internal static class JsonText
             }
         }
 
+        /// <summary>
+        /// Parses a JSON value from the current input position, handling containers, strings, literals, and numbers while enforcing a maximum nesting depth.
+        /// </summary>
+        /// <param name="depth">The depth.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool Value(int depth)
         {
             if (depth > MaxDepth)
@@ -91,6 +114,14 @@ internal static class JsonText
             }
         }
 
+        /// <summary>
+        /// Parses and formats a delimited container of values or key-value pairs, handling nested structures and whitespace.
+        /// </summary>
+        /// <param name="depth">The depth.</param>
+        /// <param name="open">The open.</param>
+        /// <param name="close">The close.</param>
+        /// <param name="member">The member.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool Container(int depth, char open, char close, bool member)
         {
             _out.Append(open);
@@ -153,6 +184,11 @@ internal static class JsonText
             }
         }
 
+        /// <summary>
+        /// Matches a literal string against the current position of the input sequence and appends it to the output buffer if successful.
+        /// </summary>
+        /// <param name="word">The word.</param>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool Literal(string word)
         {
             if (string.CompareOrdinal(_s, _i, word, 0, word.Length) != 0)
@@ -166,6 +202,10 @@ internal static class JsonText
             return true;
         }
 
+        /// <summary>
+        /// Parses a quoted string literal from the input sequence, handling escape characters and Unicode sequences while appending the result to the output buffer.
+        /// </summary>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool String()
         {
             var start = _i++;
@@ -224,6 +264,10 @@ internal static class JsonText
             return false;
         }
 
+        /// <summary>
+        /// Parses a numeric value from the current input string, supporting optional signs, decimals, and scientific notation, and appends the matched sequence to the output buffer.
+        /// </summary>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool Number()
         {
             var start = _i;
@@ -272,6 +316,10 @@ internal static class JsonText
             return true;
         }
 
+        /// <summary>
+        /// Advances the current index through a sequence of numeric digits and returns true if at least one digit was encountered.
+        /// </summary>
+        /// <returns>true if the operation succeeded; otherwise, false.</returns>
         private bool Digits()
         {
             var start = _i;

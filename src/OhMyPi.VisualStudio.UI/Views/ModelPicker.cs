@@ -57,10 +57,19 @@ internal sealed class ModelPicker
         };
     }
 
+    /// <summary>
+    /// Gets the view.
+    /// </summary>
     public ModelPickerView View { get; }
 
+    /// <summary>
+    /// Gets the popup.
+    /// </summary>
     public Popup Popup { get; }
 
+    /// <summary>
+    /// Occurs when picked.
+    /// </summary>
     public event Action<ModelView>? Picked;
 
     /// <summary>Opens the popup showing <paramref name="status"/> until <see cref="SetModels"/> provides the catalog.</summary>
@@ -73,10 +82,22 @@ internal sealed class ModelPicker
         View.FocusSearch();
     }
 
+    /// <summary>
+    /// Updates the status of the associated view with the specified status string.
+    /// </summary>
+    /// <param name="status">The status.</param>
     public void SetStatus(string? status) => View.SetStatus(status);
 
+    /// <summary>
+    /// Updates the view with a collection of model views and specifies which model should be active.
+    /// </summary>
+    /// <param name="models">The collection of models.</param>
+    /// <param name="active">The active.</param>
     public void SetModels(IReadOnlyList<ModelView> models, ModelKey? active) => View.SetModels(models, active);
 
+    /// <summary>
+    /// Closes the popup window and returns focus to the associated anchor element.
+    /// </summary>
     public void Close()
     {
         Popup.IsOpen = false;
@@ -102,6 +123,9 @@ internal sealed class ModelPicker
         View.SetSize(ModelPickerLayout.Fit(width - 2, _area.ActualHeight - TopGap - 2));
     }
 
+    /// <summary>
+    /// Subscribes to the zoom transform change events of the anchor&apos;s owner to automatically update the popup size when it is open.
+    /// </summary>
     private void WatchZoom()
     {
         if (_watchingZoom)
@@ -125,6 +149,11 @@ internal sealed class ModelPicker
         };
     }
 
+    /// <summary>
+    /// Traverses the visual or logical tree upwards from the specified element to find and return the nearest ancestor of type OmpChatControl.
+    /// </summary>
+    /// <param name="element">The element.</param>
+    /// <returns>The omp chat control? result.</returns>
     private static OmpChatControl? FindOwner(DependencyObject? element)
     {
         while (element is not null && !(element is OmpChatControl))

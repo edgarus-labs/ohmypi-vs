@@ -13,8 +13,20 @@ public static class PaletteKeys
     public const string CodeSurfaceBorder = "Omp.Surface.CodeBorder";
     /// <summary>Background of a tool's result: the window background moved at least a fixed visible step, away from the text where there is room, so it differs from both the window and the code surface.</summary>
     public const string OutputSurface = "Omp.Surface.Output";
+    /// <summary>
+    /// The diff added line.
+    /// </summary>
     public const string DiffAddedLine = "Omp.Diff.AddedLine";
+    /// <summary>
+    /// The diff removed line.
+    /// </summary>
     public const string DiffRemovedLine = "Omp.Diff.RemovedLine";
+    /// <summary>
+    /// The diff added word.
+    /// </summary>
     public const string DiffAddedWord = "Omp.Diff.AddedWord";
+    /// <summary>
+    /// The diff removed word.
+    /// </summary>
     public const string DiffRemovedWord = "Omp.Diff.RemovedWord";
 }

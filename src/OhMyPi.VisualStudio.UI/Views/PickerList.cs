@@ -18,6 +18,12 @@ internal sealed class PickerList : DockPanel
     private readonly TextBlock _status;
     private Func<string, IReadOnlyList<PickerItem>>? _source;
 
+    /// <summary>
+    /// Initializes a new instance of the PickerList class with a specified title and optional search functionality.
+    /// </summary>
+    /// <param name="title">The title.</param>
+    /// <param name="searchable">The searchable.</param>
+    /// <param name="searchName">The search name.</param>
     public PickerList(string title, bool searchable, string? searchName = null)
     {
         LastChildFill = true;
@@ -61,10 +67,19 @@ internal sealed class PickerList : DockPanel
         Ui.OnEscape(this, () => Dismissed?.Invoke());
     }
 
+    /// <summary>
+    /// Gets the heading.
+    /// </summary>
     public TextBlock Heading { get; }
 
+    /// <summary>
+    /// Gets the list.
+    /// </summary>
     public ListBox List => _list;
 
+    /// <summary>
+    /// Occurs when picked.
+    /// </summary>
     public event Action<object>? Picked;
 
     /// <summary>Escape was pressed inside the list.</summary>
@@ -83,6 +98,9 @@ internal sealed class PickerList : DockPanel
         SetStatus(status);
     }
 
+    /// <summary>
+    /// Asynchronously sets the input focus to the search field if available, otherwise defaults the focus to the list component.
+    /// </summary>
     public void FocusFirst() => _ = Dispatcher.InvokeAsync(() =>
                                      {
                                          if (_search is not null)
@@ -95,12 +113,20 @@ internal sealed class PickerList : DockPanel
                                          }
                                      }, DispatcherPriority.Input);
 
+    /// <summary>
+    /// Updates the status text and toggles its visibility based on whether the provided status value is null or empty.
+    /// </summary>
+    /// <param name="status">The status.</param>
     public void SetStatus(string? status)
     {
         _status.Text = status ?? "";
         _status.Visibility = string.IsNullOrEmpty(status) ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    /// <summary>
+    /// Sets the data source for retrieving picker items and refreshes the current view.
+    /// </summary>
+    /// <param name="source">The source.</param>
     public void SetSource(Func<string, IReadOnlyList<PickerItem>> source)
     {
         _source = source;
@@ -126,12 +152,19 @@ internal sealed class PickerList : DockPanel
         }
     }
 
+    /// <summary>
+    /// Adds the specified UI element to the children collection and sets its dock position to the top.
+    /// </summary>
+    /// <param name="element">The element.</param>
     private void Add(UIElement element)
     {
         SetDock(element, Dock.Top);
         Children.Add(element);
     }
 
+    /// <summary>
+    /// Updates the list box items based on the current search text and source provider, applying accessibility properties and selecting the first valid entry.
+    /// </summary>
     private void Refresh()
     {
         if (_source is null)
@@ -163,6 +196,11 @@ internal sealed class PickerList : DockPanel
         SetStatus(items.Count == 0 ? "No matches." : null);
     }
 
+    /// <summary>
+    /// Handles key press events to navigate the list via arrow keys or select the currently highlighted item using the Enter key.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnSearchKey(object sender, KeyEventArgs e)
     {
         switch (e.Key)
@@ -188,6 +226,10 @@ internal sealed class PickerList : DockPanel
         }
     }
 
+    /// <summary>
+    /// Updates the selected index of the list by shifting it by the specified delta to the next enabled item and scrolls that item into view.
+    /// </summary>
+    /// <param name="delta">The delta.</param>
     private void Move(int delta)
     {
         var index = _list.SelectedIndex;
@@ -203,6 +245,10 @@ internal sealed class PickerList : DockPanel
         }
     }
 
+    /// <summary>
+    /// Processes the selection of a list box item by invoking the Picked event with the item&apos;s associated tag.
+    /// </summary>
+    /// <param name="item">The item.</param>
     private void Pick(ListBoxItem item)
     {
         if (item.Tag is null)

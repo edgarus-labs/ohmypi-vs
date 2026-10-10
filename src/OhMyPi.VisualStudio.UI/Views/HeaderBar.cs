@@ -12,7 +12,7 @@ using System.Windows.Threading;
 namespace OhMyPi.VisualStudio.UI.Views;
 
 /// <summary>
-/// Thin header: session name (click to rename inline), activity, the state indicator with the elapsed time of the
+/// Thin header: session name (click to rename inline), activity, the model, the state indicator with the elapsed time of the
 /// current turn, context and cost. New Session and Session History live on the tool window's toolbar.
 /// </summary>
 internal sealed class HeaderBar : Border
@@ -26,12 +26,17 @@ internal sealed class HeaderBar : Border
     private readonly TextBlock _stateWord;
     private readonly TextBlock _elapsed;
     private readonly TextBlock _usage;
+    private readonly TextBlock _model;
+    private readonly Button _resumeRouter;
     private readonly DispatcherTimer _timer;
     private DateTime? _busySince;
     private StateWord _word = StateWord.Offline;
     private bool _compacting;
     private IReadOnlyList<string> _statusTexts = Array.Empty<string>();
 
+    /// <summary>
+    /// Initializes a new instance of the HeaderBar class and configures its visual layout, including the session renaming controls, state indicators, and model usage displays.
+    /// </summary>
     public HeaderBar()
     {
         BorderThickness = new Thickness(0, 0, 0, 1);
@@ -66,7 +71,19 @@ internal sealed class HeaderBar : Border
         _usage = Ui.Muted("");
         _usage.Margin = new Thickness(8, 0, 4, 0);
 
-        var right = Ui.Row(_statePill, _usage);
+        _model = Ui.Muted("");
+        _model.Margin = new Thickness(8, 0, 0, 0);
+        _model.MaxWidth = 160;
+        _model.TextTrimming = TextTrimming.CharacterEllipsis;
+        _model.VerticalAlignment = VerticalAlignment.Center;
+
+        _resumeRouter = Ui.Button(Ui.Text("Resume auto", small: true), () => ResumeRouterRequested?.Invoke(), tooltip: "The model was set manually, so the tier router is paused. Sends /tier-auto.");
+        _resumeRouter.Margin = new Thickness(6, 0, 0, 0);
+        _resumeRouter.VerticalAlignment = VerticalAlignment.Center;
+        _resumeRouter.Visibility = Visibility.Collapsed;
+        Ui.AutomationName(_resumeRouter, "Resume tier router auto routing");
+
+        var right = Ui.Row(_model, _resumeRouter, _statePill, _usage);
         var left = new DockPanel { LastChildFill = true };
         var title = new Grid();
         title.Children.Add(_sessionButton);
@@ -85,8 +102,23 @@ internal sealed class HeaderBar : Border
         _timer.Tick += (_, __) => RenderActivity();
     }
 
+    /// <summary>
+    /// Occurs when renamed.
+    /// </summary>
     public event Action<string>? Renamed;
 
+    /// <summary>
+    /// Occurs when resume router requested.
+    /// </summary>
+    public event Action? ResumeRouterRequested;
+
+    /// <summary>
+    /// Updates the user interface elements to reflect the current session state, connection status, model details, and token usage metrics.
+    /// </summary>
+    /// <param name="session">The session.</param>
+    /// <param name="connection">The connection.</param>
+    /// <param name="pendingInteractions">The pending interactions.</param>
+    /// <param name="unavailable">The unavailable.</param>
     public void Render(SessionView session, ConnectionStatus connection, int pendingInteractions, bool unavailable)
     {
         _word = Chrome.GetStateWord(connection.State, session.Phase, pendingInteractions, unavailable);
@@ -109,6 +141,10 @@ internal sealed class HeaderBar : Border
             : _word == StateWord.Waiting || _word == StateWord.Aborting ? ThemeKeys.Warning
             : ThemeKeys.Progress);
         _statePill.ToolTip = $"connection: {connection.State.ToString().ToLowerInvariant()}{(string.IsNullOrEmpty(connection.Detail) ? "" : $" ({connection.Detail})")}";
+
+        _model.Text = Chrome.HeaderModelText(session.Model);
+        _model.ToolTip = session.Model is null ? null : $"{session.Model.Provider}/{session.Model.Id}";
+        _model.Visibility = _model.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
 
         var usage = Chrome.UsageText(session.ContextUsage, session.CostUsd);
         _usage.Text = usage;
@@ -135,6 +171,12 @@ internal sealed class HeaderBar : Border
         RenderActivity();
     }
 
+    /// <summary>Shows the action that resumes the tier router while it is paused by a manual model change.</summary>
+    public void SetRouterPaused(bool paused) => _resumeRouter.Visibility = paused ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>
+    /// Initiates the rename mode by displaying the rename text box, populating it with the current session text, and shifting focus to allow the user to edit the session name.
+    /// </summary>
     public void BeginRename()
     {
         _renameBox.Text = _sessionText.Text == "New chat" ? "" : _sessionText.Text;
@@ -144,8 +186,16 @@ internal sealed class HeaderBar : Border
         _renameBox.SelectAll();
     }
 
+    /// <summary>
+    /// Stops the internal timer to prevent further execution of the scheduled task.
+    /// </summary>
     public void StopTimer() => _timer.Stop();
 
+    /// <summary>
+    /// Handles key press events during a rename operation to either commit the changes when the Enter key is pressed or cancel them when the Escape key is pressed.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The e.</param>
     private void OnRenameKey(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
@@ -182,6 +232,9 @@ internal sealed class HeaderBar : Border
         }
     }
 
+    /// <summary>
+    /// Updates the activity and elapsed time UI elements based on the current system state, busy duration, and active status messages.
+    /// </summary>
     private void RenderActivity()
     {
         _elapsed.Text = _busySince.HasValue && _word != StateWord.Offline && _word != StateWord.Starting
@@ -199,6 +252,10 @@ internal sealed class HeaderBar : Border
         _activity.ToolTip = _activity.Text.Length == 0 ? null : _activity.Text;
     }
 
+    /// <summary>
+    /// Updates the busy state tracking by managing the busy timestamp and controlling the associated timer.
+    /// </summary>
+    /// <param name="busy">The busy.</param>
     private void TrackBusy(bool busy)
     {
         if (!busy)

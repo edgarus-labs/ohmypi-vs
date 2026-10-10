@@ -5,11 +5,24 @@ using System.Windows.Controls.Primitives;
 
 namespace OhMyPi.VisualStudio.UI.Views;
 
+/// <summary>
+/// Provides a collection of static constants or utility methods for managing brush keys, glyphs, and line definitions used in notice rendering.
+/// </summary>
 internal static class Notices
 {
+    /// <summary>
+    /// Maps the specified notice level to its corresponding theme brush key.
+    /// </summary>
+    /// <param name="level">The level.</param>
+    /// <returns>The object result.</returns>
     public static object BrushKey(NoticeLevel level) =>
         level == NoticeLevel.Error ? ThemeKeys.Error : level == NoticeLevel.Warning ? ThemeKeys.Warning : ThemeKeys.Muted;
 
+    /// <summary>
+    /// Returns the corresponding visual glyph string associated with the specified notice level.
+    /// </summary>
+    /// <param name="level">The level.</param>
+    /// <returns>The string result.</returns>
     public static string Glyph(NoticeLevel level) =>
         level == NoticeLevel.Error ? Glyphs.Error : level == NoticeLevel.Warning ? Glyphs.Warning : Glyphs.Info;
 

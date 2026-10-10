@@ -118,6 +118,11 @@ internal static class CommandLine
         return block.Append('\0').ToString();
     }
 
+    /// <summary>
+    /// Escapes and wraps a string argument in double quotes to ensure it is properly formatted for command-line execution.
+    /// </summary>
+    /// <param name="arg">The arg.</param>
+    /// <returns>The string result.</returns>
     private static string CmdArgument(string arg)
     {
         var quoted = "\"" + TrailingBackslashes.Replace(QuotesAfterBackslashes.Replace(arg, "$1$1\\\""), "$1$1") + "\"";

@@ -13,12 +13,22 @@ internal sealed class ChangesSection : Section
     private readonly Action<string> _openDiff;
     private readonly Action<string> _openFile;
 
+    /// <summary>
+    /// Initializes a new instance of the ChangesSection class with the specified actions for opening diffs and files.
+    /// </summary>
+    /// <param name="openDiff">The open diff.</param>
+    /// <param name="openFile">The open file.</param>
     public ChangesSection(Action<string> openDiff, Action<string> openFile) : base("Changes")
     {
         _openDiff = openDiff;
         _openFile = openFile;
     }
 
+    /// <summary>
+    /// Renders a list of tracked changes into the user interface, updating the title and populating the rows based on the provided changes and current working directory.
+    /// </summary>
+    /// <param name="changes">The collection of changes.</param>
+    /// <param name="cwd">The cwd.</param>
     public void Render(IReadOnlyList<TrackedChange> changes, string? cwd)
     {
         SetTitle(ChangeRows.Title(changes.Count));
@@ -34,6 +44,12 @@ internal sealed class ChangesSection : Section
         }
     }
 
+    /// <summary>
+    /// Creates a UI element representing a tracked change row, including status indicators, file details, and action buttons for opening the file or viewing the diff.
+    /// </summary>
+    /// <param name="change">The change.</param>
+    /// <param name="cwd">The cwd.</param>
+    /// <returns>The uielement result.</returns>
     private UIElement Row(TrackedChange change, string? cwd)
     {
         var letter = Ui.Text(ChangeRows.StatusLetter(change.Status),

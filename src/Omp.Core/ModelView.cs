@@ -3,24 +3,54 @@ using System.Collections.Generic;
 
 namespace Omp.Core;
 
+/// <summary>
+/// Represents the data structure containing detailed configuration and metadata for a specific AI model view, including its provider, capabilities, and cost metrics.
+/// </summary>
 public sealed class ModelView
 {
+    /// <summary>
+    /// Gets or sets the provider.
+    /// </summary>
     public string Provider { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the id.
+    /// </summary>
     public string Id { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the name.
+    /// </summary>
     public string Name { get; set; } = "";
 
+    /// <summary>
+    /// Gets or sets the api.
+    /// </summary>
     public string? Api { get; set; }
 
+    /// <summary>
+    /// Gets or sets the context window.
+    /// </summary>
     public long? ContextWindow { get; set; }
 
+    /// <summary>
+    /// Gets or sets the max tokens.
+    /// </summary>
     public long? MaxTokens { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether reasoning.
+    /// </summary>
     public bool Reasoning { get; set; }
 
+    /// <summary>
+    /// Gets or sets the collection of thinking efforts.
+    /// </summary>
     public IReadOnlyList<string> ThinkingEfforts { get; set; } = Array.Empty<string>();
 
+    /// <summary>
+    /// Gets or sets the collection of input.
+    /// </summary>
     public IReadOnlyList<string> Input { get; set; } = Array.Empty<string>();
 
     /// <summary>USD per million tokens, when OMP reports pricing.</summary>

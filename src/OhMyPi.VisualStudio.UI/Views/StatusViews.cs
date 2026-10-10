@@ -10,6 +10,12 @@ internal sealed class Banner : Border
 {
     private readonly TextBlock _text;
 
+    /// <summary>
+    /// Initializes a new instance of the Banner class with the specified actions for opening settings, showing logs, and restarting the application.
+    /// </summary>
+    /// <param name="openSettings">The open settings.</param>
+    /// <param name="showLog">The show log.</param>
+    /// <param name="restart">The restart.</param>
     public Banner(Action openSettings, Action showLog, Action restart)
     {
         Margin = new Thickness(8, 6, 8, 0);
@@ -40,6 +46,11 @@ internal sealed class Banner : Border
         Child = row;
     }
 
+    /// <summary>
+    /// Updates the UI visibility, tooltip, and text content to reflect the current OMP availability and connection status, announcing the result to the user if a message is present.
+    /// </summary>
+    /// <param name="unavailable">The unavailable.</param>
+    /// <param name="connection">The connection.</param>
     public void Render(OmpUnavailable? unavailable, ConnectionStatus connection)
     {
         string? message = null;

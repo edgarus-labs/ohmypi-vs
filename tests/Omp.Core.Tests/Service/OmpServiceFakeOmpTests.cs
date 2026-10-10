@@ -12,6 +12,9 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     private readonly List<Harness> _harnesses = new();
     private readonly NodeMemoryGuard _memory;
     private string _launcher = "";
+    /// <summary>
+    /// Gets the log file.
+    /// </summary>
     private string LogFile => Path.Combine(_dir, "commands.log");
 
     public OmpServiceFakeOmpTests()
@@ -44,30 +47,73 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
         await TempDirectory.DeleteAsync(_dir);
     }
 
+    /// <summary>
+    /// Represents a test harness used to orchestrate and track the state, interactions, and execution events of an OmpService session.
+    /// </summary>
     private sealed class Harness
     {
+        /// <summary>
+        /// Gets or sets the service.
+        /// </summary>
         public required OmpService Service { get; init; }
 
+        /// <summary>
+        /// Gets or sets the logger.
+        /// </summary>
         public required MemoryLogger Logger { get; init; }
 
+        /// <summary>
+        /// Gets the collection of phases.
+        /// </summary>
         public List<SessionPhase> Phases { get; } = new();
 
+        /// <summary>
+        /// Gets the collection of states.
+        /// </summary>
         public List<ConnectionState> States { get; } = new();
 
+        /// <summary>
+        /// Gets the collection of items.
+        /// </summary>
         public List<TranscriptItem> Items { get; } = new();
 
+        /// <summary>
+        /// Gets the collection of tools.
+        /// </summary>
         public List<ToolExecutionEvent> Tools { get; } = new();
 
+        /// <summary>
+        /// Gets the collection of interactions.
+        /// </summary>
         public List<InteractionRequest> Interactions { get; } = new();
 
+        /// <summary>
+        /// Gets the collection of cancelled.
+        /// </summary>
         public List<string> Cancelled { get; } = new();
 
+        /// <summary>
+        /// Gets the collection of presentations.
+        /// </summary>
         public List<PresentationRequest> Presentations { get; } = new();
 
+        /// <summary>
+        /// Retrieves a read-only list of text content from all assistant items within the transcript.
+        /// </summary>
+        /// <returns>A collection of iread only list items.</returns>
         public IReadOnlyList<string> AssistantTexts() => Service.Transcript.OfType<AssistantItem>().Select(i => i.Text).ToArray();
 
+        /// <summary>
+        /// Retrieves a list of formatted notice strings from the transcript, combining the lowercase severity level and the notice text.
+        /// </summary>
+        /// <returns>A collection of iread only list items.</returns>
         public IReadOnlyList<string> Notices() => Service.Transcript.OfType<NoticeItem>().Select(n => $"{n.Level.ToString().ToLowerInvariant()}: {n.Text}").ToArray();
 
+        /// <summary>
+        /// Executes the specified function within a critical section to ensure thread-safe access to the current instance.
+        /// </summary>
+        /// <param name="read">The read.</param>
+        /// <returns>The t result.</returns>
         public T Locked<T>(Func<T> read)
         {
             lock (this)
@@ -384,15 +430,31 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     /// <summary>Host tools that record their calls and answer through <see cref="Answer"/>.</summary>
     private sealed class RecordingHostTools : IHostTools
     {
+        /// <summary>
+        /// Gets the collection of calls.
+        /// </summary>
         public List<(string Name, JObject Arguments)> Calls { get; } = new();
 
+        /// <summary>
+        /// Gets or sets the answer.
+        /// </summary>
         public Func<string, JObject, CancellationToken, Task<HostToolResult>> Answer { get; set; } = (_, _, _) => Task.FromResult(HostToolResult.Text("done"));
 
+        /// <summary>
+        /// Gets the collection of definitions.
+        /// </summary>
         public IReadOnlyList<HostToolDefinition> Definitions { get; } = new[]
         {
             new HostToolDefinition("vs_build", "Builds the solution.", JObject.Parse("{\"type\":\"object\",\"properties\":{\"target\":{\"type\":\"string\"}}}")),
         };
 
+        /// <summary>
+        /// Asynchronously invokes a host tool by the specified name with the provided arguments and records the call for tracking purposes.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="arguments">The arguments.</param>
+        /// <param name="cancellationToken">The cancellation token to monitor for cancellation requests.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains the host tool result.</returns>
         public Task<HostToolResult> InvokeAsync(string name, JObject arguments, CancellationToken cancellationToken)
         {
             lock (Calls)

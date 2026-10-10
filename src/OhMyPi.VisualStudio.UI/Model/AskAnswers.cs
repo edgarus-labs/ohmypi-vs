@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace OhMyPi.VisualStudio.UI.Model;
 
+/// <summary>
+/// Provides utility methods for constructing and managing answer-related data for the Ask domain.
+/// </summary>
 internal static class AskAnswers
 {
     /// <summary>

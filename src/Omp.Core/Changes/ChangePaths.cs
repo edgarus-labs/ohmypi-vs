@@ -219,6 +219,11 @@ public static class ChangePaths
         return (added, counts.Values.Sum());
     }
 
+    /// <summary>
+    /// Splits the specified text into a collection of lines, removing any trailing empty line resulting from a final newline character.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <returns>A collection of ienumerable items.</returns>
     private static IEnumerable<string> Lines(string? text)
     {
         if (string.IsNullOrEmpty(text))
