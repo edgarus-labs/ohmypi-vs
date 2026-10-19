@@ -120,7 +120,12 @@ internal sealed class OmpCommands
     }
 
     /// <summary>Reveals the chat and runs <paramref name="action"/> on the UI thread, which owns the control.</summary>
-    private async Task OnChatAsync(Action<OmpChatControl> action) => action(await ChatAsync(activate: true));
+    private async Task OnChatAsync(Action<OmpChatControl> action)
+    {
+        var chat = await ChatAsync(activate: true);
+        await _package.JoinableTaskFactory.SwitchToMainThreadAsync(_package.DisposalToken);
+        action(chat);
+    }
 
     /// <summary>The chat control, once the package has created the first service generation; on the UI thread.</summary>
     private async Task<OmpChatControl> ChatAsync(bool activate)
