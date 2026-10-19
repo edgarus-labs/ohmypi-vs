@@ -89,7 +89,7 @@ internal sealed class Composer : Border
 
         _placeholder = Ui.Muted("", wrap: true, small: false);
         _placeholder.IsHitTestVisible = false;
-        _placeholder.Margin = new Thickness(Input.Padding.Left + 1, Input.Padding.Top, Input.Padding.Right, 0);
+        _placeholder.Margin = new Thickness(Input.Padding.Left + 2, Input.Padding.Top, Input.Padding.Right, 0);
         _placeholder.VerticalAlignment = VerticalAlignment.Top;
         var inputGrid = new Grid();
         inputGrid.SetResourceReference(TextElement.FontSizeProperty, ThemeKeys.ChatFontSize);

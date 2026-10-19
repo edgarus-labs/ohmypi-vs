@@ -52,6 +52,20 @@ public sealed class ComposerTests
     }
 
     [Fact]
+    public void The_caret_starts_at_the_text_inset_aligned_with_the_placeholder() => RunSta((window, control) =>
+    {
+        var composer = Composer(window);
+        composer.Input.Focus();
+        Pump();
+        var caret = composer.Input.GetRectFromCharacterIndex(0);
+        var origin = composer.Input.TranslatePoint(new Point(caret.X, caret.Y), composer);
+        var placeholder = Descendants(composer).OfType<TextBlock>().Single(t => t.Text.StartsWith("Ask OMP"));
+        var start = placeholder.TranslatePoint(new Point(), composer);
+        Assert.InRange(Math.Abs(origin.X - start.X), 0, 0.5);
+        Assert.InRange(Math.Abs(origin.Y - start.Y), 0, 0.5);
+    }, new FakeService(), new FakeHost());
+
+    [Fact]
     public void Adding_an_attachment_keeps_the_existing_chips() => RunSta((window, control) =>
                                                                         {
                                                                             var composer = Composer(window);
