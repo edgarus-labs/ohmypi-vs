@@ -46,5 +46,7 @@
             <ScrollViewer x:Name="InteractionsScroller" Focusable="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" />
             <ContentControl x:Name="ComposerHost" Focusable="False" />
         </StackPanel>
+
+        <Border x:Name="UsageScrim" Grid.RowSpan="5" Background="#99000000" IsHitTestVisible="False" Visibility="Collapsed" />
     </Grid>
 </UserControl>

@@ -74,7 +74,8 @@ public interface IOmpService : IDisposable
 
     /// <summary>
     /// The configured providers and their rate limits, from OMP's <c>/usage</c> command; the report does not enter
-    /// the transcript. Fails with <see cref="InvalidOperationException"/> when OMP prints no usage report.
+    /// the transcript. A limit whose quota bucket <c>omp usage --json</c> names (as Antigravity's Gemini 4 Argon) carries
+    /// it in its name. Fails with <see cref="InvalidOperationException"/> when OMP prints no usage report.
     /// </summary>
     Task<IReadOnlyList<ProviderUsage>> GetUsageAsync();
 

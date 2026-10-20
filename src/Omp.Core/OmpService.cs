@@ -24,6 +24,8 @@ public sealed class OmpService : IOmpService
 {
     private const int SessionCommandTimeoutMs = 60_000;
     private const int ModelDiscoveryTimeoutMs = 120_000;
+    /// <summary>How long <c>omp usage --json</c> may take before the report keeps the names <c>/usage</c> gave.</summary>
+    private const int UsageJsonTimeoutMs = 30_000;
     /// <summary>OMP's per-turn effort selector (<c>ConfiguredThinkingLevel</c> "auto").</summary>
     private const string AutoThinking = "auto";
     /// <summary>
@@ -342,10 +344,14 @@ public sealed class OmpService : IOmpService
         await _usageGate.WaitAsync().ConfigureAwait(false);
         try
         {
+            bool connected;
             lock (_sync)
             {
                 _usageCapture = new StringBuilder();
+                connected = _client is not null;
             }
+
+            var bucketReport = connected ? FetchUsageJsonAsync() : Task.FromResult<string?>(null);
 
             string text;
             try
@@ -365,11 +371,88 @@ public sealed class OmpService : IOmpService
                 throw new InvalidOperationException("OMP printed no usage report");
             }
 
-            return UsageReport.Parse(text);
+            var providers = UsageReport.Parse(text);
+            var json = await bucketReport.ConfigureAwait(false);
+            if (json is not null)
+            {
+                UsageBuckets.Qualify(providers, json);
+            }
+
+            return providers;
         }
         finally
         {
             _usageGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Runs <c>omp usage --json</c>, which names the quota bucket of each limit where <c>/usage</c> does not. Null, with a
+    /// warning logged, when it fails: the report then keeps the names <c>/usage</c> gave.
+    /// </summary>
+    private async Task<string?> FetchUsageJsonAsync()
+    {
+        var output = new MemoryStream();
+        var closed = new TaskCompletionSource<TransportClose>(TaskCreationOptions.RunContinuationsAsynchronously);
+        IOmpProcessHandle? process = null;
+        try
+        {
+            process = _tuning.Spawn(new OmpProcessOptions
+            {
+                Executable = _options.Executable,
+                Mode = new[] { "usage", "--json" },
+                Cwd = _options.Cwd,
+                Environment = _options.Environment,
+                Logger = _logger,
+            });
+            process.Data += chunk =>
+            {
+                lock (output)
+                {
+                    output.Write(chunk.Array!, chunk.Offset, chunk.Count);
+                }
+            };
+            process.Closed += close => closed.TrySetResult(close);
+            process.Start();
+            if (await Task.WhenAny(closed.Task, Task.Delay(UsageJsonTimeoutMs)).ConfigureAwait(false) != closed.Task)
+            {
+                _logger.Warn($"omp usage --json did not finish within {UsageJsonTimeoutMs / 1000} s; limits keep the names /usage gives");
+
+                return null;
+            }
+
+            var exit = await closed.Task.ConfigureAwait(false);
+            if (exit.Error is not null || exit.Code != 0)
+            {
+                _logger.Warn($"omp usage --json failed (exit {exit.Code?.ToString() ?? "unknown"}): {exit.Error?.Message ?? exit.Stderr}; limits keep the names /usage gives");
+
+                return null;
+            }
+
+            lock (output)
+            {
+                return Encoding.UTF8.GetString(output.ToArray());
+            }
+        }
+        catch (Exception error) when (error is IOException || error is InvalidOperationException || error is System.ComponentModel.Win32Exception)
+        {
+            _logger.Warn($"omp usage --json could not run: {error.Message}; limits keep the names /usage gives");
+
+            return null;
+        }
+        finally
+        {
+            if (process is not null)
+            {
+                try
+                {
+                    await process.ShutdownAsync(_tuning.ShutdownGraceMs).ConfigureAwait(false);
+                }
+                catch (Exception error) when (error is IOException || error is InvalidOperationException || error is TimeoutException)
+                {
+                    _logger.Warn($"Stopping omp usage --json failed: {error.Message}");
+                }
+            }
         }
     }
 

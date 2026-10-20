@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace Omp.Core.Processes;
 
 /// <summary>
-/// One <c>omp --mode rpc-ui</c> child process started suspended inside its own kill-on-close Windows job object, so
+/// One <c>omp</c> child process (<c>--mode rpc-ui</c> unless <see cref="OmpProcessOptions.Mode"/> says otherwise) started suspended inside its own kill-on-close Windows job object, so
 /// the whole tree normally dies with this handle, even if Visual Studio crashes. When the job cannot be created or
 /// assigned, the tree is ended by walking it (<see cref="ProcessTree"/>) on shutdown only, and a crash of Visual Studio
 /// leaves it running. Stdin/stdout/stderr are raw UTF-8 byte pipes and no other handle is inherited. The child never searches
@@ -123,7 +123,7 @@ internal sealed class OmpProcess : IOmpProcessHandle
 
     private void Launch()
     {
-        var args = new List<string> { "--mode", "rpc-ui" };
+        var args = new List<string>(_options.Mode);
         args.AddRange(_options.Args);
         var (application, commandLine) = CommandLine.Build(_options.Executable, args, System.Environment.GetEnvironmentVariable("ComSpec"));
         _logger.Debug($"Spawning {commandLine} (cwd {_options.Cwd})");
