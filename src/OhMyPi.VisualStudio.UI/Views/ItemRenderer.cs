@@ -113,7 +113,7 @@ internal static class ItemRenderer
         var children = new List<UIElement?>();
         if (parts.Text.Length > 0)
         {
-            children.Add(Ui.Prose(parts.Text));
+            children.Add(SlashCommands.IsCommand(parts.Text) ? CommandPrompt(parts.Text) : Ui.Prose(parts.Text));
         }
 
         for (var i = 0; i < parts.Pasted.Count; i++)
@@ -146,6 +146,39 @@ internal static class ItemRenderer
         Ui.AutomationName(card, "You");
 
         return WithCopy(card, item.Text, ctx);
+    }
+
+    /// <summary>A prompt that runs a slash command: the command in monospace beside the slash mark, which is centered on the command's first line.</summary>
+    private static FrameworkElement CommandPrompt(string text)
+    {
+        var icon = SlashIcon.Create(20);
+        icon.VerticalAlignment = VerticalAlignment.Top;
+        icon.Margin = new Thickness(0, 0, 8, 0);
+        var command = Ui.Code(text, null);
+        command.VerticalAlignment = VerticalAlignment.Top;
+        command.Loaded += (_, __) => CenterOnFirstLine(icon, command);
+        Grid.SetColumn(command, 1);
+        var row = new Grid();
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.Children.Add(icon);
+        row.Children.Add(command);
+
+        return row;
+    }
+
+    /// <summary>Lines the icon and the first line of <paramref name="command"/> up on their centers: the shorter of the two moves down.</summary>
+    private static void CenterOnFirstLine(FrameworkElement icon, RichTextBox command)
+    {
+        var line = command.Document.ContentStart.GetCharacterRect(System.Windows.Documents.LogicalDirection.Forward);
+        if (line.IsEmpty)
+        {
+            return;
+        }
+
+        var shift = line.Top + ((line.Height - icon.Height) / 2);
+        icon.Margin = new Thickness(0, Math.Max(shift, 0), 8, 0);
+        command.Margin = new Thickness(0, Math.Max(-shift, 0), 0, 0);
     }
 
     /// <summary>
