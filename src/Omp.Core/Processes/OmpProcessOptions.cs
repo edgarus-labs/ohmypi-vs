@@ -13,7 +13,10 @@ internal sealed class OmpProcessOptions
     /// </summary>
     public string Executable { get; set; } = "";
 
-    /// <summary>Arguments appended after <c>--mode rpc-ui</c>.</summary>
+    /// <summary>The arguments that select what the process runs, before <see cref="Args"/>: the RPC server unless a caller asks for another command.</summary>
+    public IReadOnlyList<string> Mode { get; set; } = new[] { "--mode", "rpc-ui" };
+
+    /// <summary>Arguments appended after <see cref="Mode"/>.</summary>
     public IReadOnlyList<string> Args { get; set; } = Array.Empty<string>();
 
     /// <summary>

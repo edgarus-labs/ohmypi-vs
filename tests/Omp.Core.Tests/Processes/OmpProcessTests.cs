@@ -52,13 +52,14 @@ public sealed class OmpProcessTests : IAsyncLifetime
         }
     }
 
-    private Spawned Spawn(string executable, IReadOnlyList<string> args, IDictionary<string, string>? env = null, bool start = true, bool useJob = true, ProcessTree.INative? tree = null, IProcessNative? native = null)
+    private Spawned Spawn(string executable, IReadOnlyList<string> args, IDictionary<string, string>? env = null, bool start = true, bool useJob = true, ProcessTree.INative? tree = null, IProcessNative? native = null, IReadOnlyList<string>? mode = null)
     {
         var logger = new MemoryLogger();
         var process = new OmpProcess(new OmpProcessOptions
         {
             Executable = executable,
             Args = args,
+            Mode = mode ?? new[] { "--mode", "rpc-ui" },
             Cwd = _dir,
             Environment = FakeOmp.Environment(_dir, extra: env),
             Logger = logger,
@@ -162,6 +163,14 @@ public sealed class OmpProcessTests : IAsyncLifetime
         await Wait.For(() => fake.Logger.Text("debug").Contains("fake-omp started"), 5000, "stderr");
         Assert.Contains("args [\"--mode\",\"rpc-ui\",\"--profile\",\"x\"]", fake.Logger.Text("debug"));
         Assert.DoesNotContain("job object", fake.Logger.Text("warn"));
+    }
+
+    [Fact]
+    public async Task RunsTheGivenModeInsteadOfTheRpcServer()
+    {
+        var fake = Spawn(FakeOmp.WriteLauncher(_dir, "fake-omp", FakeOmp.Script), new[] { "--profile", "x" }, mode: new[] { "usage", "--json" });
+        await Wait.For(() => fake.Logger.Text("debug").Contains("fake-omp started"), 10000, "start");
+        Assert.Contains("args [\"usage\",\"--json\",\"--profile\",\"x\"]", fake.Logger.Text("debug"));
     }
 
     [Fact]

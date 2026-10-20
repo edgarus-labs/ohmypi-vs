@@ -345,9 +345,11 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         _modelPicker.Popup.Closed += (_, __) => SetTranscriptScrollBar(ScrollBarVisibility.Auto);
         _usagePopup = new UsagePopup(TranscriptArea, ComposerHost, () => service.GetUsageAsync(), (message, error) => host.LogError(message, error), () =>
         {
+            UsageScrim.Visibility = Visibility.Collapsed;
             _usageClosedAt = DateTime.UtcNow;
             FocusInput();
         });
+        _usagePopup.Popup.Opened += (_, __) => UsageScrim.Visibility = Visibility.Visible;
         _effortPicker = new PickerPopup(_composer.EffortButton, "Reasoning effort", searchable: false, width: 280);
         _effortPicker.Picked += value => _ = RunAsync("Set reasoning effort", WithService(() => service.SetThinkingLevelAsync((string)value)));
         _sessionPicker = new PickerList("Session history", searchable: true, searchName: "Search sessions");

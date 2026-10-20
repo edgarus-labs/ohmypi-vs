@@ -1,4 +1,6 @@
 using Newtonsoft.Json.Linq;
+using Omp.Core.Processes;
+using Omp.Core.Protocol;
 using Omp.Core.Tests.Support;
 
 namespace Omp.Core.Tests.Service;
@@ -17,12 +19,16 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         }
     }
 
-    private (OmpService Service, MemoryLogger Logger, List<InteractionRequest> Interactions) Create(MemoryOmp omp, bool autoRestart = false)
+    private (OmpService Service, MemoryLogger Logger, List<InteractionRequest> Interactions) Create(MemoryOmp omp, bool autoRestart = false, Func<OmpProcessOptions, IOmpProcessHandle>? usageCommand = null)
     {
         var logger = new MemoryLogger();
         var service = new OmpService(
             new OmpServiceOptions { Executable = "memory-omp", Cwd = Path.GetTempPath(), Logger = logger, AutoRestart = autoRestart },
-            new OmpServiceTuning { Spawn = _ => omp, ShutdownGraceMs = 50 });
+            new OmpServiceTuning
+            {
+                Spawn = options => options.Mode.SequenceEqual(new[] { "usage", "--json" }) ? (usageCommand ?? (_ => new UsageJsonProcess("", 0)))(options) : omp,
+                ShutdownGraceMs = 50,
+            });
         _services.Add(service);
         var interactions = new List<InteractionRequest>();
         service.InteractionRequested += (_, request) => { lock (interactions) { interactions.Add(request); } };
@@ -744,5 +750,84 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetUsageAsync());
+    }
+
+    private const string AntigravityText = "```\nUsage (0s ago)\n\nGoogle Antigravity\n- Gemini — Weekly\n  user@example.com: 9.64% used (90.4% left)\n  resets in 7d\n- Gemini — Weekly\n  user@example.com: 2.77% used (97.2% left)\n  resets in 6d\n```";
+
+    private const string AntigravityJson = """
+        {"reports":[{"provider":"google-antigravity","limits":[
+          {"id":"google-antigravity:google:default:gemini-argon-wtu-weekly","label":"Gemini","scope":{"windowId":"weekly"},"window":{"id":"weekly","label":"Weekly"},"amount":{"unit":"percent","usedFraction":0.09636587}},
+          {"id":"google-antigravity:google:default:gemini-weekly","label":"Gemini","scope":{"windowId":"weekly"},"window":{"id":"weekly","label":"Weekly"},"amount":{"unit":"percent","usedFraction":0.02770454}}
+        ]}]}
+        """;
+
+    private static MemoryOmp OmpPrinting(string text) => new(new()
+    {
+        ["prompt"] = (_, o) =>
+        {
+            o.Emit(new JObject { ["type"] = "command_output", ["text"] = text });
+
+            return new JObject();
+        },
+    });
+
+    [Fact]
+    public async Task UsageNamesTheBucketsThatOmpUsageJsonReports()
+    {
+        OmpProcessOptions? spawned = null;
+        var (service, _, _) = Create(OmpPrinting(AntigravityText), usageCommand: options =>
+        {
+            spawned = options;
+
+            return new UsageJsonProcess(AntigravityJson, 0);
+        });
+        await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var usage = await service.GetUsageAsync();
+
+        Assert.Equal(new[] { "Gemini Argon — Weekly", "Gemini — Weekly" }, Assert.Single(usage).Limits.Select(limit => limit.Name));
+        Assert.Equal("memory-omp", spawned!.Executable);
+        Assert.Equal(Path.GetTempPath(), spawned.Cwd);
+    }
+
+    [Fact]
+    public async Task UsageKeepsOmpsNamesAndLogsAWarningWhenOmpUsageJsonFails()
+    {
+        var (service, logger, _) = Create(OmpPrinting(AntigravityText), usageCommand: _ => new UsageJsonProcess("", 1));
+        await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var usage = await service.GetUsageAsync();
+
+        Assert.Equal(new[] { "Gemini — Weekly", "Gemini — Weekly" }, Assert.Single(usage).Limits.Select(limit => limit.Name));
+        Assert.Contains("usage", logger.Text("warn"));
+    }
+
+    /// <summary>Stands in for <c>omp usage --json</c>: prints <paramref name="output"/> and exits with <paramref name="code"/>.</summary>
+    private sealed class UsageJsonProcess : IOmpProcessHandle
+    {
+        private readonly byte[] _output;
+        private readonly int _code;
+
+        public UsageJsonProcess(string output, int code)
+        {
+            _output = System.Text.Encoding.UTF8.GetBytes(output);
+            _code = code;
+        }
+
+        public event Action<ArraySegment<byte>>? Data;
+
+        public event Action<TransportClose>? Closed;
+
+        public int? Pid => 4242;
+
+        public void Start() => Task.Run(() =>
+        {
+            Data?.Invoke(new ArraySegment<byte>(_output));
+            Closed?.Invoke(new TransportClose { Code = _code, Pid = Pid });
+        });
+
+        public void Write(string line, Action<Exception>? onError = null) => throw new InvalidOperationException("omp usage reads no input");
+
+        public Task ShutdownAsync(int graceMs) => Task.CompletedTask;
     }
 }

@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       tag: ${{ steps.parse.outputs.tag }}
       version: ${{ steps.parse.outputs.version }}
@@ -46,7 +46,7 @@ jobs:
 
   draft:
     needs: [version, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     steps:
