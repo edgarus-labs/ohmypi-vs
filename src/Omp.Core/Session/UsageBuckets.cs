@@ -96,7 +96,7 @@ internal static class UsageBuckets
     }
 
     /// <summary>"Google Antigravity" in the text and "google-antigravity" in the JSON name the same provider.</summary>
-    private static string Key(string provider) => new string(provider.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+    private static string Key(string provider) => new string([.. provider.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant)]);
 
     private sealed class ReportedLimit
     {
@@ -152,7 +152,7 @@ internal static class UsageBuckets
                 return "";
             }
 
-            var words = id!.Substring(id.LastIndexOf(':') + 1).Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+            var words = id!.Substring(id.LastIndexOf(':') + 1).Split(['-'], StringSplitOptions.RemoveEmptyEntries);
             var labelWords = new HashSet<string>(label.Split(' ', '&', '(', ')').Where(word => word.Length > 0), StringComparer.OrdinalIgnoreCase);
             if (words.Length == 0 || !labelWords.Contains(words[0]))
             {
