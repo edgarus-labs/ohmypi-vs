@@ -5,7 +5,6 @@ using Omp.Core.Protocol;
 using Omp.Core.Session;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -45,7 +44,7 @@ public sealed class OmpService : IOmpService
     private readonly SessionStore _store;
     private readonly AgentRegistry _agents;
     /// <summary>Runs while the session is busy; the turn ends, and is summarized, when the session is idle again.</summary>
-    private Stopwatch? _turnClock;
+    private long? _turnStartedMs;
     /// <summary>Transcript position where the current turn began.</summary>
     private int _turnFrom;
     private bool _turnAborted;
@@ -625,24 +624,24 @@ public sealed class OmpService : IOmpService
 
         if (phase != SessionPhase.Idle)
         {
-            if (_turnClock is not null)
+            if (_turnStartedMs is not null)
             {
                 return;
             }
 
-            _turnClock = Stopwatch.StartNew();
+            _turnStartedMs = _tuning.TurnClockMs();
             _turnFrom = _store.Transcript.Count;
             _turnAborted = false;
 
             return;
         }
-        if (_turnClock is null)
+        if (_turnStartedMs is null)
         {
             return;
         }
 
-        _store.AddTurnSummary(_turnFrom, _turnClock.ElapsedMilliseconds, _turnAborted);
-        _turnClock = null;
+        _store.AddTurnSummary(_turnFrom, _tuning.TurnClockMs() - _turnStartedMs.Value, _turnAborted);
+        _turnStartedMs = null;
     }
 
     public async Task NewSessionAsync()
