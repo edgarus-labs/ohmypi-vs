@@ -1,6 +1,7 @@
 using Omp.Core.Processes;
 using Omp.Core.Protocol;
 using System;
+using System.Diagnostics;
 
 namespace Omp.Core;
 
@@ -32,4 +33,7 @@ internal sealed class OmpServiceTuning
 
     /// <summary>Creates the OMP process; tests substitute an in-memory one.</summary>
     public Func<OmpProcessOptions, IOmpProcessHandle> Spawn { get; set; } = options => new OmpProcess(options);
+
+    /// <summary>Milliseconds on a monotonic clock, used to time a turn; tests substitute a manual one.</summary>
+    public Func<long> TurnClockMs { get; set; } = () => Stopwatch.GetTimestamp() * 1000 / Stopwatch.Frequency;
 }

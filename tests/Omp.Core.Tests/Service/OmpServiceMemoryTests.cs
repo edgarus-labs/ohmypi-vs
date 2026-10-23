@@ -19,16 +19,22 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         }
     }
 
-    private (OmpService Service, MemoryLogger Logger, List<InteractionRequest> Interactions) Create(MemoryOmp omp, bool autoRestart = false, Func<OmpProcessOptions, IOmpProcessHandle>? usageCommand = null)
+    private (OmpService Service, MemoryLogger Logger, List<InteractionRequest> Interactions) Create(MemoryOmp omp, bool autoRestart = false, Func<OmpProcessOptions, IOmpProcessHandle>? usageCommand = null, Func<long>? turnClockMs = null)
     {
         var logger = new MemoryLogger();
+        var tuning = new OmpServiceTuning
+        {
+            Spawn = options => options.Mode.SequenceEqual(new[] { "usage", "--json" }) ? (usageCommand ?? (_ => new UsageJsonProcess("", 0)))(options) : omp,
+            ShutdownGraceMs = 50,
+        };
+        if (turnClockMs is not null)
+        {
+            tuning.TurnClockMs = turnClockMs;
+        }
+
         var service = new OmpService(
             new OmpServiceOptions { Executable = "memory-omp", Cwd = Path.GetTempPath(), Logger = logger, AutoRestart = autoRestart },
-            new OmpServiceTuning
-            {
-                Spawn = options => options.Mode.SequenceEqual(new[] { "usage", "--json" }) ? (usageCommand ?? (_ => new UsageJsonProcess("", 0)))(options) : omp,
-                ShutdownGraceMs = 50,
-            });
+            tuning);
         _services.Add(service);
         var interactions = new List<InteractionRequest>();
         service.InteractionRequested += (_, request) => { lock (interactions) { interactions.Add(request); } };
@@ -358,22 +364,23 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
     [Fact]
     public async Task EndsEachAgentTurnWithItsDurationTokensAndCost()
     {
+        long now = 1_000;
         var omp = new MemoryOmp(new() { ["prompt"] = (_, _) => null });
-        var (service, _, _) = Create(omp);
+        var (service, _, _) = Create(omp, turnClockMs: () => Volatile.Read(ref now));
         await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
         var outcome = service.PromptAsync("do it");
         await Wait.For(() => omp.Sent("prompt").Count == 1, 1000, "prompt sent");
         omp.Emit(AssistantEnd("a1", 100, 20, 1000, 0.01));
         omp.Emit(AssistantEnd("a2", 50, 30, 2000, 0.02));
         await Wait.For(() => service.Transcript.OfType<AssistantItem>().Count() == 2, 1000, "assistant messages");
-        await Task.Delay(20, TestContext.Current.CancellationToken);
+        Volatile.Write(ref now, 1_025);
         var id = (string)omp.Sent("prompt")[0]["id"]!;
         omp.Emit(new JObject { ["type"] = "prompt_result", ["id"] = id, ["agentInvoked"] = true, ["status"] = "completed", ["sessionSettled"] = true });
         await outcome;
         var summary = Assert.IsType<TurnSummaryItem>(service.Transcript.Last());
         Assert.Equal((150L, 50L, 3000L), (summary.InputTokens, summary.OutputTokens, summary.CacheReadTokens));
         Assert.Equal(0.03, summary.CostUsd!.Value, 6);
-        Assert.InRange(summary.DurationMs, 20, 10_000);
+        Assert.Equal(25, summary.DurationMs);
         Assert.False(summary.Aborted);
     }
 

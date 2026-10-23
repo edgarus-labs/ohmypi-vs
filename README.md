@@ -109,7 +109,7 @@ Prerequisites:
 
 - Visual Studio 2026 with the **Visual Studio extension development** workload (VSSDK).
 - The .NET 10 SDK. `global.json` pins 10.0.401 and accepts later feature bands; `Directory.Build.props` pins C# 13.
-- Node.js on `PATH`: the `Omp.Core` tests run a fake OMP (`tests/Omp.Core.Tests/Fixtures/fake-omp.mjs`) with `node`.
+- Node.js 22.23.4, 24.22.1, 26.12.1 or 27 and newer on `PATH` (earlier releases are affected by CVE-2026-111497): the `Omp.Core` tests run a fake OMP (`tests/Omp.Core.Tests/Fixtures/fake-omp.mjs`) with `node`. CI pins 24.22.1.
 - Optionally an installed, logged-in OMP: the real-OMP test is skipped unless `OMP_REAL=1` is set, because it sends a real (small, billed) model request.
 
 Build the solution and the VSIX with Visual Studio's MSBuild (the VSSDK build tasks need it):
