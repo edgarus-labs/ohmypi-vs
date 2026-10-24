@@ -19,6 +19,7 @@
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
     <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
     <CreateVsixContainer>true</CreateVsixContainer>
+    <TargetVsixContainerName>edgarus-labs.ohmypi.vs.v$(Version).vsix</TargetVsixContainerName>
     <!-- Debug (F5) deploys to the experimental instance; Release only builds the .vsix for VSIXInstaller (see README). -->
     <DeployExtension Condition="'$(Configuration)' == 'Debug'">true</DeployExtension>
     <DeployExtension Condition="'$(Configuration)' != 'Debug'">false</DeployExtension>

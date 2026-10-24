@@ -44,14 +44,27 @@ jobs:
           vs-version: '[18.0,19.0)'
 
       - name: Build solution and VSIX
+        id: build
         shell: pwsh
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          $arguments = @('OhMyPi.sln', '-restore', '-p:Configuration=Release', '-v:minimal', '-nologo')
-          if ($env:VERSION) { $arguments += "-p:Version=$env:VERSION" }
-          msbuild @arguments
+          $properties = @('-p:Configuration=Release')
+          if ($env:VERSION) { $properties += "-p:Version=$env:VERSION" }
+          msbuild OhMyPi.sln -restore @properties -v:minimal -nologo
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $evaluated = msbuild src\OhMyPi.VisualStudio\OhMyPi.VisualStudio.csproj @properties -getProperty:Version -getProperty:TargetVsixContainer -nologo
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $evaluated = ($evaluated | Out-String | ConvertFrom-Json).Properties
+          "version=$($evaluated.Version)" >> $env:GITHUB_OUTPUT
+          "vsix=src/OhMyPi.VisualStudio/$($evaluated.TargetVsixContainer -replace '\\', '/')" >> $env:GITHUB_OUTPUT
+
+      - name: Verify VSIX version consistency
+        shell: pwsh
+        env:
+          EXPECTED_VERSION: ${{ inputs.version || steps.build.outputs.version }}
+          VSIX: ${{ steps.build.outputs.vsix }}
+        run: ./.github/scripts/Assert-VsixVersion.ps1 -VsixPath $env:VSIX -Version $env:EXPECTED_VERSION
 
       - name: Test Omp.Core
         run: dotnet test tests\Omp.Core.Tests -c Release --no-build
@@ -67,5 +80,5 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ inputs.artifact-name }}
-          path: src/OhMyPi.VisualStudio/bin/Release/net48/OhMyPi.VisualStudio.vsix
+          path: ${{ steps.build.outputs.vsix }}
           if-no-files-found: error
