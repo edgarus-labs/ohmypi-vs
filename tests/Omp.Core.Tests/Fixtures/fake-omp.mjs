@@ -10,6 +10,8 @@
 // Env: FAKE_OMP_SESSION_DIR (session files), FAKE_OMP_LOG (every stdin line is appended),
 //      FAKE_OMP_THINKING=auto (start with the auto effort selector),
 //      FAKE_OMP_NO_ASK_DIALOG=1 (set_ask_dialog fails), FAKE_OMP_CANCEL_SWITCH=1 (switch_session is vetoed),
+//      FAKE_OMP_UNRESTORABLE_MODEL=<provider/id> (switch_session without provider/modelId fails as OMP does
+//      when the session's model is gone),
 //      FAKE_OMP_EXIT_IF_EXISTS=<file> (exit 4 before `ready` while that file exists),
 //      FAKE_OMP_IGNORE_EOF=1, FAKE_OMP_IGNORE_SIGTERM=1, FAKE_OMP_SPAWN_CHILD=1 (shutdown tests).
 import { spawn } from "node:child_process";
@@ -536,14 +538,23 @@ function handle(frame) {
 		case "new_session":
 			newSession();
 			return respond(type, id, { cancelled: false });
-		case "switch_session":
+		case "switch_session": {
 			if (env.FAKE_OMP_CANCEL_SWITCH === "1") return respond(type, id, { cancelled: true });
+			let model;
+			if (frame.provider !== undefined || frame.modelId !== undefined) {
+				model = MODELS.find(m => m.provider === frame.provider && m.id === frame.modelId);
+				if (!model) return fail(type, id, `Model not found: ${frame.provider}/${frame.modelId}`);
+			} else if (env.FAKE_OMP_UNRESTORABLE_MODEL) {
+				return fail(type, id, `Could not restore model ${env.FAKE_OMP_UNRESTORABLE_MODEL}`);
+			}
 			try {
 				loadSession(frame.sessionPath);
 			} catch (error) {
 				return fail(type, id, error.message);
 			}
+			if (model) state.model = model;
 			return respond(type, id, { cancelled: false });
+		}
 		case "set_session_name":
 			if (!frame.name) return fail(type, id, "Session name cannot be empty");
 			state.sessionName = frame.name;

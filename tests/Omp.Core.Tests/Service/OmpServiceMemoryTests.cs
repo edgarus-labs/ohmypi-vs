@@ -759,6 +759,26 @@ public sealed class OmpServiceMemoryTests : IAsyncLifetime
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetUsageAsync());
     }
 
+    [Fact]
+    public async Task GoalSendsTheOperationAndObjectiveAndReturnsTheGoalOmpReports()
+    {
+        var omp = new MemoryOmp(new()
+        {
+            ["goal"] = (f, _) => (string?)f["op"] == "create"
+                ? JObject.Parse("""{"goal":{"id":"g1","objective":"Ship it","status":"active","tokensUsed":120,"tokenBudget":5000,"timeUsedSeconds":3,"createdAt":1,"updatedAt":2},"state":{"enabled":true,"mode":"active"}}""")
+                : JObject.Parse("""{"goal":null,"state":null}"""),
+        });
+        var (service, _, _) = Create(omp);
+        await service.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        var created = await service.GoalAsync(GoalOperation.Create, "Ship it");
+        var dropped = await service.GoalAsync(GoalOperation.Drop);
+
+        Assert.Equal(new[] { "create:Ship it", "drop:" }, omp.Sent("goal").Select(f => $"{f["op"]}:{f["objective"]}"));
+        Assert.Equal(("Ship it", "active", 120L, (long?)5000), (created!.Objective, created.Status, created.TokensUsed, created.TokenBudget));
+        Assert.Null(dropped);
+    }
+
     private const string AntigravityText = "```\nUsage (0s ago)\n\nGoogle Antigravity\n- Gemini — Weekly\n  user@example.com: 9.64% used (90.4% left)\n  resets in 7d\n- Gemini — Weekly\n  user@example.com: 2.77% used (97.2% left)\n  resets in 6d\n```";
 
     private const string AntigravityJson = """

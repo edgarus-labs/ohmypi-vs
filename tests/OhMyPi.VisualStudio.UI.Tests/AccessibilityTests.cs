@@ -31,7 +31,7 @@ public sealed class AccessibilityTests
             Assert.True(deny.IsKeyboardFocused);
             Click(deny);
             Pump();
-            Assert.True(Named<TextBox>(window, "Prompt").IsKeyboardFocused);
+            Assert.True(Named<Views.PromptBox>(window, "Prompt").IsKeyboardFocused);
         }, service, new FakeHost());
     }
 
@@ -111,7 +111,7 @@ public sealed class AccessibilityTests
                                                                                                      control.BeginRename();
                                                                                                      Pump();
                                                                                                      Assert.True(Named<TextBox>(window, "Session name").IsKeyboardFocused);
-                                                                                                     var input = Named<TextBox>(window, "Prompt");
+                                                                                                     var input = Named<Views.PromptBox>(window, "Prompt");
                                                                                                      Keyboard.Focus(input);
                                                                                                      Pump();
                                                                                                      Assert.True(input.IsKeyboardFocused);

@@ -11,6 +11,29 @@ internal static class SlashCommands
     /// <summary>OMP runs a prompt as a slash command only when its text starts with "/".</summary>
     public static bool IsCommand(string text) => text.TrimStart().StartsWith("/", StringComparison.Ordinal);
 
+    /// <summary>Where the command word of a slash-command prompt is: the "/" and what follows it up to the first whitespace; empty for any other prompt.</summary>
+    public static (int Start, int Length) CommandSpan(string text)
+    {
+        var start = 0;
+        while (start < text.Length && char.IsWhiteSpace(text[start]))
+        {
+            start++;
+        }
+
+        if (start == text.Length || text[start] != '/')
+        {
+            return (0, 0);
+        }
+
+        var end = start + 1;
+        while (end < text.Length && !char.IsWhiteSpace(text[end]))
+        {
+            end++;
+        }
+
+        return (start, end - start);
+    }
+
     /// <summary>The command word typed so far (without "/"), or null once arguments or a new line follow.</summary>
     public static string? Query(string text)
     {

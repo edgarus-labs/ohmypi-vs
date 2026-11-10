@@ -34,6 +34,9 @@ internal sealed class Composer : Border
     /// <summary>Distance from the card's edge to the text, the caret and the placeholder.</summary>
     private const double TextInset = 12;
 
+    /// <summary>Space between <see cref="TextInset"/> and the first character, as a text box draws it.</summary>
+    private const double TextGap = 2;
+
     /// <summary>Room inside a 26 px icon button around its 13 px glyph, so the toolbar's first glyph aligns with the text above it.</summary>
     private const double IconInset = 6.5;
 
@@ -65,16 +68,13 @@ internal sealed class Composer : Border
         this.Theme(BackgroundProperty, ThemeKeys.InputBackground);
         this.Theme(BorderBrushProperty, ThemeKeys.InputBorder);
 
-        Input = new TextBox
+        Input = new PromptBox
         {
-            AcceptsReturn = true,
-            AcceptsTab = false,
-            TextWrapping = TextWrapping.Wrap,
             MinHeight = 64,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             BorderThickness = new Thickness(0),
             Background = System.Windows.Media.Brushes.Transparent,
-            Padding = new Thickness(TextInset, 8, TextInset, 4),
+            Padding = new Thickness(TextInset + TextGap - PromptBox.CaretRoom, 8, TextInset + TextGap - PromptBox.CaretRoom, 4),
         }.Styled("Omp.TextBox");
         Ui.AutomationName(Input, "Prompt");
         Input.PreviewKeyDown += OnInputKey;
@@ -89,7 +89,7 @@ internal sealed class Composer : Border
 
         _placeholder = Ui.Muted("", wrap: true, small: false);
         _placeholder.IsHitTestVisible = false;
-        _placeholder.Margin = new Thickness(Input.Padding.Left + 2, Input.Padding.Top, Input.Padding.Right, 0);
+        _placeholder.Margin = new Thickness(Input.Padding.Left + PromptBox.CaretRoom, Input.Padding.Top, Input.Padding.Right, 0);
         _placeholder.VerticalAlignment = VerticalAlignment.Top;
         var inputGrid = new Grid();
         inputGrid.SetResourceReference(TextElement.FontSizeProperty, ThemeKeys.ChatFontSize);
@@ -159,7 +159,7 @@ internal sealed class Composer : Border
         RenderActions();
     }
 
-    public TextBox Input { get; }
+    public PromptBox Input { get; }
 
     public Button AttachButton { get; }
 
@@ -421,8 +421,8 @@ internal sealed class Composer : Border
     private long ImageBytes => _attachments.OfType<ImageAttachment>().Sum(i => i.Bytes);
 
     /// <summary>
-    /// A text box only enables Paste for text, so Ctrl+V with an image or copied files on the clipboard would do
-    /// nothing; those take the composer's own paste. Text keeps the text box's paste (and <see cref="OnPaste"/>).
+    /// The prompt only enables Paste for text, so Ctrl+V with an image or copied files on the clipboard would do
+    /// nothing; those take the composer's own paste. Text keeps the prompt's paste (and <see cref="OnPaste"/>).
     /// </summary>
     private void OnCanPaste(object sender, CanExecuteRoutedEventArgs e)
     {

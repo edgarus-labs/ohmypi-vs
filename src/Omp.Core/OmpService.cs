@@ -498,6 +498,28 @@ public sealed class OmpService : IOmpService
         }
     }
 
+    public async Task<GoalView?> GoalAsync(GoalOperation operation, string? objective = null)
+    {
+        var parameters = new JObject { ["op"] = operation.ToString().ToLowerInvariant() };
+        if (objective is not null)
+        {
+            parameters["objective"] = objective;
+        }
+
+        if (Json.Get(await RequestAsync("goal", parameters).ConfigureAwait(false), "goal") is not JObject goal)
+        {
+            return null;
+        }
+
+        return new GoalView
+        {
+            Objective = Json.Str(goal, "objective") ?? "",
+            Status = Json.Str(goal, "status") ?? "",
+            TokensUsed = Json.Long(goal, "tokensUsed") ?? 0,
+            TokenBudget = Json.Long(goal, "tokenBudget"),
+        };
+    }
+
     public async Task<PromptOutcome> PromptAsync(string text, PromptMode mode = PromptMode.Auto, IReadOnlyList<PromptImage>? images = null) =>
         await SubmitPrompt(text, mode, images).Outcome.ConfigureAwait(false);
 
@@ -657,13 +679,26 @@ public sealed class OmpService : IOmpService
 
     public async Task SwitchSessionAsync(string sessionFile)
     {
-        var result = await RequestAsync("switch_session", new JObject { ["sessionPath"] = sessionFile }, SessionCommandTimeoutMs).ConfigureAwait(false);
+        OmpRpcClient client;
+        lock (_sync)
+        {
+            client = RequireClient();
+        }
+
+        var (result, replaced) = await SwitchSessionFileAsync(client, sessionFile).ConfigureAwait(false);
         if (Json.Bool(result, "cancelled") == true)
         {
             throw new InvalidOperationException("Switching sessions was cancelled by an OMP extension");
         }
 
         await ReloadSessionAsync().ConfigureAwait(false);
+        if (replaced is not null)
+        {
+            lock (_sync)
+            {
+                _store.AddNotice(NoticeLevel.Warning, replaced);
+            }
+        }
     }
 
     public async Task SetSessionNameAsync(string name)
@@ -1080,7 +1115,12 @@ public sealed class OmpService : IOmpService
         {
             if (File.Exists(file))
             {
-                var result = await client.RequestAsync("switch_session", new JObject { ["sessionPath"] = file }, SessionCommandTimeoutMs).ConfigureAwait(false);
+                var (result, replaced) = await SwitchSessionFileAsync(client, file!).ConfigureAwait(false);
+                if (replaced is not null)
+                {
+                    notices.Add((NoticeLevel.Warning, replaced));
+                }
+
                 if (Json.Bool(result, "cancelled") == true)
                 {
                     var message = $"Resuming {file} was cancelled by an OMP extension";
@@ -1105,6 +1145,40 @@ public sealed class OmpService : IOmpService
         {
             await client.RequestAsync("new_session", new JObject(), SessionCommandTimeoutMs).ConfigureAwait(false);
             _logger.Info("Started a new OMP session");
+        }
+    }
+
+    /// <summary>
+    /// Switches to <paramref name="file"/>. When OMP cannot restore the session's own model (gone, or its provider has no
+    /// credentials), it switches with the model OMP is running instead; <c>Replaced</c> then tells the user which model
+    /// replaced it.
+    /// </summary>
+    private async Task<(JToken? Result, string? Replaced)> SwitchSessionFileAsync(OmpRpcClient client, string file)
+    {
+        try
+        {
+            return (await client.RequestAsync("switch_session", new JObject { ["sessionPath"] = file }, SessionCommandTimeoutMs).ConfigureAwait(false), null);
+        }
+        catch (OmpRequestException error) when (error.Code != "closed" && error.Message.StartsWith("Could not restore model ", StringComparison.Ordinal))
+        {
+            var running = Json.Get(await client.RequestAsync("get_state").ConfigureAwait(false), "model") as JObject;
+            var provider = Json.Str(running, "provider");
+            var modelId = Json.Str(running, "id");
+            if (string.IsNullOrEmpty(provider) || string.IsNullOrEmpty(modelId))
+            {
+                throw;
+            }
+
+            var result = await client.RequestAsync("switch_session", new JObject { ["sessionPath"] = file, ["provider"] = provider, ["modelId"] = modelId }, SessionCommandTimeoutMs).ConfigureAwait(false);
+            if (Json.Bool(result, "cancelled") == true)
+            {
+                return (result, null);
+            }
+
+            var replaced = $"{error.Message}; using {provider}/{modelId} instead";
+            _logger.Warn(replaced);
+
+            return (result, replaced);
         }
     }
 

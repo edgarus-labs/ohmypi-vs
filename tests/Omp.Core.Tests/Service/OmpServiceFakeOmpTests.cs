@@ -818,6 +818,48 @@ public sealed class OmpServiceFakeOmpTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ResumesTheSessionWithTheRunningModelWhenOmpCannotRestoreTheSessionsModel()
+    {
+        var first = Create();
+        await first.Service.StartAsync(new StartOptions { NewSession = true }, TestContext.Current.CancellationToken);
+        await first.Service.PromptAsync("remember me");
+        var file = first.Service.Session.SessionFile!;
+        await first.Service.StopAsync();
+        var second = Create(env: new Dictionary<string, string> { ["FAKE_OMP_UNRESTORABLE_MODEL"] = "gone/argon" });
+        await second.Service.StartAsync(new StartOptions { ResumeSessionFile = file }, TestContext.Current.CancellationToken);
+        Assert.Equal(ConnectionState.Ready, second.Service.Connection.State);
+        Assert.Equal(file, second.Service.Session.SessionFile);
+        Assert.Equal(new[] { "user:remember me", "assistant:Echo: remember me" }, second.Service.Transcript.Select(i => i switch
+        {
+            UserItem u => $"user:{u.Text}",
+            AssistantItem a => $"assistant:{a.Text}",
+            _ => null,
+        }).OfType<string>());
+        Assert.Contains(second.Notices(), n => n.StartsWith("warning: ") && n.Contains("gone/argon") && n.Contains("fake-anthropic/fake-large"));
+    }
+
+    [Fact]
+    public async Task SwitchesToASessionWithTheRunningModelWhenOmpCannotRestoreTheSessionsModel()
+    {
+        var first = Create();
+        await first.Service.StartAsync(new StartOptions { NewSession = true }, TestContext.Current.CancellationToken);
+        await first.Service.PromptAsync("remember me");
+        var file = first.Service.Session.SessionFile!;
+        await first.Service.StopAsync();
+        var second = Create(env: new Dictionary<string, string> { ["FAKE_OMP_UNRESTORABLE_MODEL"] = "gone/argon" });
+        await second.Service.StartAsync(new StartOptions { NewSession = true }, TestContext.Current.CancellationToken);
+        await second.Service.SwitchSessionAsync(file);
+        Assert.Equal(file, second.Service.Session.SessionFile);
+        Assert.Equal(new[] { "user:remember me", "assistant:Echo: remember me" }, second.Service.Transcript.Select(i => i switch
+        {
+            UserItem u => $"user:{u.Text}",
+            AssistantItem a => $"assistant:{a.Text}",
+            _ => null,
+        }).OfType<string>());
+        Assert.Contains(second.Notices(), n => n.StartsWith("warning: ") && n.Contains("gone/argon") && n.Contains("fake-anthropic/fake-large"));
+    }
+
+    [Fact]
     public async Task LoadsLongHistoriesPageByPage()
     {
         var first = Create();

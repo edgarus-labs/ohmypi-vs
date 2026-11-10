@@ -57,6 +57,16 @@ public sealed class SlashCommandsTests
     [InlineData("// comment", true)]
     public void Detects_slash_command_prompts(string text, bool expected) => Assert.Equal(expected, SlashCommands.IsCommand(text));
 
+    [Theory]
+    [InlineData("/goal Ship it", 0, 5)]
+    [InlineData("/compact", 0, 8)]
+    [InlineData("  /goal\nnext", 2, 5)]
+    [InlineData("/", 0, 1)]
+    [InlineData("fix /model", 0, 0)]
+    [InlineData("", 0, 0)]
+    public void The_command_word_is_the_slash_and_the_word_after_it(string text, int start, int length) =>
+        Assert.Equal((start, length), SlashCommands.CommandSpan(text));
+
     [Fact]
     public void A_slash_command_is_sent_trimmed_so_omp_sees_the_leading_slash()
     {

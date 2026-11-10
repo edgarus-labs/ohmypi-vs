@@ -110,7 +110,7 @@ public sealed class ViewDetailsTests
             control.BeginRename();
             Pump();
             box.Text = "Left behind";
-            Named<TextBox>(window, "Prompt").Focus();
+            Named<Views.PromptBox>(window, "Prompt").Focus();
             Pump();
             Assert.False(box.IsVisible);
         }, service, new FakeHost());

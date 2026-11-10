@@ -88,7 +88,7 @@ public sealed class ComposerFlowsTests
         }
     }
 
-    private static void Paste(TextBox input, IDataObject data) =>
+    private static void Paste(PromptBox input, IDataObject data) =>
         input.RaiseEvent(new DataObjectPastingEventArgs(data, false, data.GetFormats()[0]));
 
     private static DragEventArgs Drag(IDataObject data, RoutedEvent routedEvent)
@@ -188,8 +188,8 @@ public sealed class ComposerFlowsTests
                                                                                                    Assert.Single(AllNamed<Button>(h.Composer, "Remove Image 1"));
                                                                                                });
 
-    /// <summary>Ctrl+V as the text box runs it: the Paste command against the system clipboard.</summary>
-    private static void PasteClipboard(TextBox input)
+    /// <summary>Ctrl+V as the prompt runs it: the Paste command against the system clipboard.</summary>
+    private static void PasteClipboard(PromptBox input)
     {
         input.Focus();
         Assert.True(ApplicationCommands.Paste.CanExecute(null, input), "Paste is disabled for this clipboard content");

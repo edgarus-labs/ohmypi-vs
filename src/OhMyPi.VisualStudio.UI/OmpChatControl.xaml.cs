@@ -195,7 +195,7 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         BuildViews(service, host);
         Subscribe(service, host);
 
-        _composer!.Commands = service.Commands;
+        _composer!.Commands = GoalCommand.WithGoal(service.Commands);
         foreach (var status in service.Statuses)
         {
             ApplyStatus(status.Key, status.Value);
@@ -390,7 +390,7 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         On<InteractionRequest>(h => service.InteractionRequested += h, h => service.InteractionRequested -= h, (_, request) => Post(() => _interactions!.Add(request)));
         On<string>(h => service.InteractionCancelled += h, h => service.InteractionCancelled -= h, (_, id) => Post(() => _interactions!.Remove(id)));
         On<PresentationRequest>(h => service.Presentation += h, h => service.Presentation -= h, (_, request) => Post(() => Present(request)));
-        On<IReadOnlyList<SlashCommandView>>(h => service.CommandsChanged += h, h => service.CommandsChanged -= h, (_, commands) => Post(() => _composer!.Commands = commands));
+        On<IReadOnlyList<SlashCommandView>>(h => service.CommandsChanged += h, h => service.CommandsChanged -= h, (_, commands) => Post(() => _composer!.Commands = GoalCommand.WithGoal(commands)));
         On(h => host.ChangesChanged += h, h => host.ChangesChanged -= h, (_, __) => Schedule(_queue.EnqueueChanges()));
         On(h => host.ActiveDocumentChanged += h, h => host.ActiveDocumentChanged -= h, (_, __) => Post(() => _composer!.ActiveDocument = host.ActiveDocumentPath));
     }
@@ -664,6 +664,13 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
     {
         var service = _service!;
         ScrollToBottom();
+        if (GoalCommand.Parse(draft.Text) is GoalRequest goal)
+        {
+            await SendGoalAsync(draft, goal);
+
+            return;
+        }
+
         Task<PromptOutcome> outcome;
         try
         {
@@ -702,6 +709,34 @@ public sealed partial class OmpChatControl : UserControl, IDisposable
         catch (Exception error)
         {
             Fail("Prompt failed", error);
+        }
+    }
+
+    /// <summary>Runs a <c>/goal</c> prompt through OMP's goal command and reports the goal OMP returns; a failure restores the draft.</summary>
+    private async Task SendGoalAsync(Draft draft, GoalRequest goal)
+    {
+        var refusal = goal.Error ?? (draft.Attachments.Count > 0 ? "/goal takes only text; remove the attachments" : null);
+        if (refusal is not null)
+        {
+            _composer!.Restore(draft);
+            AddNotice(NoticeLevel.Error, refusal);
+
+            return;
+        }
+
+        try
+        {
+            await _host!.EnsureServiceAsync();
+            var result = await _service!.GoalAsync(goal.Operation, goal.Objective);
+            AddNotice(NoticeLevel.Info, GoalCommand.Describe(goal.Operation, result));
+        }
+        catch (OmpSupersededException)
+        {
+        }
+        catch (Exception error)
+        {
+            _composer!.Restore(draft);
+            Fail("Goal failed", error);
         }
     }
 

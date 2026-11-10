@@ -154,6 +154,8 @@ internal sealed class FakeOmpService : IOmpService
     /// <exception cref="NotSupportedException">Thrown when an error occurs during execution.</exception>
     public Task SetFastModeAsync(bool enabled) => throw new NotSupportedException();
 
+    public Task<GoalView?> GoalAsync(GoalOperation operation, string? objective = null) => throw new NotSupportedException();
+
     /// <summary>
     /// Asynchronously processes a text prompt, optionally including images and a specified prompt mode, to produce a prompt outcome.
     /// </summary>
