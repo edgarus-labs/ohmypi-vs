@@ -23,7 +23,7 @@ internal static class GoalCommand
 {
     private const string Name = "goal";
 
-    private static readonly SlashCommandView Command = new SlashCommandView
+    private static readonly SlashCommandView Command = new()
     {
         Name = Name,
         Description = "Set a persistent objective OMP works on until it is done; show, pause, resume or drop it",
@@ -33,11 +33,12 @@ internal static class GoalCommand
 
     /// <summary><paramref name="commands"/> with <c>/goal</c> after them, unless OMP already lists it.</summary>
     public static IReadOnlyList<SlashCommandView> WithGoal(IReadOnlyList<SlashCommandView> commands) =>
-        commands.Any(c => string.Equals(c.Name, Name, StringComparison.OrdinalIgnoreCase)) ? commands : commands.Concat(new[] { Command }).ToArray();
+        commands.Any(c => string.Equals(c.Name, Name, StringComparison.OrdinalIgnoreCase)) ? commands : [.. commands, Command];
 
     /// <summary>
     /// The request a <c>/goal</c> prompt makes, or null for any other prompt. With no argument or <c>show</c> it reads the
     /// goal; <c>pause</c>, <c>resume</c> and <c>drop</c> act on it; any other text, optionally after <c>set</c>, is the objective.
+    /// A subcommand followed by more text is an error rather than an objective, so a mistyped command never starts work.
     /// </summary>
     public static GoalRequest? Parse(string text)
     {
@@ -49,30 +50,29 @@ internal static class GoalCommand
         }
 
         var argument = trimmed.Substring(Name.Length + 1).Trim();
-        var space = argument.IndexOfAny(new[] { ' ', '\t', '\r', '\n' });
+        var space = argument.IndexOfAny([' ', '\t', '\r', '\n']);
         var word = (space < 0 ? argument : argument.Substring(0, space)).ToLowerInvariant();
         var rest = space < 0 ? "" : argument.Substring(space + 1).Trim();
-        switch (word)
+        return word switch
         {
-            case "":
-            case "show" when rest.Length == 0:
-                return new GoalRequest { Operation = GoalOperation.Get };
-            case "pause" when rest.Length == 0:
-                return new GoalRequest { Operation = GoalOperation.Pause };
-            case "resume" when rest.Length == 0:
-                return new GoalRequest { Operation = GoalOperation.Resume };
-            case "drop" when rest.Length == 0:
-                return new GoalRequest { Operation = GoalOperation.Drop };
-            case "set":
-                return rest.Length == 0
-                    ? new GoalRequest { Operation = GoalOperation.Create, Error = "/goal set needs an objective, for example: /goal set Make the build green" }
-                    : new GoalRequest { Operation = GoalOperation.Create, Objective = rest };
-            case "budget":
-                return new GoalRequest { Operation = GoalOperation.Get, Error = "OMP does not let Visual Studio change the goal's token budget" };
-            default:
-                return new GoalRequest { Operation = GoalOperation.Create, Objective = argument };
-        }
+            "" => new GoalRequest { Operation = GoalOperation.Get },
+            "show" => Bare(GoalOperation.Get, word, rest),
+            "pause" => Bare(GoalOperation.Pause, word, rest),
+            "resume" => Bare(GoalOperation.Resume, word, rest),
+            "drop" => Bare(GoalOperation.Drop, word, rest),
+            "set" when rest.Length == 0 => new GoalRequest { Operation = GoalOperation.Create, Error = "/goal set needs an objective, for example: /goal set Make the build green" },
+            "set" => new GoalRequest { Operation = GoalOperation.Create, Objective = rest },
+            "budget" => new GoalRequest { Operation = GoalOperation.Get, Error = "OMP does not let Visual Studio change the goal's token budget" },
+            _ => new GoalRequest { Operation = GoalOperation.Create, Objective = argument },
+        };
     }
+
+    /// <summary>A subcommand that takes no argument; an error when <paramref name="rest"/> is not empty.</summary>
+    private static GoalRequest Bare(GoalOperation operation, string word, string rest) => new()
+    {
+        Operation = operation,
+        Error = rest.Length == 0 ? null : $"/goal {word} takes no argument; to set a new objective use /goal set <objective>",
+    };
 
     /// <summary>The notice shown after OMP ran <paramref name="operation"/>; <paramref name="goal"/> is the goal it reported.</summary>
     public static string Describe(GoalOperation operation, GoalView? goal) => operation switch

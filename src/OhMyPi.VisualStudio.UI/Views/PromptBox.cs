@@ -16,14 +16,14 @@ namespace OhMyPi.VisualStudio.UI.Views;
 internal sealed class PromptBox : RichTextBox
 {
     private static readonly ICommand[] FormattingCommands =
-    {
+    [
         EditingCommands.ToggleBold, EditingCommands.ToggleItalic, EditingCommands.ToggleUnderline,
         EditingCommands.ToggleSubscript, EditingCommands.ToggleSuperscript,
         EditingCommands.IncreaseFontSize, EditingCommands.DecreaseFontSize,
         EditingCommands.AlignLeft, EditingCommands.AlignCenter, EditingCommands.AlignRight, EditingCommands.AlignJustify,
         EditingCommands.ToggleBullets, EditingCommands.ToggleNumbering,
         EditingCommands.IncreaseIndentation, EditingCommands.DecreaseIndentation,
-    };
+    ];
 
     /// <summary>Room a rich text box always keeps between its padding and the text, left and right, so the caret is not clipped at the edges.</summary>
     public const double CaretRoom = 5;
@@ -165,7 +165,7 @@ internal sealed class PromptBox : RichTextBox
 
         foreach (var block in Document.Blocks)
         {
-            if (!(block is Paragraph paragraph) || !Check(paragraph.Inlines))
+            if (block is not Paragraph paragraph || !Check(paragraph.Inlines))
             {
                 return false;
             }

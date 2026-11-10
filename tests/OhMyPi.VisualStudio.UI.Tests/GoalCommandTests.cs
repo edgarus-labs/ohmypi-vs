@@ -31,6 +31,10 @@ public sealed class GoalCommandTests
     [Theory]
     [InlineData("/goal set")]
     [InlineData("/goal budget 5000")]
+    [InlineData("/goal pause now")]
+    [InlineData("/goal resume later")]
+    [InlineData("/goal drop it")]
+    [InlineData("/goal show all")]
     public void A_goal_command_omp_cannot_run_is_an_error(string text) => Assert.NotNull(GoalCommand.Parse(text)!.Error);
 
     [Fact]
