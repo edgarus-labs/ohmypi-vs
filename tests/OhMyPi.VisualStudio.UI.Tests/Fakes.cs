@@ -159,6 +159,8 @@ internal sealed class FakeService : IOmpService
         return Task.CompletedTask;
     }
 
+    public Task<GoalView?> GoalAsync(GoalOperation operation, string? objective = null) => throw new NotSupportedException();
+
     public Task<PromptOutcome> PromptAsync(string text, PromptMode mode = PromptMode.Auto, IReadOnlyList<PromptImage>? images = null)
     {
         if (PromptError is not null)

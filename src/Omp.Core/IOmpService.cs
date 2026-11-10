@@ -85,6 +85,12 @@ public interface IOmpService : IDisposable
 
     Task SetFastModeAsync(bool enabled);
 
+    /// <summary>
+    /// Runs OMP's <c>goal</c> command, which <c>/goal</c> drives in OMP's terminal UI. Creating or resuming a goal makes
+    /// OMP work on it. Returns the goal afterwards, null when the session has none.
+    /// </summary>
+    Task<GoalView?> GoalAsync(GoalOperation operation, string? objective = null);
+
     /// <summary>Completes at prompt completion (prompt_result or local completion), never at acknowledgement.</summary>
     Task<PromptOutcome> PromptAsync(string text, PromptMode mode = PromptMode.Auto, IReadOnlyList<PromptImage>? images = null);
 

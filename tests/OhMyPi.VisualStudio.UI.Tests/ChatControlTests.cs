@@ -75,7 +75,7 @@ public sealed class ChatControlTests
             control.AddFileMentions(new[] { "C:\\repo\\src\\a.cs" });
             Pump();
             Assert.True(HasText(window, "a.cs"));
-            var input = Named<TextBox>(window, "Prompt");
+            var input = Named<Views.PromptBox>(window, "Prompt");
             input.Text = "line one";
             Keyboard.Focus(input);
             Assert.Empty(service.Prompts);
@@ -121,7 +121,7 @@ public sealed class ChatControlTests
         RunSta((window, control) =>
         {
             Assert.DoesNotContain(Descendants(window).OfType<Button>(), b => b.IsVisible && (System.Windows.Automation.AutomationProperties.GetName(b) is "Follow-up" or "Steer"));
-            var input = Named<TextBox>(window, "Prompt");
+            var input = Named<Views.PromptBox>(window, "Prompt");
             input.Text = "focus on tests";
             Keyboard.Focus(input);
             Press(input, Key.Enter);
@@ -139,7 +139,7 @@ public sealed class ChatControlTests
         var service = new FakeService { Session = new SessionView { Phase = SessionPhase.Yielded } };
         RunSta((window, control) =>
         {
-            var input = Named<TextBox>(window, "Prompt");
+            var input = Named<Views.PromptBox>(window, "Prompt");
             Keyboard.Focus(input);
             Press(input, Key.Escape);
             Pump(200);
@@ -161,7 +161,7 @@ public sealed class ChatControlTests
         var service = new FakeService { PromptRefusal = "OMP is busy" };
         RunSta((window, control) =>
         {
-            var input = Named<TextBox>(window, "Prompt");
+            var input = Named<Views.PromptBox>(window, "Prompt");
             input.Text = "hello";
             Press(input, Key.Enter);
             Pump(300);
@@ -251,7 +251,7 @@ public sealed class ChatControlTests
         {
             Assert.True(HasText(window, "OMP not found: omp is not on PATH"));
             Assert.True(HasText(window, "offline"));
-            Assert.False(Named<TextBox>(window, "Prompt").IsEnabled);
+            Assert.False(Named<Views.PromptBox>(window, "Prompt").IsEnabled);
         }, service, host);
     }
 
@@ -264,7 +264,7 @@ public sealed class ChatControlTests
         {
             Assert.True(HasText(window, "OMP is not available: Access to the path is denied"));
             Assert.False(HasText(window, "OMP not found: Access to the path is denied"));
-            Assert.False(Named<TextBox>(window, "Prompt").IsEnabled);
+            Assert.False(Named<Views.PromptBox>(window, "Prompt").IsEnabled);
         }, service, host);
     }
 
@@ -372,7 +372,7 @@ public sealed class ChatControlTests
                 new SlashCommandView { Name = "compact", Description = "Compact the context" },
             });
             Pump();
-            var input = Named<TextBox>(window, "Prompt");
+            var input = Named<Views.PromptBox>(window, "Prompt");
             input.Focus();
             input.Text = "/co";
             input.CaretIndex = input.Text.Length;

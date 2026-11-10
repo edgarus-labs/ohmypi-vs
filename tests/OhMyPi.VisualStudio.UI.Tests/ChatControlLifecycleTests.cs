@@ -74,7 +74,7 @@ public sealed class ChatControlLifecycleTests
         var host = new FakeHost { EnsureGate = gate };
         RunSta((window, control) =>
         {
-            var input = Named<TextBox>(window, "Prompt");
+            var input = Named<Views.PromptBox>(window, "Prompt");
             input.Text = "hello";
             Press(input, Key.Enter);
             Pump(200);
@@ -193,7 +193,7 @@ public sealed class ChatControlLifecycleTests
         service.CommandsRead = () => service.RaiseCommands(new[] { new SlashCommandView { Name = "compact", Description = "Compact the context" } });
         RunSta((window, control) =>
         {
-            var input = Named<TextBox>(window, "Prompt");
+            var input = Named<Views.PromptBox>(window, "Prompt");
             input.Focus();
             input.Text = "/co";
             input.CaretIndex = input.Text.Length;

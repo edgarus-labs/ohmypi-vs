@@ -18,7 +18,7 @@ public sealed class ChatFlowsTests
 {
     private static void Send(Window window, string text)
     {
-        var input = Named<TextBox>(window, "Prompt");
+        var input = Named<Views.PromptBox>(window, "Prompt");
         input.Text = text;
         Press(input, Key.Enter);
         Pump(300);
@@ -48,7 +48,7 @@ public sealed class ChatFlowsTests
             Pump(300);
             Assert.True(HasText(window, "disk almost full"));
             Assert.True(HasText(window, "building…"));
-            Assert.Equal("draft from OMP", Named<TextBox>(window, "Prompt").Text);
+            Assert.Equal("draft from OMP", Named<Views.PromptBox>(window, "Prompt").Text);
 
             service.RaisePresentation(new StatusPresentation { Key = "build", Text = null });
             Pump(300);
@@ -256,13 +256,13 @@ public sealed class ChatFlowsTests
         RunSta((window, control) =>
         {
             Send(window, "first");
-            Assert.Equal("first", Named<TextBox>(window, "Prompt").Text);
+            Assert.Equal("first", Named<Views.PromptBox>(window, "Prompt").Text);
             Assert.True(HasText(window, "Prompt failed: OMP is not installed"));
 
             host.EnsureError = null;
             service.PromptError = new InvalidOperationException("pipe closed");
             Send(window, "second");
-            Assert.Equal("second", Named<TextBox>(window, "Prompt").Text);
+            Assert.Equal("second", Named<Views.PromptBox>(window, "Prompt").Text);
             Assert.True(HasText(window, "Prompt failed: pipe closed"));
 
             service.PromptError = null;

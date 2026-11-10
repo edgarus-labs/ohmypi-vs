@@ -21,16 +21,16 @@ internal sealed class SlashCompletion
     /// </summary>
     private const int MaxRows = 50;
 
-    private readonly TextBox _input;
+    private readonly PromptBox _input;
     private readonly ListBox _list;
     private readonly Popup _popup;
     private IReadOnlyList<SlashCommandView> _commands = Array.Empty<SlashCommandView>();
 
     /// <summary>
-    /// Initializes a new instance of the SlashCompletion class and associates it with the specified TextBox to provide slash command completion functionality.
+    /// Initializes a new instance of the SlashCompletion class and associates it with the specified prompt to provide slash command completion functionality.
     /// </summary>
     /// <param name="input">The input.</param>
-    public SlashCompletion(TextBox input)
+    public SlashCompletion(PromptBox input)
     {
         _input = input;
         _list = new ListBox { MaxHeight = 260, Focusable = false }.Styled("Omp.ListBox");

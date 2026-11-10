@@ -81,7 +81,7 @@ public sealed class ComposerTests
     [Fact]
     public void A_clipboard_that_fails_during_paste_becomes_a_notice() => RunSta((window, control) =>
                                                                                {
-                                                                                   var input = Named<TextBox>(window, "Prompt");
+                                                                                   var input = Named<Views.PromptBox>(window, "Prompt");
                                                                                    var args = new DataObjectPastingEventArgs(new BrokenClipboard(), false, DataFormats.Bitmap) { RoutedEvent = DataObject.PastingEvent };
                                                                                    input.RaiseEvent(args);
                                                                                    Pump();
